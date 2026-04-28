@@ -35,7 +35,7 @@ public class Helper {
         return hypot(ac, cb)
     }
     
-    public static func calc(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: Orientation) throws -> FoVData {
+    public static func calc(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation) throws -> FoVData {
         let distance : Double = camera.distance(to: motif)
         
         if focalLengthInMM < 8 || focalLengthInMM > 2400 { throw FoVError.invalidArgument(message: "Error, focal length must be between 8mm and 2400mm") }
@@ -68,7 +68,7 @@ public class Helper {
         let phi           : Double = asin(2.0 / 3.605551)
         let fovWidth      : Double
         let fovHeight     : Double
-        if Orientation.landscape == orientation {
+        if CameraOrientation.landscape == orientation {
             fovWidth  = cos(phi) * diagonalLength
             fovHeight = sin(phi) * diagonalLength
         } else {
@@ -86,7 +86,7 @@ public class Helper {
         return FoVData(camera: camera, motif: motif, focalLength: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation, infinite: infinite, hyperFocal: hyperFocal, nearLimit: nearLimit, farLimit: farLimit, frontPercent: frontPercent, behindPercent: behindPercent, total: total, diagonalAngle: diagonalAngle, diagonalLength: diagonalLength, fovWidth: fovWidth, fovWidthAngle: fovWidthAngle, fovHeight: fovHeight, fovHeightAngle: fovHeightAngle, radius: radius)
     }
     
-    public static func updateTriangle(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: Orientation, triangle: Triangle) {
+    public static func updateTriangle(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation, triangle: Triangle) {
         do {
             let data: FoVData = try calc(camera: camera, motif: motif, focalLengthInMM: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
             let trianglePoints: [MKMapPoint] = calcTrianglePoints(data: data)
@@ -106,7 +106,7 @@ public class Helper {
         return [p1, p2, p3]
     }
     
-    public static func updateTrapezoid(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: Orientation, trapezoid: Trapezoid) {
+    public static func updateTrapezoid(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation, trapezoid: Trapezoid) {
         do {
             let data: FoVData = try calc(camera: camera, motif: motif, focalLengthInMM: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
             let trapezoidPoints: [MKMapPoint] = calcTrapezoidPoints(data: data)
@@ -375,7 +375,7 @@ public class Helper {
         if let jsonUrl = jsonUrl {
             do {
                 try jsonTxt.write(to: jsonUrl, atomically: true, encoding: .utf8)
-                _ = try String(contentsOf: jsonUrl)
+                _ = try String(contentsOf: jsonUrl, encoding: .utf8)
                 print("Stored views to iCloud documents (\(jsonUrl.path))")
             } catch {
                 print(error.localizedDescription)
@@ -403,7 +403,7 @@ public class Helper {
             print("json file: \(jsonUrl.path)")
             if FileManager.default.fileExists(atPath: jsonUrl.path) {
                 do {
-                    let jsonTxt = try String(contentsOf: jsonUrl)
+                    let jsonTxt = try String(contentsOf: jsonUrl, encoding: .utf8)
                     if let jsonData = jsonTxt.data(using: .utf8) {
                         let viewDataArray :[PhotoViewData] = try! JSONDecoder().decode([PhotoViewData].self, from: jsonData)
                         for viewData in viewDataArray {
@@ -518,48 +518,29 @@ public class Helper {
         return group.filter({ $0.0 == item.0 }).count > 0
     }
     
-    public static func getCountryForSpot(spot: Spot) -> Void {
-        let location : CLLocation = CLLocation(latitude: spot.point.coordinate.latitude, longitude: spot.point.coordinate.longitude)
-        CLGeocoder().reverseGeocodeLocation(location) { placemarks, error in
-            guard let placemarks = placemarks, error == nil else {
-                self.processResponse(spot: spot, placemarks: nil, error: error)
-                return
-            }
-            self.processResponse(spot: spot, placemarks: placemarks, error: nil)
-        }
-    }
-    private static func processResponse(spot: Spot, placemarks: [CLPlacemark]?, error: Error?) -> Void {
-        if nil == placemarks { return }
-        for placemark in placemarks! {
-            if let countryCode = placemark.isoCountryCode {
-                spot.country = countryCode
-                return
-            } else {
-                spot.country = ""
+    public static func updateCountryForSpot(spot: Spot) -> Void {
+        let coordinate : CLLocationCoordinate2D = spot.point.coordinate
+        Task {
+            do {
+                let (_, countryCode) = try await coordinate.fetchCityAndCountryCode()
+                spot.countryCode = countryCode
+            } catch {
+                debugPrint(error)
             }
         }
     }
     
-    public static func getCountryForView(view: PhotoView) -> Void {
-        let location : CLLocation = CLLocation(latitude: view.cameraPoint.coordinate.latitude, longitude: view.cameraPoint.coordinate.longitude)
-        CLGeocoder().reverseGeocodeLocation(location) { placemarks, error in
-            guard let placemarks = placemarks, error == nil else {
-                self.processResponse(view: view, placemarks: nil, error: error)
-                return
-            }
-            self.processResponse(view: view, placemarks: placemarks, error: nil)
-        }
-    }
-    private static func processResponse(view: PhotoView, placemarks: [CLPlacemark]?, error: Error?) -> Void {
-        if nil == placemarks { return }
-        for placemark in placemarks! {
-            if let countryCode = placemark.isoCountryCode {
-                view.country = countryCode
-                return
-            } else {
-                view.country = ""
+    public static func updateCountryForView(view: PhotoView) -> Void {
+        let coordinate = view.cameraPoint.coordinate
+        Task {
+            do {
+                let (_, countryCode) = try await coordinate.fetchCityAndCountryCode()
+                view.countryCode = countryCode
+            } catch {
+                debugPrint(error)
             }
         }
     }
 }
+
 

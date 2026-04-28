@@ -94,9 +94,7 @@ public class Constants {
     public static let EQP_FLASH      : (String, Int) = ("Flash",      1 << 5) // 32
     public static let EQP_REMOTE     : (String, Int) = ("Remote",     1 << 6) // 64
     
-    public static let EQUIPMENT      :[(String, Int)] = [
-        EQP_TRIPOD, EQP_GIMBAL, EQP_CPL_FILTER, EQP_ND_FILTER, EQP_IR_FILTER, EQP_FLASH, EQP_REMOTE
-    ]
+    public static let EQUIPMENT      :[(String, Int)] = [ EQP_TRIPOD, EQP_GIMBAL, EQP_CPL_FILTER, EQP_ND_FILTER, EQP_IR_FILTER, EQP_FLASH, EQP_REMOTE ]
     
     // Times
     public static let TMS_ALL_YEAR   : (String, Int) = ("All Year",   1 << 0)
@@ -158,7 +156,7 @@ public class Constants {
     
     public static let DEFAULT_COUNTRY     : String     = "DE"
     
-    public static let DEFAULT_POSITION    : MKMapPoint = MKMapPoint(CLLocationManager().location?.coordinate ?? CLLocationCoordinate2D(latitude : 51.911821, longitude: 7.633703))
+    public static let DEFAULT_LOCATION    : MKMapPoint = MKMapPoint(CLLocationManager().location?.coordinate ?? CLLocationCoordinate2D(latitude : 51.911821, longitude: 7.633703))
     
     public static let DEFAULT_CAMERA      : Camera = Camera(name        : "DEFAULT DSLR",
                                                             sensorFormat: SensorFormat.fullFormat.id)
@@ -170,24 +168,24 @@ public class Constants {
                                                           maxAperture   : 99,
                                                           sensorFormat  : SensorFormat.fullFormat.id)
     
-    public static let DEFAULT_ORIENTATION : Orientation = Orientation.landscape
+    public static let DEFAULT_ORIENTATION : CameraOrientation = CameraOrientation.landscape
     
     public static let DEFAULT_MAP_SIZE    : MKMapSize   = MKMapSize(width: 97313.02098080516, height: 60438.11837643385)
     
-    public static let DEFAULT_ORIGIN      : MKMapPoint  = MKMapPoint(x: DEFAULT_POSITION.x - DEFAULT_MAP_SIZE.width / 2, y: DEFAULT_POSITION.y - DEFAULT_MAP_SIZE.height / 2)
+    public static let DEFAULT_ORIGIN      : MKMapPoint  = MKMapPoint(x: DEFAULT_LOCATION.x - DEFAULT_MAP_SIZE.width / 2, y: DEFAULT_LOCATION.y - DEFAULT_MAP_SIZE.height / 2)
             
-    public static let DEFAULT_SPOT        : Spot        = Spot(name: "Home", description: "Test", point: DEFAULT_POSITION, country: DEFAULT_COUNTRY)
+    public static let DEFAULT_SPOT        : Spot        = Spot(name: "Home", description: "Test", point: DEFAULT_LOCATION, countryCode: DEFAULT_COUNTRY)
     
     public static let DEFAULT_VIEW        : PhotoView   = PhotoView(name  : "View",
                                                                description: "Default View",
-                                                               cameraPoint: DEFAULT_POSITION,
-                                                               motifPoint : MKMapPoint(CLLocationCoordinate2D(latitude: DEFAULT_POSITION.coordinate.latitude + 0.005, longitude: DEFAULT_POSITION.coordinate.longitude)),
+                                                               cameraPoint: DEFAULT_LOCATION,
+                                                               motifPoint : MKMapPoint(CLLocationCoordinate2D(latitude: DEFAULT_LOCATION.coordinate.latitude + 0.005, longitude: DEFAULT_LOCATION.coordinate.longitude)),
                                                                camera     : DEFAULT_CAMERA,
                                                                lens       : DEFAULT_LENS,
                                                                focalLength: DEFAULT_LENS.minFocalLength + (DEFAULT_LENS.maxFocalLength - DEFAULT_LENS.minFocalLength) / 2,
                                                                aperture   : DEFAULT_LENS.minAperture + (DEFAULT_LENS.maxAperture - DEFAULT_LENS.minAperture) / 2,
-                                                               orientation: Orientation.landscape,
-                                                               country    : DEFAULT_COUNTRY,
+                                                               orientation: CameraOrientation.landscape,
+                                                               countryCode: DEFAULT_COUNTRY,
                                                                mapRect    : MKMapRect(origin: DEFAULT_ORIGIN, size: DEFAULT_MAP_SIZE),
                                                                tags       : TAG_STREET.1,
                                                                equipment  : EQP_TRIPOD.1,

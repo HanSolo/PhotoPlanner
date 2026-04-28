@@ -18,8 +18,8 @@ public class PhotoView: Equatable, Hashable {
     var lens        : Lens
     var focalLength : Double
     var aperture    : Double
-    var orientation : Orientation
-    var country     : String
+    var orientation : CameraOrientation
+    var countryCode : String
     var mapRect     : MKMapRect
     var tags        : Int
     var equipment   : Int
@@ -27,7 +27,7 @@ public class PhotoView: Equatable, Hashable {
     
     
     
-    init(name: String, description: String, cameraPoint: MKMapPoint, motifPoint: MKMapPoint, camera: Camera, lens: Lens, focalLength: Double, aperture: Double, orientation: Orientation, country: String, mapRect: MKMapRect, tags: Int? = 0, equipment: Int? = 0, times: Int? = 0) {
+    init(name: String, description: String, cameraPoint: MKMapPoint, motifPoint: MKMapPoint, camera: Camera, lens: Lens, focalLength: Double, aperture: Double, orientation: CameraOrientation, countryCode: String, mapRect: MKMapRect, tags: Int? = 0, equipment: Int? = 0, times: Int? = 0) {
         self.name        = name
         self.description = description
         self.cameraPoint = cameraPoint
@@ -37,7 +37,7 @@ public class PhotoView: Equatable, Hashable {
         self.focalLength = focalLength
         self.aperture    = aperture
         self.orientation = orientation
-        self.country     = country
+        self.countryCode = countryCode
         self.mapRect     = mapRect
         self.tags        = tags ?? 0
         self.equipment   = equipment ?? 0
@@ -62,8 +62,8 @@ public class PhotoView: Equatable, Hashable {
         }
         self.focalLength = Double(viewData.focalLength!)!
         self.aperture    = Double(viewData.aperture!)!
-        self.orientation = Orientation(rawValue: viewData.orientation!)!
-        self.country     = viewData.country!
+        self.orientation = CameraOrientation(rawValue: viewData.orientation!)!
+        self.countryCode = viewData.countryCode!
         
         let origin    : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: CLLocationDegrees((viewData.originLat! as NSString).doubleValue), longitude: CLLocationDegrees((viewData.originLon! as NSString).doubleValue)))
         let mapWidth  : Double     = (viewData.mapWidth! as NSString).doubleValue
@@ -95,8 +95,8 @@ public class PhotoView: Equatable, Hashable {
             
         self.focalLength                  = Double(viewData.focalLength!)!
         self.aperture                     = Double(viewData.aperture!)!
-        self.orientation                  = Orientation(rawValue: viewData.orientation!)!
-        self.country                      = viewData.country!
+        self.orientation                  = CameraOrientation(rawValue: viewData.orientation!)!
+        self.countryCode                  = viewData.countryCode!
         
         let origin         : MKMapPoint   = MKMapPoint(CLLocationCoordinate2D(latitude: CLLocationDegrees((viewData.originLat! as NSString).doubleValue), longitude: CLLocationDegrees((viewData.originLon! as NSString).doubleValue)))
         let mapWidth       : Double       = (viewData.mapWidth! as NSString).doubleValue
@@ -111,7 +111,7 @@ public class PhotoView: Equatable, Hashable {
     
     init(name: String, description: String, cameraLat: Double, cameraLon: Double, motifLat: Double, motifLon: Double, cameraName: String, sensorFormat: Int,
     lensName: String, minFocalLength: Double, maxFocalLength: Double, minAperture: Double, maxAperture: Double,
-    focalLength: Double, aperture: Double, orientation: String, country: String, originLat: Double, originLon: Double, mapWidth: Double, mapHeight: Double, tags: Int, equipment: Int, times: Int) {
+    focalLength: Double, aperture: Double, orientation: String, countryCode: String, originLat: Double, originLon: Double, mapWidth: Double, mapHeight: Double, tags: Int, equipment: Int, times: Int) {
         self.name          = name
         self.description   = description
         self.cameraPoint   = MKMapPoint(CLLocationCoordinate2D(latitude: CLLocationDegrees(cameraLat), longitude: CLLocationDegrees(cameraLon)))
@@ -121,8 +121,8 @@ public class PhotoView: Equatable, Hashable {
         self.lens          = Lens(name: lensName, minFocalLength: minFocalLength, maxFocalLength: maxFocalLength, minAperture: minAperture, maxAperture: maxAperture, sensorFormat: sensorFormat)
         self.focalLength   = focalLength
         self.aperture      = aperture
-        self.orientation   = Orientation(rawValue: orientation)!
-        self.country       = country
+        self.orientation   = CameraOrientation(rawValue: orientation)!
+        self.countryCode   = countryCode
         let origin         = MKMapPoint(CLLocationCoordinate2D(latitude: CLLocationDegrees(originLat), longitude: CLLocationDegrees(originLon)))
         let mapWidth       = mapWidth
         let mapHeight      = mapHeight
@@ -135,10 +135,10 @@ public class PhotoView: Equatable, Hashable {
     
     
     public static func ==(lhs: PhotoView, rhs: PhotoView) -> Bool {
-        return lhs.name == rhs.name &&
+        return lhs.name        == rhs.name &&
                lhs.description == rhs.description &&
-               lhs.camera == rhs.camera &&
-               lhs.lens == rhs.lens
+               lhs.camera      == rhs.camera &&
+               lhs.lens        == rhs.lens
     }
     
     func toJsonString() -> String {
@@ -158,7 +158,7 @@ public class PhotoView: Equatable, Hashable {
         jsonString += "\"focalLength\":\"\(focalLength)\","
         jsonString += "\"aperture\":\"\(aperture)\","
         jsonString += "\"orientation\":\"\(orientation.name.uppercased())\","
-        jsonString += "\"country\":\"\(country)\","
+        jsonString += "\"countryCode\":\"\(countryCode)\","
         jsonString += "\"originLat\":\"\(mapRect.origin.coordinate.latitude)\","
         jsonString += "\"originLon\":\"\(mapRect.origin.coordinate.longitude)\","
         jsonString += "\"mapWidth\":\"\(mapRect.size.width)\","
@@ -188,7 +188,7 @@ public class PhotoView: Equatable, Hashable {
         jsonString += "\"focalLength\":\"\(focalLength)\","
         jsonString += "\"aperture\":\"\(aperture)\","
         jsonString += "\"orientation\":\"\(orientation)\","
-        jsonString += "\"country\":\"\(country)\","
+        jsonString += "\"countryCode\":\"\(countryCode)\","
         jsonString += "\"originLat\":\"\(mapRect.origin.coordinate.latitude)\","
         jsonString += "\"originLon\":\"\(mapRect.origin.coordinate.longitude)\","
         jsonString += "\"mapWidth\":\"\(mapRect.size.width)\","
@@ -205,7 +205,7 @@ public class PhotoView: Equatable, Hashable {
                     cameraLat: self.cameraPoint.coordinate.latitude, cameraLon: self.cameraPoint.coordinate.longitude, motifLat: self.motifPoint.coordinate.latitude, motifLon: self.motifPoint.coordinate.longitude,
                     cameraName: self.camera.name, sensorFormat: self.camera.sensorFormat, lensName: self.lens.name, minFocalLength: self.lens.minFocalLength, maxFocalLength: self.lens.maxFocalLength,
                     minAperture: self.lens.minAperture, maxAperture: self.lens.maxAperture, focalLength: self.focalLength, aperture: self.aperture, orientation: self.orientation.rawValue,
-                    country: self.country, originLat: self.mapRect.origin.coordinate.latitude, originLon: self.mapRect.origin.coordinate.longitude, mapWidth: self.mapRect.width, mapHeight: self.mapRect.height,
+                    countryCode: self.countryCode, originLat: self.mapRect.origin.coordinate.latitude, originLon: self.mapRect.origin.coordinate.longitude, mapWidth: self.mapRect.width, mapHeight: self.mapRect.height,
                     tags: self.tags, equipment: self.equipment, times: self.times)
     }
     

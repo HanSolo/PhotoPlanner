@@ -13,7 +13,7 @@ public struct SpotData: Codable {
     let description   : String?
     let lat           : String?
     let lon           : String?
-    let country       : String?
+    let countryCode   : String?
     let tags          : String?
     
     
@@ -22,7 +22,7 @@ public struct SpotData: Codable {
         self.description = description
         self.lat         = lat
         self.lon         = lon
-        self.country     = country
+        self.countryCode = country
         self.tags        = tags
     }
     init(dictionary: Dictionary<String, String>) throws {

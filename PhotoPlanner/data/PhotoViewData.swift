@@ -25,7 +25,7 @@ public struct PhotoViewData: Codable {
     let focalLength   : String?
     let aperture      : String?
     let orientation   : String?
-    let country       : String?
+    let countryCode   : String?
     let originLat     : String?
     let originLon     : String?
     let mapWidth      : String?
@@ -37,7 +37,7 @@ public struct PhotoViewData: Codable {
     
     init(name: String, description: String, cameraLat: String, cameraLon: String, motifLat: String, motifLon: String, cameraName: String, sensorFormat: String,
          lensName: String, minFocalLength: String, maxFocalLength: String, minAperture: String, maxAperture: String,
-         focalLength: String, aperture: String, orientation: String, country: String, originLat: String, originLon: String, mapWidth: String, mapHeight: String, tags: String, equipment: String, times: String) {
+         focalLength: String, aperture: String, orientation: String, countryCode: String, originLat: String, originLon: String, mapWidth: String, mapHeight: String, tags: String, equipment: String, times: String) {
         self.name           = name
         self.description    = description
         self.cameraLat      = cameraLat
@@ -54,7 +54,7 @@ public struct PhotoViewData: Codable {
         self.focalLength    = focalLength
         self.aperture       = aperture
         self.orientation    = orientation
-        self.country        = country
+        self.countryCode    = countryCode
         self.originLat      = originLat
         self.originLon      = originLon
         self.mapWidth       = mapWidth

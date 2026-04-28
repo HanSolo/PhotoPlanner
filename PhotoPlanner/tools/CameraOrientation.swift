@@ -8,7 +8,7 @@
 import Foundation
 
 
-public enum Orientation: String {
+public enum CameraOrientation: String {
     case landscape
     case portrait
     
@@ -21,7 +21,7 @@ public enum Orientation: String {
 
     var jsonString: String {
         var text : String = "{"
-        text += "\"orientation\":\"\(self)\""
+        text += "\"cameraOrientation\":\"\(self.name)\""
         text += "}"
         return text
     }

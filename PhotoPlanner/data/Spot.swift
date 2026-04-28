@@ -13,15 +13,15 @@ public class Spot: Equatable, Hashable {
     var name        : String
     var description : String
     var point       : MKMapPoint
-    var country     : String
+    var countryCode : String
     var tags        : Int
     
     
-    init(name: String, description: String, point: MKMapPoint, country: String, tags: Int? = 0) {
+    init(name: String, description: String, point: MKMapPoint, countryCode: String, tags: Int? = 0) {
         self.name        = name
         self.description = description
         self.point       = point
-        self.country     = country
+        self.countryCode = countryCode
         self.tags        = tags ?? 0
     }
     
@@ -30,7 +30,7 @@ public class Spot: Equatable, Hashable {
         self.name        = spotData.name!
         self.description = spotData.description!
         self.point       = MKMapPoint(CLLocationCoordinate2D(latitude: CLLocationDegrees((spotData.lat! as NSString).doubleValue), longitude: CLLocationDegrees((spotData.lon! as NSString).doubleValue)))
-        self.country     = spotData.country!
+        self.countryCode = spotData.countryCode!
         self.tags        = Int(spotData.tags ?? "0") ?? 0
     }
     
@@ -38,22 +38,22 @@ public class Spot: Equatable, Hashable {
         self.name        = spotData.name!
         self.description = spotData.description!
         self.point       = MKMapPoint(CLLocationCoordinate2D(latitude: CLLocationDegrees((spotData.lat! as NSString).doubleValue), longitude: CLLocationDegrees((spotData.lon! as NSString).doubleValue)))
-        self.country     = spotData.country!
+        self.countryCode = spotData.countryCode!
         self.tags        = Int(spotData.tags ?? "0") ?? 0
     }
     
-    init(name: String, description: String, lat: Double, lon: Double, country: String, tags: Int) {
+    init(name: String, description: String, lat: Double, lon: Double, countryCode: String, tags: Int) {
         self.name        = name
         self.description = description
         self.point       = MKMapPoint(CLLocationCoordinate2D(latitude: CLLocationDegrees(lat), longitude: CLLocationDegrees(lon)))
-        self.country     = country
+        self.countryCode = countryCode
         self.tags        = tags
     }
     
     public static func ==(lhs: Spot, rhs: Spot) -> Bool {
-        return lhs.name == rhs.name &&
+        return lhs.name        == rhs.name &&
                lhs.description == rhs.description &&
-               lhs.tags == rhs.tags
+               lhs.tags        == rhs.tags
     }
     
     func toJsonString() -> String {
@@ -62,7 +62,7 @@ public class Spot: Equatable, Hashable {
         jsonString += "\"description\":\"\(description)\","
         jsonString += "\"lat\":\"\(point.coordinate.latitude)\","
         jsonString += "\"lon\":\"\(point.coordinate.longitude)\","
-        jsonString += "\"country\":\"\(country)\","
+        jsonString += "\"countryCode\":\"\(countryCode)\","
         jsonString += "\"tags\":\"\(tags)\""
         jsonString += "}"
         return jsonString
@@ -74,21 +74,21 @@ public class Spot: Equatable, Hashable {
         jsonString += "\"description\":\"\(description)\","
         jsonString += "\"lat\":\"\(point.coordinate.latitude)\","
         jsonString += "\"lon\":\"\(point.coordinate.longitude)\","
-        jsonString += "\"country\":\"\(country)\","
+        jsonString += "\"countryCode\":\"\(countryCode)\","
         jsonString += "\"tags\":\"\(tags)\""
         jsonString += "}"
         return jsonString
     }
     
     public func clone() -> Spot {
-        return Spot(name: self.name, description: self.description, lat: self.point.coordinate.latitude, lon: self.point.coordinate.longitude, country: self.country, tags: self.tags)
+        return Spot(name: self.name, description: self.description, lat: self.point.coordinate.latitude, lon: self.point.coordinate.longitude, countryCode: self.countryCode, tags: self.tags)
     }
     
     // Make sure the class conforms to hashable protocol
     public func hash(into hasher: inout Hasher) {
         hasher.combine(name)
         hasher.combine(description)
-        hasher.combine(country)
+        hasher.combine(countryCode)
         hasher.combine(tags)
     }
 }

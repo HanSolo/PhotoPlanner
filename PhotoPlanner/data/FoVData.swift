@@ -16,7 +16,7 @@ public class FoVData {
     public let aperture                  : Double
     public let distance                  : Double
     public let sensorFormat              : Int
-    public let orientation               : Orientation
+    public let orientation               : CameraOrientation
     public let infinite                  : Bool
     public let hyperFocal                : Double
     public let nearLimit                 : Double
@@ -36,7 +36,7 @@ public class FoVData {
     public let dofBehind                 : Double
     
     
-    init(camera: MKMapPoint, motif: MKMapPoint, focalLength: Double, aperture: Double, sensorFormat: Int, orientation: Orientation,
+    init(camera: MKMapPoint, motif: MKMapPoint, focalLength: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation,
          infinite: Bool, hyperFocal: Double, nearLimit: Double, farLimit: Double, frontPercent: Double, behindPercent: Double, total: Double,
          diagonalAngle: Double, diagonalLength: Double, fovWidth: Double, fovWidthAngle: Double, fovHeight: Double, fovHeightAngle: Double, radius: Double) {
         self.camera                     = camera
