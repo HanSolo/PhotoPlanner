@@ -16,9 +16,10 @@ struct AddLensView: View {
     @Environment(\.modelContext)         private var context
     @Environment(\.dismiss)              private var dismiss
     
-    @State private var name           : String = "Lens"
-    @State private var minFocalLength : Int    = 24
-    @State private var maxFocalLength : Int    = 70
+    @State private var name           : String = ""
+    @State private var isPrime        : Bool   = false
+    @State private var minFocalLength : Double = 24
+    @State private var maxFocalLength : Double = 70
     @State private var minAperture    : Double = 2.8
     @State private var maxAperture    : Double = 22.0
     
@@ -42,17 +43,35 @@ struct AddLensView: View {
             .listRowBackground(self.colorScheme == .dark ? Color.black : Color.white)
             
             HStack {
+                Text("Prime")
+                    .font(Constants.REGULAR_FONT_16)
+                    .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+                Spacer()
+                Toggle("", isOn: $isPrime)
+                    .onChange(of: self.isPrime) { oldValue, newValue in
+                        self.maxFocalLength = self.minFocalLength
+                    }
+            }
+            .background(self.colorScheme == .dark ? .black : .white)
+            .listRowBackground(self.colorScheme == .dark ? Color.black : Color.white)
+            
+            HStack {
                 Text("Min Focal Length")
                     .font(Constants.REGULAR_FONT_16)
                     .foregroundStyle(self.colorScheme == .dark ? .white : .black)
                 Spacer()
                 Picker("", selection: $minFocalLength) {
-                    ForEach(Array(stride(from: 8, through: 1200, by: 1)), id: \.self) { index in
-                        Text("\(index, specifier: "%d") mm")
+                    ForEach(Array(stride(from: 8.0, through: 1200.0, by: 1.0)), id: \.self) { index in
+                        Text("\(index, specifier: "%.0f") mm")
                             .tag(index)
                     }
                 }
                 .pickerStyle(.menu)
+                .onChange(of: self.minFocalLength) { oldValue, newValue in
+                    if self.isPrime {
+                        self.maxFocalLength = newValue
+                    }
+                }
             }
             .background(self.colorScheme == .dark ? .black : .white)
             .listRowBackground(self.colorScheme == .dark ? Color.black : Color.white)
@@ -63,12 +82,13 @@ struct AddLensView: View {
                     .foregroundStyle(self.colorScheme == .dark ? .white : .black)
                 Spacer()
                 Picker("", selection: $maxFocalLength) {
-                    ForEach(Array(stride(from: 8, through: 1200, by: 1)), id: \.self) { index in
-                        Text("\(index, specifier: "%d") mm")
+                    ForEach(Array(stride(from: 8.0, through: 1200.0, by: 1.0)), id: \.self) { index in
+                        Text("\(index, specifier: "%.0f") mm")
                             .tag(index)
                     }
                 }
                 .pickerStyle(.menu)
+                .disabled(self.isPrime)
             }
             .background(self.colorScheme == .dark ? .black : .white)
             .listRowBackground(self.colorScheme == .dark ? Color.black : Color.white)
@@ -115,11 +135,12 @@ struct AddLensView: View {
                 }
                 dismiss()
             }
+            .disabled(name.isEmpty || (minFocalLength > maxFocalLength || (minAperture > maxAperture)))
             .listRowBackground(self.colorScheme == .dark ? Color.black : Color.white)
             .foregroundStyle(self.colorScheme == .dark ? .white : .black)
             .buttonStyle(.bordered)
         }
         .scrollContentBackground(.hidden)
-        .background(self.colorScheme == .dark ? .black : .white)        
+        .background(self.colorScheme == .dark ? .black : .white)
     }
 }

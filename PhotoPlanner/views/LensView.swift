@@ -55,10 +55,10 @@ struct LensView: View {
                                 Text(lens.name)
                                     .font(Constants.REGULAR_FONT_16)
                                 if lens.isPrime {
-                                    Text("\(lens.minFocalLength) mm")
+                                    Text("\(String(format: "%.0f", lens.minFocalLength)) mm")
                                         .font(Constants.REGULAR_FONT_14)
                                 } else {
-                                    Text("\(lens.minFocalLength) - \(lens.maxFocalLength) mm")
+                                    Text("\(String(format: "%.0f", lens.minFocalLength)) - \(String(format: "%.0f", lens.maxFocalLength)) mm")
                                         .font(Constants.REGULAR_FONT_14)
                                 }
                                 Text("f/\(String(format: "%.1f", lens.minAperture)) - f/\(String(format: "%.1f", lens.maxAperture))")

@@ -162,8 +162,8 @@ public class Constants {
     public static let DEFAULT_LOCATION    : MKMapPoint = MKMapPoint(CLLocationManager().location?.coordinate ?? CLLocationCoordinate2D(latitude : 51.911821, longitude: 7.633703))
     public static let DEFAULT_CAMERA      : Camera = Camera(name        : "DEFAULT CAMERA", sensorFormat: SensorFormat.fullFormat.id)
     public static let DEFAULT_LENS        : Lens   = Lens(name          : "DEFAULT LENS",
-                                                          minFocalLength: 400,
-                                                          maxFocalLength: 400,
+                                                          minFocalLength: 24,
+                                                          maxFocalLength: 70,
                                                           minAperture   : 2.8,
                                                           maxAperture   : 22,
                                                           sensorFormat  : SensorFormat.fullFormat.id)

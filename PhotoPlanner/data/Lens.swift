@@ -13,18 +13,18 @@ import SwiftData
 public final class Lens: Identifiable {
     private(set) public var id  : String
     var name          : String
-    var minFocalLength: Int
-    var maxFocalLength: Int
+    var minFocalLength: Double
+    var maxFocalLength: Double
     var minAperture   : Double
     var maxAperture   : Double
     var sensorFormat  : Int
     var isPrime       : Bool
     
         
-    convenience init(name: String="Lens", focalLength: Int, minAperture: Double, maxAperture: Double, sensorFormat: Int) {
+    convenience init(name: String="Lens", focalLength: Double, minAperture: Double, maxAperture: Double, sensorFormat: Int) {
         self.init(name: name, minFocalLength: focalLength, maxFocalLength: focalLength, minAperture: minAperture, maxAperture: maxAperture, sensorFormat: sensorFormat)
     }
-    init(name: String, minFocalLength: Int, maxFocalLength: Int, minAperture: Double, maxAperture: Double, sensorFormat: Int) {
+    init(name: String, minFocalLength: Double, maxFocalLength: Double, minAperture: Double, maxAperture: Double, sensorFormat: Int) {
         self.id             = UUID().uuidString
         self.name           = name
         self.minFocalLength = minFocalLength
