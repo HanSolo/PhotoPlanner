@@ -86,57 +86,52 @@ public class Helper {
         return FoVData(camera: camera, motif: motif, focalLength: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation, infinite: infinite, hyperFocal: hyperFocal, nearLimit: nearLimit, farLimit: farLimit, frontPercent: frontPercent, behindPercent: behindPercent, total: total, diagonalAngle: diagonalAngle, diagonalLength: diagonalLength, fovWidth: fovWidth, fovWidthAngle: fovWidthAngle, fovHeight: fovHeight, fovHeightAngle: fovHeightAngle, radius: radius)
     }
     
-    public static func updateTriangle(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation, triangle: Triangle) {
+    public static func updateTriangle(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation) -> [CLLocationCoordinate2D] {
         do {
-            let data: FoVData = try calc(camera: camera, motif: motif, focalLengthInMM: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
-            let trianglePoints: [MKMapPoint] = calcTrianglePoints(data: data)
-            triangle.p1 = trianglePoints[0]
-            triangle.p2 = trianglePoints[1]
-            triangle.p3 = trianglePoints[2]
+            let fovData: FoVData = try calc(camera: camera, motif: motif, focalLengthInMM: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
+            return calcTrianglePoints(data: fovData)
         } catch {
             // Handle error here
+            return []
         }
     }
     
-    public static func calcTrianglePoints(data: FoVData) -> [MKMapPoint] {
+    public static func calcTrianglePoints(data: FoVData) -> [CLLocationCoordinate2D] {
         let halfFovWidthAngle: Double = data.fovWidthAngle / 2.0
-        let p1: MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: Double(data.camera.coordinate.latitude), longitude: Double(data.camera.coordinate.longitude)))
-        let p2: MKMapPoint = calcCoord(start: data.camera, distance: data.radius, bearing: -halfFovWidthAngle)
-        let p3: MKMapPoint = calcCoord(start: data.camera, distance: data.radius, bearing: halfFovWidthAngle)
-        return [p1, p2, p3]
+        let p1Coordinates : CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: Double(data.cameraLocation.coordinate.latitude), longitude: Double(data.cameraLocation.coordinate.longitude))
+        let p2Coordinates : CLLocationCoordinate2D = calcCoord(start: data.cameraLocation, distance: data.radius, bearing: -halfFovWidthAngle)
+        let p3Coordinates : CLLocationCoordinate2D = calcCoord(start: data.cameraLocation, distance: data.radius, bearing: halfFovWidthAngle)
+        return [ p1Coordinates, p2Coordinates, p3Coordinates ]
     }
     
-    public static func updateTrapezoid(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation, trapezoid: Trapezoid) {
+    public static func updateTrapezoid(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation) -> [CLLocationCoordinate2D] {
         do {
             let data: FoVData = try calc(camera: camera, motif: motif, focalLengthInMM: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
-            let trapezoidPoints: [MKMapPoint] = calcTrapezoidPoints(data: data)
-            trapezoid.p1 = trapezoidPoints[0]
-            trapezoid.p2 = trapezoidPoints[1]
-            trapezoid.p3 = trapezoidPoints[2]
-            trapezoid.p4 = trapezoidPoints[3]
+            return calcTrapezoidPoints(data: data)
         } catch {
             // Handle error here
+            return []
         }
     }
     
-    public static func calcTrapezoidPoints(data: FoVData) -> [MKMapPoint] {
+    public static func calcTrapezoidPoints(data: FoVData) -> [CLLocationCoordinate2D] {
         let halfFovWidthAngle: Double = data.fovWidthAngle / 2.0
         let radius1          : Double = data.nearLimit / cos(halfFovWidthAngle)
         let radius2          : Double = data.farLimit / cos(halfFovWidthAngle)
 
-        let p1: MKMapPoint = calcCoord(start: data.camera, distance: radius1, bearing: -halfFovWidthAngle)
-        let p2: MKMapPoint = calcCoord(start: data.camera, distance: radius2, bearing: -halfFovWidthAngle)
-        let p3: MKMapPoint = calcCoord(start: data.camera, distance: radius2, bearing: halfFovWidthAngle)
-        let p4: MKMapPoint = calcCoord(start: data.camera, distance: radius1, bearing: halfFovWidthAngle)
+        let p1Coordinates : CLLocationCoordinate2D = calcCoord(start: data.cameraLocation, distance: radius1, bearing: -halfFovWidthAngle)
+        let p2Coordinates : CLLocationCoordinate2D = calcCoord(start: data.cameraLocation, distance: radius2, bearing: -halfFovWidthAngle)
+        let p3Coordinates : CLLocationCoordinate2D = calcCoord(start: data.cameraLocation, distance: radius2, bearing: halfFovWidthAngle)
+        let p4Coordinates : CLLocationCoordinate2D = calcCoord(start: data.cameraLocation, distance: radius1, bearing: halfFovWidthAngle)
 
-        return  [ p1, p2, p3, p4 ]
+        return  [ p1Coordinates, p2Coordinates, p3Coordinates, p4Coordinates ]
     }
     
-    public static func calculateBearing(location1: MKMapPoint, location2: MKMapPoint) -> Double {
-        let lat1   : Double = toRadians(degrees: Double(location1.coordinate.latitude))
-        let lon1   : Double = Double(location1.coordinate.longitude)
-        let lat2   : Double = toRadians(degrees: Double(location2.coordinate.latitude))
-        let lon2   : Double = Double(location2.coordinate.longitude)
+    public static func calcBearing(location1: CLLocationCoordinate2D, location2: CLLocationCoordinate2D) -> Double {
+        let lat1   : Double = toRadians(degrees: Double(location1.latitude))
+        let lon1   : Double = Double(location1.longitude)
+        let lat2   : Double = toRadians(degrees: Double(location2.latitude))
+        let lon2   : Double = Double(location2.longitude)
         let dLon   : Double = toRadians(degrees: lon2 - lon1);
         let y      : Double = sin(dLon) * cos(lat2)
         let x      : Double = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
@@ -144,7 +139,22 @@ public class Helper {
         return bearing
     }
     
-    public static func calcCoord(start: MKMapPoint, distance: Double, bearing: Double) -> MKMapPoint {
+    public static func calcBearingInDegree(location1: CLLocationCoordinate2D, location2: CLLocationCoordinate2D) -> Double {
+        return calcBearingInDegree(lat1: location1.latitude, lon1: location1.longitude, lat2: location2.latitude, lon2: location2.longitude)
+    }
+    public static func calcBearingInDegree(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
+        let lat1Rad : Double = toRadians(degrees: lat1)
+        let lon1Rad : Double = toRadians(degrees: lon1)
+        let lat2Rad : Double = toRadians(degrees: lat2)
+        let lon2Rad : Double = toRadians(degrees: lon2)
+        let y       : Double = sin(lon2Rad - lon1Rad) * cos(lat2Rad)
+        let x       : Double = cos(lat1Rad) * sin(lat2Rad) - sin(lat1Rad) * cos(lat2Rad) * cos(lon2Rad - lon1Rad)
+        let t       : Double = atan2(y, x)
+        let brng    : Double = (t * 180 / .pi + 360.0).truncatingRemainder(dividingBy: 360.0)
+        return brng
+    }
+    
+    public static func calcCoord(start: MKMapPoint, distance: Double, bearing: Double) -> CLLocationCoordinate2D {
         let lat1   = toRadians(degrees: Double(start.coordinate.latitude))
         let lon1   = toRadians(degrees: Double(start.coordinate.longitude))
         let radius = distance / Constants.EARTH_RADIUS
@@ -152,67 +162,42 @@ public class Helper {
         let lat2 = asin(sin(lat1) * cos(radius) + cos(lat1) * sin(radius) * cos(bearing))
         var lon2 = lon1 + atan2(sin(bearing) * sin(radius) * cos(lat1), cos(radius) - sin(lat1) * sin(lat2))
         lon2 = (lon2 + 3 * .pi).truncatingRemainder(dividingBy: (2 * .pi)) - .pi
+        
+        return CLLocationCoordinate2D(latitude: toDegrees(radians: lat2), longitude: toDegrees(radians: lon2))
+    }
+    
+    public static func rotatePointAroundCenter(point: MKMapPoint, rotationCenter: MKMapPoint, angleRad: Double) -> MKMapPoint {
+        return MKMapPoint(rotatePointAroundCenter(location: point.coordinate, around: rotationCenter.coordinate, angleRad: angleRad))
+    }
+    public static func rotatePointAroundCenter(location: CLLocationCoordinate2D, around: CLLocationCoordinate2D, angleRad: Double) -> CLLocationCoordinate2D {
+        let piFactor             : Double = .pi / 180
+        let locationLatRad       : Double = location.latitude * piFactor
+        let locationLonRad       : Double = location.longitude * piFactor
+        let rotationCenterLatRad : Double = around.latitude * piFactor
+        let rotationCenterLonRad : Double = around.longitude * piFactor
 
-        return MKMapPoint(CLLocationCoordinate2D(latitude: toDegrees(radians: lat2), longitude: toDegrees(radians: lon2)))
+        // Convert both points to Cartesian (x, y) on a flat plane
+        let x : Double = (locationLonRad - rotationCenterLonRad) * cos(rotationCenterLatRad)
+        let y : Double = locationLatRad - rotationCenterLatRad
+
+        // Apply 2D rotation matrix
+        let cosA     : Double = cos(angleRad)
+        let sinA     : Double = sin(angleRad)
+        let xRotated : Double = x * cosA - y * sinA
+        let yRotated : Double = x * sinA + y * cosA
+
+        // Convert back to lat/lon
+        let newLatRad : Double = yRotated + rotationCenterLatRad
+        let newLonRad : Double = xRotated / cos(rotationCenterLatRad) + rotationCenterLonRad
+
+        return CLLocationCoordinate2D(latitude: newLatRad * 180 / .pi, longitude: newLonRad * 180 / .pi)
     }
-    
-    public static func rotatePointAroundCenter(point: MKMapPoint, rotationCenter: MKMapPoint, rad: Double) -> MKMapPoint {
-        let sinValue = sin(rad)
-        let cosValue = cos(rad)
-        let dx       = point.x - rotationCenter.x
-        let dy       = point.y - rotationCenter.y
-        return MKMapPoint(x: rotationCenter.x + (dx * cosValue) - (dy * sinValue), y: rotationCenter.y + (dx * sinValue) + (dy * cosValue))
-    }
-    
-    public static func spotToDictionary(spot: Spot) -> Dictionary<String,String> {
-        let jsonString : String = spot.toFlatJsonString()
-        if let data = jsonString.data(using: String.Encoding.utf8) {
-            do {
-                let decoder = JSONDecoder()
-                let jsonDictionary = try decoder.decode(Dictionary<String, String>.self, from: data)
-                return jsonDictionary
-            } catch {
-                return Dictionary<String,String>()
-            }
-        }
-        return Dictionary<String,String>()
-    }
-    
-    public static func dictionaryToSpot(dictionary: Dictionary<String,String>) -> Spot {
-        do {
-            return try Spot(dictionary: dictionary)
-        } catch {
-            return Constants.DEFAULT_SPOT
-        }
-    }
-    
-    public static func viewToDictionary(view: PhotoView) -> Dictionary<String,String> {
-        let jsonString : String = view.toFlatJsonString()
-        if let data = jsonString.data(using: String.Encoding.utf8) {
-            do {
-                let decoder = JSONDecoder()
-                let jsonDictionary = try decoder.decode(Dictionary<String, String>.self, from: data)
-                return jsonDictionary
-            } catch {
-                return Dictionary<String,String>()
-            }
-        }
-        return Dictionary<String,String>()
-    }
-    
-    public static func dictionaryToView(dictionary: Dictionary<String,String>, cameras: [Camera], lenses: [Lens]) -> PhotoView {
-        do {
-            return try PhotoView(dictionary: dictionary, cameras: cameras, lenses: lenses)
-        } catch {
-            return Constants.DEFAULT_VIEW
-        }
-    }
-    
+        
     public static func getPointByAngle(point: MKMapPoint, angleDeg: Double) -> MKMapPoint {
-        return rotatePointAroundCenter(point: MKMapPoint(CLLocationCoordinate2D(latitude: point.coordinate.latitude, longitude: point.coordinate.longitude + .pi/2)), rotationCenter: point, rad: toRadians(degrees: angleDeg))
+        return rotatePointAroundCenter(point: MKMapPoint(CLLocationCoordinate2D(latitude: point.coordinate.latitude, longitude: point.coordinate.longitude + .pi/2)), rotationCenter: point, angleRad: toRadians(degrees: angleDeg))
     }
     public static func getPointByAngle(point: MKMapPoint, angleDeg: Double, distance: Double) -> MKMapPoint {
-        return rotatePointAroundCenter(point: MKMapPoint(x: point.x, y: point.y + distance), rotationCenter: point, rad: toRadians(degrees: angleDeg))
+        return rotatePointAroundCenter(point: MKMapPoint(x: point.x, y: point.y + distance), rotationCenter: point, angleRad: toRadians(degrees: angleDeg))
     }
     
     public static func getLatLonByAngleAndDistance(lat :Double, lon :Double, distanceInMeters :Double, angleDeg: Double) -> (Double, Double){
@@ -309,7 +294,7 @@ public class Helper {
     }
     
     public static func setNavBarTitle(navBar: UINavigationBar) -> Void {
-        navBar.topItem?.title = Constants.APP_TITLE
+        navBar.topItem?.title = Constants.APP_NAME
         
         let appearance = UINavigationBarAppearance()
         appearance.backgroundColor          = UIColor.darkGray
@@ -317,229 +302,6 @@ public class Helper {
         appearance.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
         
         navBar.standardAppearance           = appearance
-    }
-    
-    
-    // MARK: iCloud Documents related
-    public static func getDocumentsFolder() -> URL? {
-        var containerUrl: URL? {
-            return FileManager.default.url(forUbiquityContainerIdentifier: nil)?.appendingPathComponent("Documents")
-        }
-        
-        do {
-            let fileURLs = try FileManager.default.contentsOfDirectory(at: containerUrl!, includingPropertiesForKeys: nil)
-            for file in fileURLs {
-                print("File: \(file.absoluteString)")
-            }
-        } catch {
-            print("Error while enumerating files \(containerUrl!.path): \(error.localizedDescription)")
-        }
-        
-        return containerUrl
-    }
-    
-    public static func saveViewsToDocuments(views: [PhotoView]) -> Void {
-        // Create json string from views
-        var jsonTxt : String = "[\n"
-        for view in views {
-            jsonTxt += view.toFlatJsonString()
-            jsonTxt += ",\n"
-        }
-        jsonTxt.removeLast(2)
-        jsonTxt += "\n]"
-        
-        let containerUrl: URL? = getDocumentsFolder()
-        
-        // check for container existence
-        if let url = containerUrl, !FileManager.default.fileExists(atPath: url.path, isDirectory: nil) {
-            do {
-                try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
-            }
-            catch {
-                print(error.localizedDescription)
-            }
-        }
-        
-        // Store json file to documents
-        let jsonUrl = containerUrl?.appendingPathComponent(Constants.JSON_FILE_NAME).appendingPathExtension(Constants.JSON_FILE_EXTENSION)
-        
-        if FileManager.default.fileExists(atPath: jsonUrl!.path) {
-            do {
-                //try FileManager.default.removeItem(atPath: jsonUrl!.path)
-                try FileManager.default.removeItem(at: jsonUrl!)
-            } catch {
-                print(error)
-            }
-        }
-        
-        if let jsonUrl = jsonUrl {
-            do {
-                try jsonTxt.write(to: jsonUrl, atomically: true, encoding: .utf8)
-                _ = try String(contentsOf: jsonUrl, encoding: .utf8)
-                print("Stored views to iCloud documents (\(jsonUrl.path))")
-            } catch {
-                print(error.localizedDescription)
-            }
-        }
-    }
-    
-    public static func loadViewsFromDocuments() -> [PhotoView] {
-        var views :[PhotoView] = []
-        
-        let containerUrl: URL? = getDocumentsFolder()
-        
-        // check for container existence
-        if let url = containerUrl, !FileManager.default.fileExists(atPath: url.path, isDirectory: nil) {
-            do {
-                try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
-            }
-            catch {
-                print(error.localizedDescription)
-            }
-        }
-        
-        let jsonUrl = containerUrl?.appendingPathComponent(Constants.JSON_FILE_NAME).appendingPathExtension(Constants.JSON_FILE_EXTENSION)
-        if let jsonUrl = jsonUrl {
-            print("json file: \(jsonUrl.path)")
-            if FileManager.default.fileExists(atPath: jsonUrl.path) {
-                do {
-                    let jsonTxt = try String(contentsOf: jsonUrl, encoding: .utf8)
-                    if let jsonData = jsonTxt.data(using: .utf8) {
-                        let viewDataArray :[PhotoViewData] = try! JSONDecoder().decode([PhotoViewData].self, from: jsonData)
-                        for viewData in viewDataArray {
-                            views.append(PhotoView(viewData: viewData))
-                        }
-                        print("Loaded views from iCloud documents (\(jsonUrl.path))")
-                    } else {
-                        views.append(Constants.DEFAULT_VIEW)
-                    }
-                } catch {
-                    print(error.localizedDescription)
-                    views.append(Constants.DEFAULT_VIEW)
-                }
-            } else {
-                print("File not found")
-                views.append(Constants.DEFAULT_VIEW)
-            }
-        }
-        
-        return views
-    }
-    
-    public static func textToAdd(item: String, withComma: Bool? = false) -> String {
-        return nil == withComma ? item + " " : withComma! ? item + ", " : item + " "
-    }
-    
-    public static func getItemsTextFor(spot: Spot) -> NSAttributedString {
-        var text : String = ""
-                            
-        var tags : String = ""
-        for tag in Constants.TAGS {
-            tags += Helper.itemInBitmask(item: tag, bitmask: spot.tags) ? textToAdd(item: tag.0) : ""
-        }
-        
-        if tags.count > 0 {
-            text += ("\n" + tags)
-        }
-        
-        let itemsText :NSMutableAttributedString = NSMutableAttributedString(string: text)
-        if text.count > 0 {
-            itemsText.addAttributes([NSAttributedString.Key.foregroundColor: Constants.RED], range: NSRange(location: 0, length: tags.count))
-        }
-        
-        return itemsText
-    }
-    
-    public static func getItemsTextFor(view: PhotoView) -> NSAttributedString {
-        var text           : String
-        var equipmentBegin : Int
-        var equipmentEnd   : Int
-        var timesBegin     : Int
-        var timesEnd       : Int
-        var tagsBegin      : Int
-        
-        var equipment : String = "["
-        for equip in Constants.EQUIPMENT {
-            equipment += Helper.itemInBitmask(item: equip, bitmask: view.equipment) ? textToAdd(item: equip.0, withComma: true) : ""
-        }
-        
-        if equipment.count > 1 {
-            equipment.removeLast(2)
-            equipment += "]"
-            text = equipment
-        } else {
-            text = ""
-        }
-        equipmentBegin = 0
-        equipmentEnd   = equipmentBegin + (equipment.count > 1 ? equipment.count : 0)
-        
-        var times : String = ""
-        for time in Constants.TIMES {
-            times += Helper.itemInBitmask(item: time, bitmask: view.times)  ? textToAdd(item: time.0)  : ""
-        }
-        
-        if times.count > 0 {
-            if equipment.count > 1 {
-                times.removeLast()
-                text += ("\n" + times)
-            } else {
-                text += times
-            }
-        }
-        timesBegin = equipment.count == 1 ? equipmentEnd : equipmentEnd + 1
-        timesEnd   = timesBegin + times.count
-                
-        var tags : String = ""
-        for tag in Constants.TAGS {
-            tags += Helper.itemInBitmask(item: tag, bitmask: view.tags) ? textToAdd(item: tag.0) : ""
-        }
-        
-        if tags.count > 0 {
-            if times.count > 0 || equipment.count > 1 {
-                tags.removeLast()
-                text += ("\n" + tags)
-            } else {
-                text += tags
-            }
-        }
-        tagsBegin = times.count == 0 ? timesEnd : timesEnd + 1
-        
-        let itemsText :NSMutableAttributedString = NSMutableAttributedString(string: text)
-        if text.count > 0 {
-            itemsText.addAttributes([NSAttributedString.Key.foregroundColor: Constants.YELLOW], range: NSRange(location: equipmentBegin, length: equipment.count > 2 ? equipment.count : 0))
-            itemsText.addAttributes([NSAttributedString.Key.foregroundColor: Constants.BLUE], range: NSRange(location: timesBegin, length: times.count))
-            itemsText.addAttributes([NSAttributedString.Key.foregroundColor: Constants.RED], range: NSRange(location: tagsBegin, length: tags.count))
-        }
-        
-        return itemsText
-    }
-    
-    public static func isItemInGroup(item: (String, Int), group: [(String, Int)]) -> Bool {
-        return group.filter({ $0.0 == item.0 }).count > 0
-    }
-    
-    public static func updateCountryForSpot(spot: Spot) -> Void {
-        let coordinate : CLLocationCoordinate2D = spot.point.coordinate
-        Task {
-            do {
-                let (_, countryCode) = try await coordinate.fetchCityAndCountryCode()
-                spot.countryCode = countryCode
-            } catch {
-                debugPrint(error)
-            }
-        }
-    }
-    
-    public static func updateCountryForView(view: PhotoView) -> Void {
-        let coordinate = view.cameraPoint.coordinate
-        Task {
-            do {
-                let (_, countryCode) = try await coordinate.fetchCityAndCountryCode()
-                view.countryCode = countryCode
-            } catch {
-                debugPrint(error)
-            }
-        }
     }
 }
 

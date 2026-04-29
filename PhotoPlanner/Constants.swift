@@ -7,11 +7,15 @@
 
 import Foundation
 import MapKit
+import SwiftUI
 import UIKit
 
 
 public class Constants {
-    public static let APP_TITLE               : String = "PhotoPlanner"
+    public static let APP_NAME                : String = "PhotoPlanner"
+    public static let APP_GROUP_ID            : String = "group.eu.hansolo.PhotoPlanner"
+    public static let CONTAINER_ID            : String = "iCloud.eu.hansolo.PhotoPlannerContainer"
+    
     public static let JSON_FILE_NAME          : String = "photoplanner"
     public static let JSON_FILE_EXTENSION     : String = "json"
     
@@ -155,43 +159,19 @@ public class Constants {
     
     
     public static let DEFAULT_COUNTRY     : String     = "DE"
-    
     public static let DEFAULT_LOCATION    : MKMapPoint = MKMapPoint(CLLocationManager().location?.coordinate ?? CLLocationCoordinate2D(latitude : 51.911821, longitude: 7.633703))
-    
-    public static let DEFAULT_CAMERA      : Camera = Camera(name        : "DEFAULT DSLR",
-                                                            sensorFormat: SensorFormat.fullFormat.id)
-    
+    public static let DEFAULT_CAMERA      : Camera = Camera(name        : "DEFAULT CAMERA", sensorFormat: SensorFormat.fullFormat.id)
     public static let DEFAULT_LENS        : Lens   = Lens(name          : "DEFAULT LENS",
-                                                          minFocalLength: 8,
-                                                          maxFocalLength: 1000,
-                                                          minAperture   : 0.7,
-                                                          maxAperture   : 99,
+                                                          minFocalLength: 400,
+                                                          maxFocalLength: 400,
+                                                          minAperture   : 2.8,
+                                                          maxAperture   : 22,
                                                           sensorFormat  : SensorFormat.fullFormat.id)
     
     public static let DEFAULT_ORIENTATION : CameraOrientation = CameraOrientation.landscape
-    
     public static let DEFAULT_MAP_SIZE    : MKMapSize   = MKMapSize(width: 97313.02098080516, height: 60438.11837643385)
-    
     public static let DEFAULT_ORIGIN      : MKMapPoint  = MKMapPoint(x: DEFAULT_LOCATION.x - DEFAULT_MAP_SIZE.width / 2, y: DEFAULT_LOCATION.y - DEFAULT_MAP_SIZE.height / 2)
-            
-    public static let DEFAULT_SPOT        : Spot        = Spot(name: "Home", description: "Test", point: DEFAULT_LOCATION, countryCode: DEFAULT_COUNTRY)
-    
-    public static let DEFAULT_VIEW        : PhotoView   = PhotoView(name  : "View",
-                                                               description: "Default View",
-                                                               cameraPoint: DEFAULT_LOCATION,
-                                                               motifPoint : MKMapPoint(CLLocationCoordinate2D(latitude: DEFAULT_LOCATION.coordinate.latitude + 0.005, longitude: DEFAULT_LOCATION.coordinate.longitude)),
-                                                               camera     : DEFAULT_CAMERA,
-                                                               lens       : DEFAULT_LENS,
-                                                               focalLength: DEFAULT_LENS.minFocalLength + (DEFAULT_LENS.maxFocalLength - DEFAULT_LENS.minFocalLength) / 2,
-                                                               aperture   : DEFAULT_LENS.minAperture + (DEFAULT_LENS.maxAperture - DEFAULT_LENS.minAperture) / 2,
-                                                               orientation: CameraOrientation.landscape,
-                                                               countryCode: DEFAULT_COUNTRY,
-                                                               mapRect    : MKMapRect(origin: DEFAULT_ORIGIN, size: DEFAULT_MAP_SIZE),
-                                                               tags       : TAG_STREET.1,
-                                                               equipment  : EQP_TRIPOD.1,
-                                                               times      : TMS_ALL_YEAR.1
-                                                              )
-    
+                    
     public static let VALID_CLEAR         : CGColor = CGColor.init(srgbRed: 1, green: 1, blue: 1, alpha: 0)
     public static let INVALID_RED         : CGColor = UIColor(red: 1.00, green: 0.42, blue: 0.37, alpha: 1.00).cgColor
     
@@ -200,6 +180,11 @@ public class Constants {
     public static let ERROR_ICON          : UIImage = UIImage(systemName: "xmark.octagon")!
     public static let STAR_ICON           : UIImage = (UIImage(named: "star")?.resize(to: CGSize(width: 24, height: 24)))!
     
+    
+    public static let REGULAR_FONT_14     : Font    = Font.system(size: 14, weight: .regular, design: .rounded)
+    public static let REGULAR_FONT_16     : Font    = Font.system(size: 16, weight: .regular, design: .rounded)
+    public static let REGULAR_FONT_20     : Font    = Font.system(size: 20, weight: .regular, design: .rounded)
+    public static let REGULAR_FONT_28     : Font    = Font.system(size: 28, weight: .regular, design: .rounded)
     
     // UserDefaults keys
     public static let CAMERA_UD       : String = "camera"

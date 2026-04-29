@@ -10,8 +10,8 @@ import MapKit
 
 
 public class FoVData {
-    public let camera                    : MKMapPoint
-    public let motif                     : MKMapPoint
+    public let cameraLocation            : MKMapPoint
+    public let motifLocation             : MKMapPoint
     public let focalLength               : Double
     public let aperture                  : Double
     public let distance                  : Double
@@ -39,8 +39,8 @@ public class FoVData {
     init(camera: MKMapPoint, motif: MKMapPoint, focalLength: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation,
          infinite: Bool, hyperFocal: Double, nearLimit: Double, farLimit: Double, frontPercent: Double, behindPercent: Double, total: Double,
          diagonalAngle: Double, diagonalLength: Double, fovWidth: Double, fovWidthAngle: Double, fovHeight: Double, fovHeightAngle: Double, radius: Double) {
-        self.camera                     = camera
-        self.motif                      = motif
+        self.cameraLocation             = camera
+        self.motifLocation              = motif
         self.focalLength                = focalLength
         self.aperture                   = aperture
         self.distance                   = camera.distance(to: motif)
@@ -60,28 +60,29 @@ public class FoVData {
         self.fovHeight                  = fovHeight
         self.fovHeightAngle             = fovHeightAngle
         self.radius                     = radius
-        self.angleBetweenCameraAndMotif = Helper.toRadians(degrees: Helper.calculateBearing(location1: camera, location2: motif))
+        self.angleBetweenCameraAndMotif = Helper.toRadians(degrees: Helper.calcBearingInDegree(location1: camera.coordinate, location2: motif.coordinate))
         self.dofInFront                 = distance - nearLimit
         self.dofBehind                  = infinite ? 10000 : farLimit - distance
     }
     
     public func toString() -> String {
-        var text: String = "Sensor      : \(SensorFormat.allCases[Int(sensorFormat)].name)" + "\n"
-        text += "Focal length: \(String(format: "%.0f", focalLength)) mm" + "\n"
-        text += "Aperture    : \(String(format: "%.1f", aperture))" + "\n"
-        text += "Orientation : \(orientation.name)" + "\n"
-        text += "-----------------------------" + "\n"
-        text += "Distance    : \(String(format: "%.2f", distance)) m" + "\n"
-        text += "FoV width   : \(String(format: "%.2f", fovWidth)) m (" + "\(String(format: "%.2f", fovWidthAngle)) \u{00b0})" + "\n"
-        text += "FoV height  : \(String(format: "%.2f", fovHeight)) m (" + "\(String(format: "%.2f", fovHeightAngle)) \u{00b0})" + "\n"
-        text += "-----------------------------" + "\n"
-        text += "Hyperfocal  : \(String(format: "%.2f", hyperFocal)) m" + "\n"
-        text += "Near limit  : \(String(format: "%.2f", nearLimit)) m" + "\n"
-        text += "Far  limit  : \(String(format: "%.2f", farLimit)) m" + "\n"
-        text += "In front    : \(String(format: "%.2f", dofInFront)) m" + "\n"
-        text += "Behind      : \(String(format: "%.2f", dofBehind)) m" + "\n"
-        text += "Total       : \(String(format: "%.2f", total)) m" + "\n"
-        text += "-----------------------------" + "\n"
-        return text
+        return """
+            Sensor      : \(SensorFormat.allCases[Int(sensorFormat)].name) 
+            Focal length: \(String(format: "%.0f", focalLength)) mm 
+            Aperture    : \(String(format: "%.1f", aperture)) 
+            Orientation : \(orientation.name) 
+            ----------------------------- 
+            Distance    : \(String(format: "%.2f", distance)) m 
+            FoV width   : \(String(format: "%.2f", fovWidth)) m (\(String(format: "%.2f", fovWidthAngle)) \u{00b0}) 
+            FoV height  : \(String(format: "%.2f", fovHeight)) m (\(String(format: "%.2f", fovHeightAngle)) \u{00b0}) 
+            ----------------------------- 
+            Hyperfocal  : \(String(format: "%.2f", hyperFocal)) m 
+            Near limit  : \(String(format: "%.2f", nearLimit)) m 
+            Far  limit  : \(String(format: "%.2f", farLimit)) m 
+            In front    : \(String(format: "%.2f", dofInFront)) m 
+            Behind      : \(String(format: "%.2f", dofBehind)) m 
+            Total       : \(String(format: "%.2f", total)) m 
+            -----------------------------
+        """
     }
 }

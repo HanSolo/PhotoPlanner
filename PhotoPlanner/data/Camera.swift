@@ -6,28 +6,21 @@
 //
 
 import Foundation
+import SwiftData
 
 
-public class Camera: NSObject, NSCoding {
+@Model
+public class Camera: Identifiable {
+    private(set) public var id  : String
     var name        : String
     var sensorFormat: Int
     
     
     init(name: String, sensorFormat: Int) {
+        self.id           = UUID().uuidString
         self.name         = name
         self.sensorFormat = sensorFormat
     }
-    public required init?(coder: NSCoder) {
-        self.name         = coder.decodeObject(forKey: "name") as? String ?? ""
-        self.sensorFormat = coder.decodeInteger(forKey: "sensorFormat")
-    }
-    
-    
-    public func encode(with coder: NSCoder) {
-        coder.encode(self.name,                forKey: "name")
-        coder.encode(self.sensorFormat as Int, forKey: "sensorFormat")
-    }
-    
     
     func description() -> String {
         let format : SensorFormat = SensorFormat.allCases[sensorFormat]
@@ -38,15 +31,5 @@ public class Camera: NSObject, NSCoding {
         description += " mm \(String(format: "%.2f", format.cropFactor))"
         return description
     }
-    
-    
-    func toJsonString() -> String {
-        let format : SensorFormat = SensorFormat.allCases[sensorFormat]
-        var jsonString : String = "{"
-        jsonString += "\"name\":\"\(name)\","
-        jsonString += "\"sensor\":"
-        jsonString += format.jsonString
-        jsonString += "}"
-        return jsonString
-    }
+
 }

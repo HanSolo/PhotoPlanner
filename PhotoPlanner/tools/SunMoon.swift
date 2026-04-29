@@ -58,8 +58,8 @@ struct SunMoon {
     
     func toDays(date :Date) -> Double { return toJulianDate(date: date) - J2000 }
     
-    func dateToMillis(date :Date) -> Int64 { return Int64(date.timeIntervalSince1970 * 1000.0) }
-    func dateFromMillis(millis :Int64) -> Date { return Date(timeIntervalSince1970: TimeInterval(millis / 1000)) }
+    func dateToMillis(date :Date) -> Int { return Int(date.timeIntervalSince1970 * 1000.0) }
+    func dateFromMillis(millis :Int) -> Date { return Date(timeIntervalSince1970: TimeInterval(millis / 1000)) }
 
     // general calculations for position
     func rightAscension(l :Double, b :Double) -> Double { return atan2(sin(l) * cos(e) - tan(b) * sin(e), cos(l)) }
@@ -230,10 +230,10 @@ struct SunMoon {
     }
     
     func hoursLater(date :Date, h :Int) -> Date {
-        return dateFromMillis(millis: dateToMillis(date: date) + Int64(h) * Int64(dayMs / 24.0))
+        return dateFromMillis(millis: dateToMillis(date: date) + Int(h) * Int(dayMs / 24.0))
     }
     func hoursLater(date :Date, h :Double) -> Date {
-        return dateFromMillis(millis: dateToMillis(date: date) + Int64(h * dayMs / 24.0))
+        return dateFromMillis(millis: dateToMillis(date: date) + Int(h * dayMs / 24.0))
     }
     
     func getMoonTimes(date :Date, lat :Double, lon :Double) -> Dictionary<String, Date> {
