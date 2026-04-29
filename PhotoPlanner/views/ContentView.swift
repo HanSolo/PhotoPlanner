@@ -192,7 +192,7 @@ struct ContentView: View {
                 Toggle(isOn: $isPortrait) {
                     Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90.camera")
                         .padding(7)
-                        .rotationEffect(self.isPortrait ? .degrees(90) : .zero)
+                        .rotationEffect(self.isPortrait ? .degrees(-90) : .zero)
                 }
                 .frame(width: 44, height: 44)
                 .toggleStyle(.button)
