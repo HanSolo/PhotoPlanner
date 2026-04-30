@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct OverlayView: View {
-    @Environment(\.colorScheme)          var colorScheme
+    @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
     
     
@@ -18,21 +18,26 @@ struct OverlayView: View {
                 Canvas(opaque: false, colorMode: .linear, rendersAsynchronously: false) { ctx, size in
                     let fovData : FoVData? = self.model.fovData
                     if nil != fovData {
+                        let darkMode          : Bool                    = self.colorScheme == .dark
                         let width             : Double                  = size.width
                         let height            : Double                  = size.height
                         let offsetX           : Double                  = 100.0
                         let offsetY           : Double                  = 170.0
-                        let fovFill           : GraphicsContext.Shading = GraphicsContext.Shading.color(Constants.FOV_FILL)
-                        let fovStroke         : GraphicsContext.Shading = GraphicsContext.Shading.color(Constants.FOV_STROKE)
+                        let fovFill           : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_FILL_DARK   : Constants.FOV_FILL)
+                        let fovStroke         : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE)
                         let cameraOrientation : CameraOrientation       = fovData!.orientation
                         let fovWidth          : Double                  = fovData!.fovWidth
                         let fovHeight         : Double                  = fovData!.fovHeight
                         let distance          : Double                  = fovData!.distance
                         let fov               : CGRect                  = CGRect(x: width - offsetX, y: height - offsetY, width: 72, height: 48)
-                        let fovText           : Text                    = Text(verbatim: "\(String(format: fovWidth >= 10 ? "%.0f" : "%.1f", fovWidth))m x \(String(format: fovHeight >= 10 ? "%.0f" : "%.1f", fovHeight))m").foregroundColor(.white).font(Font.system(size: 14))
-                        let distanceText      : Text                    = Text(verbatim: "← \(String(format: distance >= 10 ? "%.0f" : "%.1f", distance))m →").foregroundColor(.white).font(Font.system(size: 14))
+                        let fovText           : Text                    = Text(verbatim: "\(String(format: fovWidth >= 10 ? "%.0f" : "%.1f", fovWidth))m x \(String(format: fovHeight >= 10 ? "%.0f" : "%.1f", fovHeight))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
+                        let distanceText      : Text                    = Text(verbatim: "← \(String(format: distance >= 10 ? "%.0f" : "%.1f", distance))m →").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
                         let fovCenterX        : Double                  = width - offsetX + 36
                         let fovCenterY        : Double                  = height - offsetY + 24
+                        
+                        let bkgRect           : CGRect                  = CGRect(x: 10, y: height - 110, width: width - 20, height: 30)
+                        
+                        ctx.fill(Rectangle().path(in: bkgRect), with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
                         
                         if cameraOrientation == .portrait {
                             ctx.drawLayer { ctx1 in
@@ -61,12 +66,12 @@ struct OverlayView: View {
                     Image(systemName: "camera")
                         .resizable()
                         .frame(width: 24, height: 19.417)
-                        .foregroundColor(.white)
+                        .foregroundColor(self.colorScheme == .dark ? .white : .black)
                         .tag(1)
                     Image(systemName: "photo")
                         .resizable()
                         .frame(width: 24, height: 18.738)
-                        .foregroundColor(.white)
+                        .foregroundColor(self.colorScheme == .dark ? .white : .black)
                         .tag(2)
                 }
             }

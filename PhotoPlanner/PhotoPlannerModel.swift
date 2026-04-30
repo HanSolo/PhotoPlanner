@@ -12,7 +12,9 @@ import MapKit
 
 
 @MainActor @Observable
-public class PhotoPlannerModel {
+public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
+    var locationManager        : CLLocationManager?
+    var mapRegion              : MKCoordinateRegion?
     
     var camera                 : Camera            = Constants.DEFAULT_CAMERA {
         didSet {
@@ -64,7 +66,7 @@ public class PhotoPlannerModel {
     var trapezoidCoordinates   : [CLLocationCoordinate2D] = []    
     
 
-    init() {
+    override init() {
         //Task { await requestAuthorization() }
     }
     
@@ -123,6 +125,49 @@ public class PhotoPlannerModel {
     }
     
     
+    
+    public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        // Handle changes in location authorization
+        let previousAuthorizationStatus = manager.authorizationStatus
+        manager.requestWhenInUseAuthorization()
+        if manager.authorizationStatus != previousAuthorizationStatus {
+            checkLocationAuthorization()
+        }
+    }
+    
+    private func checkLocationAuthorization() {
+        // Check location authorization status
+        guard let location = self.locationManager else {
+            return
+        }
+        switch location.authorizationStatus {
+        case .notDetermined:
+            print("Location authorization is not determined.")
+        case .restricted:
+            print("Location is restricted.")
+        case .denied:
+            print("Location permission denied.")
+        case .authorizedAlways, .authorizedWhenInUse:
+            // Update map region with user's location
+            if let location = location.location {
+                self.mapRegion = MKCoordinateRegion(center: location.coordinate,span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2))
+            }
+        default:
+            break
+        }
+    }
+    
+    func checkIfLocationIsEnabled() {
+        if CLLocationManager.locationServicesEnabled() {
+            self.locationManager = CLLocationManager()
+            self.locationManager?.desiredAccuracy = kCLLocationAccuracyBest
+            self.locationManager!.delegate = self
+        } else {
+            debugPrint("Location disabled")
+        }
+    }
+        
+
     /*
     func requestAuthorization() async {
         do {

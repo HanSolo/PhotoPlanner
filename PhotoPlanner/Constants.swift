@@ -56,13 +56,23 @@ public class Constants {
     public static let EPD_PHASE               : String = "phase"
     public static let EPD_ANGLE               : String = "angle"
     
-    public static let FOV_COLOR           : Color = Color(red: 0.0, green: 0.56078431, blue: 0.8627451)
-    public static let FOV_FILL            : Color = FOV_COLOR.opacity(0.3)
-    public static let FOV_STROKE          : Color = Color.white
-    public static let DOF_COLOR           : Color = Color.pink
-    public static let DOF_FILL            : Color = DOF_COLOR.opacity(0.1)
-    public static let DOF_STROKE          : Color = DOF_COLOR
-    public static let CENTER_LINE_STROKE  : Color = Color.white
+    public static let FOV_COLOR_DARK          : Color = Color(red: 0.0, green: 0.56078431, blue: 0.8627451)
+    public static let FOV_FILL_DARK           : Color = FOV_COLOR.opacity(0.3)
+    public static let FOV_STROKE_DARK         : Color = Color.white
+    public static let DOF_COLOR_DARK          : Color = Color.pink
+    public static let DOF_FILL_DARK           : Color = DOF_COLOR.opacity(0.1)
+    public static let DOF_STROKE_DARK         : Color = DOF_COLOR
+    public static let CENTER_LINE_STROKE_DARK : Color = Color.white
+    
+    public static let FOV_COLOR               : Color = Color(red: 0.0, green: 0.56078431, blue: 0.8627451)
+    public static let FOV_FILL                : Color = FOV_COLOR.opacity(0.3)
+    public static let FOV_STROKE              : Color = Color.black
+    public static let DOF_COLOR               : Color = Color.pink
+    public static let DOF_FILL                : Color = DOF_COLOR.opacity(0.1)
+    public static let DOF_STROKE              : Color = DOF_COLOR
+    public static let CENTER_LINE_STROKE      : Color = Color.black
+    
+    
     
     public static let MOON_RISE_STROKE    : Color = Color(red: 0.0,  green: 0.9,        blue:  0.9)
     public static let MOON_SET_STROKE     : Color = Color(red: 0.0,  green: 0.375,      blue:  0.75)

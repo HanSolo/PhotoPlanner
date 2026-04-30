@@ -11,6 +11,7 @@ import MapKit
 
 
 struct ContentView: View {
+    @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
     
     let home                                  : CLLocationCoordinate2D = Constants.DEFAULT_LOCATION.coordinate
@@ -26,7 +27,6 @@ struct ContentView: View {
     
     @State private var cameraViewVisible      : Bool                   = false
     @State private var lensViewVisible        : Bool                   = false
-    
     
     @Query(sort: [SortDescriptor(\Camera.name, comparator: .localizedStandard)]) private var cameras: [Camera]
     @Query(sort: [SortDescriptor(\Lens.name, comparator: .localizedStandard)])   private var lenses : [Lens]
@@ -44,7 +44,7 @@ struct ContentView: View {
                                         Image(systemName: "camera.circle")
                                             .font(.system(size: 24))
                                             .padding(2)
-                                            .foregroundStyle(self.cameraMarkerActive ? .blue : .white.opacity(0.5))
+                                            .foregroundStyle(self.cameraMarkerActive ? .blue : (self.colorScheme == .dark ? .white.opacity(0.5) : .black.opacity(0.5)))
                                     }
                                 }
                             }
@@ -56,11 +56,12 @@ struct ContentView: View {
                                         Image(systemName: "photo.circle")
                                             .font(.system(size: 24))
                                             .padding(2)
-                                            .foregroundStyle(self.motifMarkerActive ? .blue : .white.opacity(0.1))
+                                            .foregroundStyle(self.motifMarkerActive ? .blue : self.colorScheme == .dark ? .white.opacity(0.1) : .black.opacity(0.1))
                                     }
                                 }
                             }
-                        }
+                        }                        
+                        UserAnnotation()
                                                 
                         if self.model.fovData != nil {
                             MapPolyline(points: [self.model.fovData!.cameraLocation, self.model.fovData!.motifLocation])
@@ -70,23 +71,23 @@ struct ContentView: View {
                         if self.model.lens.isPrime { // Prime lens
                             MapPolygon(coordinates: self.model.triangleCoordinates)
                                 .foregroundStyle(Color.clear)
-                                .stroke(Constants.FOV_STROKE, lineWidth: 0.5)
+                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: 0.5)
                         } else { // Zoom lens
                             MapPolygon(coordinates: self.model.triangleCoordinates)
-                                .foregroundStyle(Constants.FOV_FILL)
-                                .stroke(Constants.FOV_STROKE, lineWidth: 0.5)
+                                .foregroundStyle(self.colorScheme == .dark ? Constants.FOV_FILL_DARK : Constants.FOV_FILL)
+                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: 0.5)
                             MapPolygon(coordinates: self.model.minTriangleCoordinates)
                                 .foregroundStyle(Color.clear)
-                                .stroke(Constants.FOV_STROKE, lineWidth: 0.5)
+                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: 0.5)
                             
                             MapPolygon(coordinates: self.model.maxTriangleCoordinates)
                                 .foregroundStyle(Color.clear)
-                                .stroke(Constants.FOV_STROKE, lineWidth: 0.5)
+                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: 0.5)
                         }
                         if self.model.dofVisible {
                             MapPolygon(coordinates: self.model.trapezoidCoordinates)
-                                .foregroundStyle(Constants.DOF_FILL)
-                                .stroke(Constants.DOF_STROKE, lineWidth: 0.5)
+                                .foregroundStyle(self.colorScheme == .dark ? Constants.DOF_FILL_DARK : Constants.DOF_FILL)
+                                .stroke(self.colorScheme == .dark ? Constants.DOF_STROKE_DARK : Constants.DOF_STROKE, lineWidth: 0.5)
                         }
                     }
                     .onTapGestureBugFix { type, location  in
@@ -155,6 +156,7 @@ struct ContentView: View {
                     .onAppear {
                         self.model.cameraMarkerData = MarkerData(coordinate: Constants.DEFAULT_LOCATION.coordinate, screenPoint: CGPoint(x: geo.size.width / 2, y: geo.size.height / 2))
                         self.model.motifMarkerData  = MarkerData(coordinate: Constants.DEFAULT_LOCATION.coordinate, screenPoint: CGPoint(x: geo.size.width / 2, y: geo.size.height / 2))
+                        self.model.checkIfLocationIsEnabled()
                     }
                 }
             }
@@ -184,10 +186,12 @@ struct ContentView: View {
                     
                     Text("\(self.model.camera.name) / \(self.model.lens.name)")
                         .font(Constants.REGULAR_FONT_14)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(self.colorScheme == .dark ? .white : .black)
                     
                     Spacer()
                 }
+                .padding(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
+                .background(self.colorScheme == .dark ? .black.opacity(0.5) : .white.opacity(0.5))
                 
                 HStack {
                     Button {
@@ -274,7 +278,7 @@ struct ContentView: View {
                 
                 Spacer()
                 
-                HStack {
+                HStack(spacing: 5) {
                     VStack {
                         Slider(value: self.model.apertureBinding, in: self.model.lens.minAperture...self.model.lens.maxAperture)
                         Text("f/\(String(format: "%.1f", self.model.aperture))")
@@ -288,10 +292,11 @@ struct ContentView: View {
                         Text("\(String(format: "%.0f", self.model.focalLength)) mm")
                             .font(Constants.REGULAR_FONT_14)
                     }
-                    
                 }
+                .padding(EdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5))
+                .background(self.colorScheme == .dark ? .black.opacity(0.5) : .white.opacity(0.5))
             }
-            .padding()
+            .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
             OverlayView()
                 .allowsHitTesting(false)
         }
@@ -327,6 +332,7 @@ struct ContentView: View {
     private func setMapInteraction(enabled: Bool) {
         self.modes = enabled ? [.all] : []
     }
+           
 }
 
 private extension MapProxy {
