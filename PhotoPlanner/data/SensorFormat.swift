@@ -15,6 +15,10 @@ public enum SensorFormat: String, Equatable, CaseIterable {
     case apsc
     case apscCanon
     case microFourThirds
+    case one
+    case twoThirds
+    case oneThreeDotTwo
+    
     
     
     var name: String {
@@ -25,6 +29,9 @@ public enum SensorFormat: String, Equatable, CaseIterable {
             case .apsc            : return "APS-C"
             case .apscCanon       : return "APS-C Canon"
             case .microFourThirds : return "Micro 4/3"
+            case .one             : return "1\""
+            case .twoThirds       : return "2/3\""
+            case .oneThreeDotTwo  : return "1/3.2\""
         }
     }
     
@@ -36,6 +43,9 @@ public enum SensorFormat: String, Equatable, CaseIterable {
             case .apsc            : return 3
             case .apscCanon       : return 4
             case .microFourThirds : return 5
+            case .one             : return 6
+            case .twoThirds       : return 7
+            case .oneThreeDotTwo  : return 8
         }
     }
     
@@ -47,6 +57,9 @@ public enum SensorFormat: String, Equatable, CaseIterable {
             case .apsc            : return "apsc"
             case .apscCanon       : return "apscCanon"
             case .microFourThirds : return "microFourThirds"
+            case .one             : return "oneInch"
+            case .twoThirds       : return "twoThirds"
+            case .oneThreeDotTwo  : return "oneThreeDotTwo"
         }
     }
     
@@ -62,6 +75,9 @@ public enum SensorFormat: String, Equatable, CaseIterable {
             case .apsc            : return 23.6
             case .apscCanon       : return 22.2
             case .microFourThirds : return 17.3
+            case .one             : return 13.2
+            case .twoThirds       : return 8.8
+            case .oneThreeDotTwo  : return 4.5
         }
     }
     
@@ -73,6 +89,9 @@ public enum SensorFormat: String, Equatable, CaseIterable {
             case .apsc            : return 15.8
             case .apscCanon       : return 14.8
             case .microFourThirds : return 13.0
+            case .one             : return 8.8
+            case .twoThirds       : return 6.6
+            case .oneThreeDotTwo  : return 3.4
         }
     }
     
@@ -84,20 +103,12 @@ public enum SensorFormat: String, Equatable, CaseIterable {
             case .apsc            : return 1.52
             case .apscCanon       : return 1.6
             case .microFourThirds : return 2.0
+            case .one             : return 2.7
+            case .twoThirds       : return 5.62
+            case .oneThreeDotTwo  : return 7.61
         }
     }
-    
-    var jsonString: String {
-        var text: String = "{"
-        text += "\"name\":\"\(self)\","
-        text += "\"width\":\"\(width)\","
-        text += "\"height\":\"\(height)\","
-        text += "\"crop\":\"\(cropFactor)\""
-        text += "}"
-        return text
-    }
-    
-    
+
     public static func ==(lhs: SensorFormat, rhs: SensorFormat) -> Bool {
         return lhs.name       == rhs.name &&
                lhs.width      == rhs.width &&

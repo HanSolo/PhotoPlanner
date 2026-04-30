@@ -8,16 +8,12 @@
 import Foundation
 import MapKit
 import SwiftUI
-import UIKit
 
 
 public class Constants {
     public static let APP_NAME                : String = "PhotoPlanner"
     public static let APP_GROUP_ID            : String = "group.eu.hansolo.PhotoPlanner"
     public static let CONTAINER_ID            : String = "iCloud.eu.hansolo.PhotoPlannerContainer"
-    
-    public static let JSON_FILE_NAME          : String = "photoplanner"
-    public static let JSON_FILE_EXTENSION     : String = "json"
     
     public static let EARTH_RADIUS            : Double = 6_378_137.0 // in m
     public static let DATE_FORMAT             : String = "HH:mm"
@@ -60,105 +56,21 @@ public class Constants {
     public static let EPD_PHASE               : String = "phase"
     public static let EPD_ANGLE               : String = "angle"
     
-    public static let UNIT_LENGTH         : String = " m"
-    public static let UNIT_ANGLE          : String = " °"
+    public static let FOV_COLOR           : Color = Color(red: 0.0, green: 0.56078431, blue: 0.8627451)
+    public static let FOV_FILL            : Color = FOV_COLOR.opacity(0.3)
+    public static let FOV_STROKE          : Color = Color.white
+    public static let DOF_COLOR           : Color = Color.pink
+    public static let DOF_FILL            : Color = DOF_COLOR.opacity(0.1)
+    public static let DOF_STROKE          : Color = DOF_COLOR
+    public static let CENTER_LINE_STROKE  : Color = Color.white
     
-    public static let TRANSLUCENT_GRAY    : UIColor = UIColor.darkGray.withAlphaComponent(0.75)
-    public static let YELLOW              : UIColor = UIColor(red: 1.00, green: 0.77, blue: 0.32, alpha: 1.00)
-    public static let RED                 : UIColor = UIColor(red: 1.00, green: 0.42, blue: 0.37, alpha: 1.00)
-    public static let BLUE                : UIColor = UIColor(red: 0.30, green: 0.78, blue: 1.00, alpha: 1.00)
+    public static let MOON_RISE_STROKE    : Color = Color(red: 0.0,  green: 0.9,        blue:  0.9)
+    public static let MOON_SET_STROKE     : Color = Color(red: 0.0,  green: 0.375,      blue:  0.75)
+    public static let MOON_STROKE         : Color = Color(red: 0.0,  green: 0.5,        blue:  0.5)
+    public static let SUN_RISE_STROKE     : Color = Color(red: 0.9,  green: 0.9,        blue:  0.0)
+    public static let SUN_SET_STROKE      : Color = Color(red: 0.75, green: 0.375,      blue:  0.0)
+    public static let SUN_STROKE          : Color = Color(red: 0.5,  green: 0.5,        blue:  0.0)
     
-    public static let BLUE_STROKE         : UIColor = UIColor.init(red: 0.0, green: 0.56078431, blue: 0.8627451, alpha: 1.0)
-    public static let DOF_FILL            : UIColor = UIColor.init(red: 1.0, green: 0.77,       blue: 0.32,      alpha: 0.1)
-    public static let DOF_STROKE          : UIColor = UIColor.init(red: 1.0, green: 0.77,       blue: 0.32,      alpha: 1.0)
-    public static let MAX_FOV_FILL        : UIColor = UIColor.clear
-    public static let MAX_FOV_STROKE      : UIColor = BLUE_STROKE
-    public static let MIN_FOV_FILL        : UIColor = UIColor.clear
-    public static let MIN_FOV_STROKE      : UIColor = BLUE_STROKE
-    public static let FOV_FILL            : UIColor = UIColor.init(red: 0.0, green: 0.56078431, blue:  0.8627451, alpha: 0.3)
-    public static let FOV_STROKE          : UIColor = BLUE_STROKE
-    public static let FOV_FRAME_FILL      : UIColor = UIColor.clear
-    public static let FOV_FRAME_STROKE    : UIColor = BLUE_STROKE
-
-    public static let CENTER_LINE_STROKE  : UIColor = BLUE_STROKE
-    public static let MOON_RISE_STROKE    : UIColor = UIColor.init(red: 0.0,  green: 0.9,        blue:  0.9,       alpha: 1.0)
-    public static let MOON_SET_STROKE     : UIColor = UIColor.init(red: 0.0,  green: 0.375,      blue:  0.75,      alpha: 1.0)
-    public static let MOON_STROKE         : UIColor = UIColor.init(red: 0.0,  green: 0.5,        blue:  0.5,       alpha: 1.0)
-    public static let SUN_RISE_STROKE     : UIColor = UIColor.init(red: 0.9,  green: 0.9,        blue:  0.0,       alpha: 1.0)
-    public static let SUN_SET_STROKE      : UIColor = UIColor.init(red: 0.75, green: 0.375,      blue:  0.0,       alpha: 1.0)
-    public static let SUN_STROKE          : UIColor = UIColor.init(red: 0.5,  green: 0.5,        blue:  0.0,       alpha: 1.0)
-    
-    
-    // Equipment
-    public static let EQP_TRIPOD     : (String, Int) = ("Tripod",     1 << 0) //  1
-    public static let EQP_GIMBAL     : (String, Int) = ("Gimbal",     1 << 1) //  2
-    public static let EQP_CPL_FILTER : (String, Int) = ("CPL Filter", 1 << 2) //  4
-    public static let EQP_ND_FILTER  : (String, Int) = ("ND Filter",  1 << 3) //  8
-    public static let EQP_IR_FILTER  : (String, Int) = ("IR Filter",  1 << 4) // 16
-    public static let EQP_FLASH      : (String, Int) = ("Flash",      1 << 5) // 32
-    public static let EQP_REMOTE     : (String, Int) = ("Remote",     1 << 6) // 64
-    
-    public static let EQUIPMENT      :[(String, Int)] = [ EQP_TRIPOD, EQP_GIMBAL, EQP_CPL_FILTER, EQP_ND_FILTER, EQP_IR_FILTER, EQP_FLASH, EQP_REMOTE ]
-    
-    // Times
-    public static let TMS_ALL_YEAR   : (String, Int) = ("All Year",   1 << 0)
-    public static let TMS_SPRING     : (String, Int) = ("Spring",     1 << 1)
-    public static let TMS_SUMMER     : (String, Int) = ("Summer",     1 << 2)
-    public static let TMS_AUTUMN     : (String, Int) = ("Autumn",     1 << 3)
-    public static let TMS_WINTER     : (String, Int) = ("Winter",     1 << 4)
-    public static let TMS_JANUARY    : (String, Int) = ("January",    1 << 5)
-    public static let TMS_FEBRUARY   : (String, Int) = ("February",   1 << 6)
-    public static let TMS_MARCH      : (String, Int) = ("March",      1 << 7)
-    public static let TMS_APRIL      : (String, Int) = ("April",      1 << 8)
-    public static let TMS_MAY        : (String, Int) = ("May",        1 << 9)
-    public static let TMS_JUNE       : (String, Int) = ("June",       1 << 10)
-    public static let TMS_JULY       : (String, Int) = ("July",       1 << 11)
-    public static let TMS_AUGUST     : (String, Int) = ("August",     1 << 12)
-    public static let TMS_SEPTEMBER  : (String, Int) = ("September",  1 << 13)
-    public static let TMS_OCTOBER    : (String, Int) = ("October",    1 << 14)
-    public static let TMS_NOVEMBER   : (String, Int) = ("November",   1 << 15)
-    public static let TMS_DECEMBER   : (String, Int) = ("December",   1 << 16)
-    
-    public static let TIMES          : [(String, Int)] = [
-        TMS_ALL_YEAR, TMS_SPRING, TMS_SUMMER, TMS_AUTUMN, TMS_WINTER, TMS_JANUARY, TMS_FEBRUARY, TMS_MARCH,
-        TMS_APRIL, TMS_MAY, TMS_JUNE, TMS_JULY, TMS_AUGUST, TMS_SEPTEMBER, TMS_OCTOBER, TMS_NOVEMBER, TMS_DECEMBER
-    ]
-    
-    // Tags
-    public static let TAG_NIGHT         : (String, Int) = ("Nightshot"    , 1 << 0)
-    public static let TAG_ASTRO         : (String, Int) = ("Astro"        , 1 << 1)
-    public static let TAG_MACRO         : (String, Int) = ("Macro"        , 1 << 2)
-    public static let TAG_POI           : (String, Int) = ("POI"          , 1 << 3)
-    public static let TAG_INFRARED      : (String, Int) = ("Infrared"     , 1 << 4)
-    public static let TAG_LONG_EXPOSURE : (String, Int) = ("Long Exposure", 1 << 5)
-    public static let TAG_CITYSCAPE     : (String, Int) = ("Cityscape"    , 1 << 6)
-    public static let TAG_LANDSCAPE     : (String, Int) = ("Landscape"    , 1 << 7)
-    public static let TAG_STREET        : (String, Int) = ("Street"       , 1 << 8)
-    public static let TAG_BRIDGE        : (String, Int) = ("Bridge"       , 1 << 9)
-    public static let TAG_LAKE          : (String, Int) = ("Lake"         , 1 << 10)
-    public static let TAG_SHIP          : (String, Int) = ("Ship"         , 1 << 11)
-    public static let TAG_CAR           : (String, Int) = ("Car"          , 1 << 12)
-    public static let TAG_FLOWER        : (String, Int) = ("Flower"       , 1 << 13)
-    public static let TAG_TREE          : (String, Int) = ("Tree"         , 1 << 14)
-    public static let TAG_BUILDING      : (String, Int) = ("Building"     , 1 << 15)
-    public static let TAG_BEACH         : (String, Int) = ("Beach"        , 1 << 16)
-    public static let TAG_SUNRISE       : (String, Int) = ("Sunrise"      , 1 << 17)
-    public static let TAG_SUNSET        : (String, Int) = ("Sunset"       , 1 << 18)
-    public static let TAG_MOON          : (String, Int) = ("Moon"         , 1 << 19)
-    public static let TAG_ARCHITECTURE  : (String, Int) = ("Architecture" , 1 << 20)
-    public static let TAG_CLOSEUP       : (String, Int) = ("Close up"     , 1 << 21)
-    public static let TAG_RIVER         : (String, Int) = ("River"        , 1 << 22)
-    public static let TAG_CHURCH        : (String, Int) = ("Church"       , 1 << 23)
-    public static let TAG_TRAIN         : (String, Int) = ("Train"        , 1 << 24)
-    
-    public static let TAGS              : [(String, Int)] = [
-        TAG_NIGHT, TAG_ASTRO, TAG_MACRO, TAG_POI, TAG_INFRARED, TAG_LONG_EXPOSURE, TAG_CITYSCAPE, TAG_LANDSCAPE,
-        TAG_STREET, TAG_BRIDGE, TAG_LAKE, TAG_SHIP, TAG_CAR, TAG_FLOWER, TAG_TREE, TAG_BUILDING, TAG_BEACH,
-        TAG_SUNRISE, TAG_SUNSET, TAG_MOON, TAG_ARCHITECTURE, TAG_CLOSEUP, TAG_RIVER, TAG_CHURCH, TAG_TRAIN
-    ]
-    
-    
-    public static let DEFAULT_COUNTRY     : String     = "DE"
     public static let DEFAULT_LOCATION    : MKMapPoint = MKMapPoint(CLLocationManager().location?.coordinate ?? CLLocationCoordinate2D(latitude : 51.911821, longitude: 7.633703))
     public static let DEFAULT_CAMERA      : Camera = Camera(name        : "DEFAULT CAMERA", sensorFormat: SensorFormat.fullFormat.id)
     public static let DEFAULT_LENS        : Lens   = Lens(name          : "DEFAULT LENS",
@@ -171,60 +83,10 @@ public class Constants {
     public static let DEFAULT_ORIENTATION : CameraOrientation = CameraOrientation.landscape
     public static let DEFAULT_MAP_SIZE    : MKMapSize   = MKMapSize(width: 97313.02098080516, height: 60438.11837643385)
     public static let DEFAULT_ORIGIN      : MKMapPoint  = MKMapPoint(x: DEFAULT_LOCATION.x - DEFAULT_MAP_SIZE.width / 2, y: DEFAULT_LOCATION.y - DEFAULT_MAP_SIZE.height / 2)
-                    
-    public static let VALID_CLEAR         : CGColor = CGColor.init(srgbRed: 1, green: 1, blue: 1, alpha: 0)
-    public static let INVALID_RED         : CGColor = UIColor(red: 1.00, green: 0.42, blue: 0.37, alpha: 1.00).cgColor
-    
-    public static let ATTENTION_ICON      : UIImage = UIImage(systemName: "exclamationmark.circle")!
-    public static let INFO_ICON           : UIImage = UIImage(systemName: "info.circle")!
-    public static let ERROR_ICON          : UIImage = UIImage(systemName: "xmark.octagon")!
-    public static let STAR_ICON           : UIImage = (UIImage(named: "star")?.resize(to: CGSize(width: 24, height: 24)))!
-    
-    
+                        
     public static let REGULAR_FONT_14     : Font    = Font.system(size: 14, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_16     : Font    = Font.system(size: 16, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_20     : Font    = Font.system(size: 20, weight: .regular, design: .rounded)
+    public static let REGULAR_FONT_24     : Font    = Font.system(size: 24, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_28     : Font    = Font.system(size: 28, weight: .regular, design: .rounded)
-    
-    // UserDefaults keys
-    public static let CAMERA_UD       : String = "camera"
-    public static let LENS_UD         : String = "lens"
-    public static let FOCAL_LENGTH_UD : String = "focalLength"
-    public static let APERTURE_UD     : String = "aperture"
-    
-    
-    // CoreData entities
-    public static let LENS_CD   : String = "LensCD"
-    public static let CAMERA_CD : String = "CameraCD"
-    public static let SPOT_CD   : String = "SpotCD"
-    public static let VIEW_CD   : String = "ViewCD"
-    
-    
-    // CoreData fields
-    public static let NAME_CD             : String = "name"
-    public static let MIN_APERTURE_CD     : String = "minAperture"
-    public static let MAX_APERTURE_CD     : String = "maxAperture"
-    public static let MIN_FOCAL_LENGTH_CD : String = "minFocalLength"
-    public static let MAX_FOCAL_LENGTH_CD : String = "maxFocalLength"
-    public static let SENSOR_FORMAT_CD    : String = "sensorFormat"
-    public static let DESCRIPTION_CD      : String = "desc"
-    public static let CAMERA_LAT_CD       : String = "cameraLat"
-    public static let CAMERA_LON_CD       : String = "cameraLon"
-    public static let MOTIF_LAT_CD        : String = "motifLat"
-    public static let MOTIF_LON_CD        : String = "motifLon"
-    public static let CAMERA_NAME_CD      : String = "cameraName"
-    public static let LENS_NAME_CD        : String = "lensName"
-    public static let APERTURE_CD         : String = "aperture"
-    public static let FOCAL_LENGTH_CD     : String = "focalLength"
-    public static let ORIENTATION_CD      : String = "orientation"
-    public static let COUNTRY_CD          : String = "country"
-    public static let ORIGIN_LAT_CD       : String = "originLat"
-    public static let ORIGIN_LON_CD       : String = "originLon"
-    public static let MAP_WIDTH_CD        : String = "mapWidth"
-    public static let MAP_HEIGHT_CD       : String = "mapHeight"
-    public static let TAGS_CD             : String = "tags"
-    public static let EQUIPMENT_CD        : String = "equipment"
-    public static let TIMES_CD            : String = "times"
-    public static let LAT_CD              : String = "lat"
-    public static let LON_CD              : String = "lon"
 }
