@@ -16,14 +16,14 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var locationManager        : CLLocationManager?
     var mapRegion              : MKCoordinateRegion?
     
-    var camera                 : Camera            = Constants.DEFAULT_CAMERA {
+    var camera                 : Camera                   = Constants.DEFAULT_CAMERA {
         didSet {
             Properties.instance.cameraId = self.camera.id            
             self.updateFoVTriangle(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation)
             if self.dofVisible { self.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation) }
         }
     }
-    var lens                   : Lens              = Constants.DEFAULT_LENS {
+    var lens                   : Lens                     = Constants.DEFAULT_LENS {
         didSet {
             Properties.instance.lensId = self.lens.id
             self.focalLength = self.lens.minFocalLength
@@ -32,8 +32,8 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
             if self.dofVisible { self.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation) }
         }
     }
-    var orientation            : CameraOrientation = CameraOrientation.landscape
-    var focalLength            : Double            = Constants.DEFAULT_LENS.minFocalLength {
+    var orientation            : CameraOrientation        = CameraOrientation.landscape
+    var focalLength            : Double                   = Constants.DEFAULT_LENS.minFocalLength {
         didSet {
             Properties.instance.focalLength = self.focalLength
             self.updateFoVTriangle(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation)
@@ -43,7 +43,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var focalLengthBinding     : Binding<Double> {
         Binding(get: { self.focalLength }, set: { self.focalLength = $0 })
     }
-    var aperture               : Double            = Constants.DEFAULT_LENS.minAperture {
+    var aperture               : Double                   = Constants.DEFAULT_LENS.minAperture {
         didSet {
             Properties.instance.aperture = self.aperture
             self.updateFoVTriangle(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation)
@@ -56,6 +56,20 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var fovData                : FoVData?
     var cameraMarkerData       : MarkerData?
     var motifMarkerData        : MarkerData?
+    var currentMapLocation     : CLLocationCoordinate2D?
+    var currentMapHeading      : Double?
+    var currentMapDate         : Date                     = Date.now
+    var currentMapDateBinding  : Binding<Date> {
+        .init(get: { self.currentMapDate }, set: { self.currentMapDate = $0 })
+    }
+    var currentMapStyleIndex   : Int                      = 0
+    var currentMapStyleIndexBinding : Binding<Int> {
+        Binding(get: { self.currentMapStyleIndex}, set: { self.currentMapStyleIndex = $0 })
+    }
+    var epdVisible             : Bool                     = false
+    var epdVisibleBinding      : Binding<Bool> {
+        Binding(get: { self.epdVisible}, set: { self.epdVisible = $0 })
+    }
     var dofVisible             : Bool                     = false
     var dofVisibleBinding      : Binding<Bool> {
         Binding(get: { self.dofVisible}, set: { self.dofVisible = $0 })
@@ -63,11 +77,18 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var triangleCoordinates    : [CLLocationCoordinate2D] = []
     var minTriangleCoordinates : [CLLocationCoordinate2D] = []
     var maxTriangleCoordinates : [CLLocationCoordinate2D] = []
-    var trapezoidCoordinates   : [CLLocationCoordinate2D] = []    
+    var trapezoidCoordinates   : [CLLocationCoordinate2D] = []
+    var metric                 : Bool                     = true
+    var magicHours             : MagicHours               = MagicHours()
+    var sunTimes               : Dictionary<String, Date> = [:]
+    var moonTimes              : Dictionary<String, Date> = [:]
     
 
     override init() {
         //Task { await requestAuthorization() }
+        super.init()
+        self.sunTimes  = self.magicHours.getTimes(date: self.currentMapDate, lat: self.currentMapLocation?.latitude ?? 0.0, lon: self.currentMapLocation?.longitude ?? 0.0)
+        self.moonTimes = self.magicHours.getMoonTimes(date: self.currentMapDate, lat: self.currentMapLocation?.latitude ?? 0.0, lon: self.currentMapLocation?.longitude ?? 0.0)
     }
     
     
@@ -86,7 +107,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
                 
         // Update FoV Triangle
         let triangleCoordinates : [CLLocationCoordinate2D] = Helper.updateTriangle(camera: cameraPoint, motif: motifPoint, focalLengthInMM: focalLength, aperture: aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation)
-        let angleRad            : Double                   = -Helper.toRadians(degrees: Helper.calcBearing(location1: cameraPoint.coordinate, location2: motifPoint.coordinate))
+        let angleRad            : Double                   = -Helper.toRadians(Helper.calcBearing(location1: cameraPoint.coordinate, location2: motifPoint.coordinate))
         
         self.triangleCoordinates.removeAll()
         self.triangleCoordinates.append(triangleCoordinates[0])
@@ -115,7 +136,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
         
         // Update DoF Trapzoid
         let trapezoidCoordinates : [CLLocationCoordinate2D] = Helper.updateTrapezoid(camera: cameraPoint, motif: motifPoint, focalLengthInMM: focalLength, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
-        let angleRad             : Double                   = -Helper.toRadians(degrees: Helper.calcBearingInDegree(location1: cameraPoint.coordinate, location2: motifPoint.coordinate))
+        let angleRad             : Double                   = -Helper.toRadians(Helper.calcBearingInDegree(location1: cameraPoint.coordinate, location2: motifPoint.coordinate))
         
         self.trapezoidCoordinates.removeAll()
         self.trapezoidCoordinates.append(Helper.rotatePointAroundCenter(location: trapezoidCoordinates[0], around: cameraPoint.coordinate, angleRad: angleRad))

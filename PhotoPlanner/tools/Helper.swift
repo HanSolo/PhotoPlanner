@@ -15,11 +15,10 @@ public class Helper {
         return FileManager.default.ubiquityIdentityToken != nil
     }
     
-    public static func toDegrees(radians: Double) -> Double {
+    public static func toDegrees(_ radians: Double) -> Double {
         return radians * 180 / .pi
     }
-
-    public static func toRadians(degrees: Double) -> Double {
+    public static func toRadians(_ degrees: Double) -> Double {
         return degrees * .pi / 180
     }
     
@@ -128,14 +127,14 @@ public class Helper {
     }
     
     public static func calcBearing(location1: CLLocationCoordinate2D, location2: CLLocationCoordinate2D) -> Double {
-        let lat1   : Double = toRadians(degrees: Double(location1.latitude))
+        let lat1   : Double = toRadians(Double(location1.latitude))
         let lon1   : Double = Double(location1.longitude)
-        let lat2   : Double = toRadians(degrees: Double(location2.latitude))
+        let lat2   : Double = toRadians(Double(location2.latitude))
         let lon2   : Double = Double(location2.longitude)
-        let dLon   : Double = toRadians(degrees: lon2 - lon1);
+        let dLon   : Double = toRadians(lon2 - lon1);
         let y      : Double = sin(dLon) * cos(lat2)
         let x      : Double = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
-        let bearing: Double = (toDegrees(radians: atan2(y, x)) + 360).truncatingRemainder(dividingBy: 360)
+        let bearing: Double = (toDegrees(atan2(y, x)) + 360).truncatingRemainder(dividingBy: 360)
         return bearing
     }
     
@@ -143,10 +142,10 @@ public class Helper {
         return calcBearingInDegree(lat1: location1.latitude, lon1: location1.longitude, lat2: location2.latitude, lon2: location2.longitude)
     }
     public static func calcBearingInDegree(lat1: Double, lon1: Double, lat2: Double, lon2: Double) -> Double {
-        let lat1Rad : Double = toRadians(degrees: lat1)
-        let lon1Rad : Double = toRadians(degrees: lon1)
-        let lat2Rad : Double = toRadians(degrees: lat2)
-        let lon2Rad : Double = toRadians(degrees: lon2)
+        let lat1Rad : Double = toRadians(lat1)
+        let lon1Rad : Double = toRadians(lon1)
+        let lat2Rad : Double = toRadians(lat2)
+        let lon2Rad : Double = toRadians(lon2)
         let y       : Double = sin(lon2Rad - lon1Rad) * cos(lat2Rad)
         let x       : Double = cos(lat1Rad) * sin(lat2Rad) - sin(lat1Rad) * cos(lat2Rad) * cos(lon2Rad - lon1Rad)
         let t       : Double = atan2(y, x)
@@ -155,15 +154,15 @@ public class Helper {
     }
     
     public static func calcCoord(start: MKMapPoint, distance: Double, bearing: Double) -> CLLocationCoordinate2D {
-        let lat1   = toRadians(degrees: Double(start.coordinate.latitude))
-        let lon1   = toRadians(degrees: Double(start.coordinate.longitude))
+        let lat1   = toRadians(Double(start.coordinate.latitude))
+        let lon1   = toRadians(Double(start.coordinate.longitude))
         let radius = distance / Constants.EARTH_RADIUS
 
         let lat2 = asin(sin(lat1) * cos(radius) + cos(lat1) * sin(radius) * cos(bearing))
         var lon2 = lon1 + atan2(sin(bearing) * sin(radius) * cos(lat1), cos(radius) - sin(lat1) * sin(lat2))
         lon2 = (lon2 + 3 * .pi).truncatingRemainder(dividingBy: (2 * .pi)) - .pi
         
-        return CLLocationCoordinate2D(latitude: toDegrees(radians: lat2), longitude: toDegrees(radians: lon2))
+        return CLLocationCoordinate2D(latitude: toDegrees(lat2), longitude: toDegrees(lon2))
     }
     
     public static func rotatePointAroundCenter(point: MKMapPoint, rotationCenter: MKMapPoint, angleRad: Double) -> MKMapPoint {
@@ -192,38 +191,94 @@ public class Helper {
 
         return CLLocationCoordinate2D(latitude: newLatRad * 180 / .pi, longitude: newLonRad * 180 / .pi)
     }
+    public static func rotatePointAroundRotationCenter(x: Double, y: Double, rotationCenterX: Double, rotationCenterY: Double, angleDeg: Double) -> (Double, Double) {
+        let rad : Double = toRadians(angleDeg)
+        let sin : Double = sin(rad)
+        let cos : Double = cos(rad)
+        let nX  : Double = rotationCenterX + (x - rotationCenterX) * cos - (y - rotationCenterY) * sin
+        let nY  : Double = rotationCenterY + (x - rotationCenterX) * sin + (y - rotationCenterY) * cos
+        return (nX, nY)
+    }
         
     public static func getPointByAngle(point: MKMapPoint, angleDeg: Double) -> MKMapPoint {
-        return rotatePointAroundCenter(point: MKMapPoint(CLLocationCoordinate2D(latitude: point.coordinate.latitude, longitude: point.coordinate.longitude + .pi/2)), rotationCenter: point, angleRad: toRadians(degrees: angleDeg))
+        return rotatePointAroundCenter(point: MKMapPoint(CLLocationCoordinate2D(latitude: point.coordinate.latitude, longitude: point.coordinate.longitude + .pi/2)), rotationCenter: point, angleRad: toRadians(angleDeg))
     }
     public static func getPointByAngle(point: MKMapPoint, angleDeg: Double, distance: Double) -> MKMapPoint {
-        return rotatePointAroundCenter(point: MKMapPoint(x: point.x, y: point.y + distance), rotationCenter: point, angleRad: toRadians(degrees: angleDeg))
+        return rotatePointAroundCenter(point: MKMapPoint(x: point.x, y: point.y + distance), rotationCenter: point, angleRad: toRadians(angleDeg))
     }
     
     public static func getLatLonByAngleAndDistance(lat :Double, lon :Double, distanceInMeters :Double, angleDeg: Double) -> (Double, Double){
         let earthRadius      :Double = Constants.EARTH_RADIUS // m
-        let radians          :Double = toRadians(degrees: angleDeg)
+        let radians          :Double = toRadians(angleDeg)
         
-        let originLatRad     :Double = toRadians(degrees: lat)
-        let originLonRad     :Double = toRadians(degrees: lon)
+        let originLatRad     :Double = toRadians(lat)
+        let originLonRad     :Double = toRadians(lon)
         
         let distanceToRadius :Double = distanceInMeters / earthRadius
         
         let targetLatRad     :Double = asin(sin(originLatRad) * cos(distanceToRadius) + cos(originLatRad) * sin(distanceToRadius) * cos(radians))
         let targetLonRad     :Double = originLonRad + atan2(sin(radians) * sin(distanceToRadius) * cos(originLatRad), cos(distanceToRadius) - sin(originLatRad) * sin(targetLatRad))
         
-        let targetLat        :Double = toDegrees(radians: targetLatRad)
-        let targetLon        :Double = toDegrees(radians: targetLonRad)
+        let targetLat        :Double = toDegrees(targetLatRad)
+        let targetLon        :Double = toDegrees(targetLonRad)
         
         return (targetLat, targetLon)
     }
     
-    // return date string with given format e.g. "dd.MM.yyyy HH:mm:ss"
-    public static func dateToString(fromDate date:Date, formatString :String) -> String {
+    public static func dateToString(fromDate date: Date, formatString: String) -> String {
+        return dateToString(fromDate: date, formatString: formatString, timezone: TimeZone.current)
+    }
+    public static func dateToString(fromDate date: Date, formatString: String, timezoneIdentifier: String) -> String {
+        return dateToString(fromDate: date, formatString: formatString, timezone: TimeZone(identifier: timezoneIdentifier) ?? .current)
+    }
+    public static func dateToString(fromDate date: Date, formatString: String, timezone: TimeZone) -> String {
         let dateFormatter        = DateFormatter()
-        dateFormatter.timeZone   = TimeZone.current
+        dateFormatter.timeZone   = timezone
         dateFormatter.dateFormat = formatString.isEmpty ? "dd.MM.yyyy HH:mm:ss" : formatString
         return dateFormatter.string(from: date)
+    }
+    
+    public static func secondsToHHMMString(seconds: Double) -> String {
+        if seconds.isInfinite || seconds.isNaN { return "--:--" }
+        let hhmmss : (Int, Int) = secondsToHHMM(seconds: seconds)
+        return String(format:"%02d:%02d", hhmmss.0, hhmmss.1)
+    }
+    public static func secondsToHHMM(seconds: Double) -> (Int, Int) {
+        if seconds.isInfinite || seconds.isNaN { return (0,0) }
+        let minutes : Int = Int((seconds / 60.0).truncatingRemainder(dividingBy: 60.0))
+        let hours   : Int = Int((seconds / (3600.0)).truncatingRemainder(dividingBy: 24.0))
+        return ( hours, minutes )
+    }
+    
+    public static func secondsToDDHHMMString(seconds: Double) -> String {
+        if seconds.isInfinite || seconds.isNaN { return "--:--" }
+        let ddhhmm : (Int, Int, Int) = secondsToDDHHMM(seconds: seconds)
+        if ddhhmm.0 == 0 {
+            return String(format:"%02d:%02d", ddhhmm.1, ddhhmm.2)
+        } else {
+            return String(format:"%02d:%02d:%02d", ddhhmm.0, ddhhmm.1, ddhhmm.2)
+        }
+        
+    }
+    public static func secondsToDDHHMM(seconds: Double) -> (Int, Int, Int) {
+        if seconds.isInfinite || seconds.isNaN { return (0, 0, 0) }
+        let minutes : Int = Int((seconds / 60.0).truncatingRemainder(dividingBy: 60.0))
+        let hours   : Int = Int((seconds / (3_600.0)).truncatingRemainder(dividingBy: 24.0))
+        let days    : Int = Int((seconds / (86_400.0)))
+        return ( days, hours, minutes )
+    }
+    
+    public static func secondsToHHMMSSString(seconds: Double) -> String {
+        if seconds.isInfinite || seconds.isNaN { return "--:--:--"}
+        let hhmmss : (Int, Int, Int) = secondsToHHMMSS(seconds: seconds)
+        return String(format:"%02d:%02d:%02d", hhmmss.0, hhmmss.1, hhmmss.2)
+    }
+    public static func secondsToHHMMSS(seconds: Double) -> (Int, Int, Int) {
+        if seconds.isInfinite || seconds.isNaN { return (0, 0, 0) }
+        let secs    : Int = Int(seconds.truncatingRemainder(dividingBy: 60))
+        let minutes : Int = Int((seconds / 60.0).truncatingRemainder(dividingBy: 60.0))
+        let hours   : Int = Int((seconds / (3600.0)).truncatingRemainder(dividingBy: 24.0))
+        return ( hours, minutes, secs )
     }
 }
 

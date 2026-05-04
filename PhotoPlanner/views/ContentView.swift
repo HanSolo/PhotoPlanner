@@ -15,18 +15,18 @@ struct ContentView: View {
     @Environment(PhotoPlannerModel.self) private var model
     
     let home                                  : CLLocationCoordinate2D = Constants.DEFAULT_LOCATION.coordinate
-    @State private var position               : MapCameraPosition      = .automatic //.camera(.init(centerCoordinate: Constants.DEFAULT_LOCATION.coordinate, distance: 5000))
+    @State private var position               : MapCameraPosition      = .automatic
     @State private var modes                  : MapInteractionModes    = [.pan, .rotate, .zoom]
     @State private var cameraMarkerActive     : Bool                   = false
     @State private var motifMarkerActive      : Bool                   = false
     @State private var isPortrait             : Bool                   = false
     @State private var isCameraMarkerDragging : Bool                   = false
     @State private var isMotifMarkerDragging  : Bool                   = false
-    @State private var mapStyleIndex          : Int                    = 0
     @State private var mapStyle               : MapStyle               = .standard
     
     @State private var cameraViewVisible      : Bool                   = false
     @State private var lensViewVisible        : Bool                   = false
+    @State private var datePickerVisible      : Bool                   = false
     
     @Query(sort: [SortDescriptor(\Camera.name, comparator: .localizedStandard)]) private var cameras: [Camera]
     @Query(sort: [SortDescriptor(\Lens.name, comparator: .localizedStandard)])   private var lenses : [Lens]
@@ -141,12 +141,14 @@ struct ContentView: View {
                             isMotifMarkerDragging  = false
                         }
                     )
-                    .onMapCameraChange {
+                    .onMapCameraChange(frequency: .onEnd) { pos in
                         guard self.model.cameraMarkerData != nil else { return }
                         self.model.cameraMarkerData = mapProxy.markerData(coordinate: self.model.cameraMarkerData!.coordinate, geometryProxy: geo)
                         
                         guard self.model.motifMarkerData != nil else { return }
-                        self.model.motifMarkerData = mapProxy.markerData(coordinate: self.model.motifMarkerData!.coordinate, geometryProxy: geo)
+                        self.model.motifMarkerData    = mapProxy.markerData(coordinate: self.model.motifMarkerData!.coordinate, geometryProxy: geo)
+                        self.model.currentMapLocation = pos.region.center
+                        self.model.currentMapHeading  = pos.camera.heading
                     }
                     .mapControls {
                         MapScaleView()
@@ -161,7 +163,7 @@ struct ContentView: View {
                 }
             }
             VStack(alignment: .leading, spacing: 10) {
-                Picker("", selection: $mapStyleIndex) {
+                Picker("", selection: self.model.currentMapStyleIndexBinding) {
                     Text("Std").tag(0)
                         .font(Constants.REGULAR_FONT_14)
                     Text("Sat").tag(1)
@@ -172,7 +174,7 @@ struct ContentView: View {
                         .rotationEffect(Angle(degrees: 90))
                 }
                 .pickerStyle(.segmented)
-                .onChange(of: self.mapStyleIndex) { oldValue, newValue in
+                .onChange(of: self.model.currentMapStyleIndex) { oldValue, newValue in
                     switch newValue {
                     case  0: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
                     case  1: self.mapStyle = MapStyle.imagery()
@@ -276,6 +278,24 @@ struct ContentView: View {
                     if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
                 }
                 
+                Toggle(isOn: self.$datePickerVisible) {
+                    Image(systemName: "calendar")
+                        .padding(7)
+                }
+                .frame(width: 44, height: 44)
+                .toggleStyle(.button)
+                .buttonStyle(.glass)
+                .clipShape(Circle())    
+                
+                Toggle(isOn: self.model.epdVisibleBinding) {
+                    Image(systemName: "sun.max")
+                        .padding(7)
+                }
+                .frame(width: 44, height: 44)
+                .toggleStyle(.button)
+                .buttonStyle(.glass)
+                .clipShape(Circle())
+                
                 Spacer()
                 
                 HStack(spacing: 5) {
@@ -305,6 +325,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $lensViewVisible) {
             LensView(lenses: self.lenses)
+        }
+        .sheet(isPresented: $datePickerVisible) {
+            DateTimeView()
         }
         .task {
             let savedCameraId        : String     = Properties.instance.cameraId        ?? Constants.DEFAULT_CAMERA.id

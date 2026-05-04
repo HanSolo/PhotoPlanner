@@ -60,7 +60,7 @@ public class FoVData {
         self.fovHeight                  = fovHeight
         self.fovHeightAngle             = fovHeightAngle
         self.radius                     = radius
-        self.angleBetweenCameraAndMotif = Helper.toRadians(degrees: Helper.calcBearingInDegree(location1: camera.coordinate, location2: motif.coordinate))
+        self.angleBetweenCameraAndMotif = Helper.toRadians(Helper.calcBearingInDegree(location1: camera.coordinate, location2: motif.coordinate))
         self.dofInFront                 = distance - nearLimit
         self.dofBehind                  = infinite ? 10000 : farLimit - distance
     }

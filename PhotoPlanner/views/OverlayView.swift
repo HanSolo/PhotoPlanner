@@ -6,11 +6,13 @@
 //
 
 import SwiftUI
+import CoreLocation
+
 
 struct OverlayView: View {
     @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
-    
+
     
     var body: some View {
         GeometryReader { geometry in
@@ -19,8 +21,11 @@ struct OverlayView: View {
                     let fovData : FoVData? = self.model.fovData
                     if nil != fovData {
                         let darkMode          : Bool                    = self.colorScheme == .dark
+                        let isLandscape       : Bool                    = UIDevice.current.orientation.isLandscape
                         let width             : Double                  = size.width
                         let height            : Double                  = size.height
+                        let minSize           : Double                  = (width < height ? width : height) * (Constants.IS_IPAD ? isLandscape ? 0.85 : 0.9 : 0.96)
+                        let center            : CGPoint                 = CGPoint(x: width * 0.5, y: height * 0.5)
                         let offsetX           : Double                  = 100.0
                         let offsetY           : Double                  = 170.0
                         let fovFill           : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_FILL_DARK   : Constants.FOV_FILL)
@@ -36,6 +41,70 @@ struct OverlayView: View {
                         let fovCenterY        : Double                  = height - offsetY + 24
                         
                         let bkgRect           : CGRect                  = CGRect(x: 10, y: height - 110, width: width - 20, height: 30)
+                        
+                        
+                        let eventTimes                  : Dictionary<String, Date>             = self.model.magicHours.getTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
+                        let eventAngles                 : Dictionary<String, (Double, Double)> = self.model.magicHours.getEventAngles(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
+                        let formatString                : String                               = self.model.metric ? Constants.TWENTY_FOUR_HOUR_FORMAT : Constants.TWELVE_HOUR_FORMAT
+                        let sunriseText                 : String                               = Helper.dateToString(fromDate: eventTimes[Constants.EPD_SUNRISE]!, formatString: formatString)
+                        let sunsetText                  : String                               = Helper.dateToString(fromDate: eventTimes[Constants.EPD_SUNSET]!, formatString: formatString)
+                        let sunIsUp                     : Bool                                 = self.model.currentMapDate >= eventTimes[Constants.EPD_SUNRISE]! && self.model.currentMapDate <= eventTimes[Constants.EPD_SUNSET]!
+                        //let moonIsUp                    : Bool                                 = now >= eventTimes[Constants.EPD_MOONRISE]! && now <= eventTimes[Constants.EPD_MOONSET]!
+                        let sunRiseSetColor             : Color                                = .orange
+                        let blueHourColor               : Color                                = .blue
+                        let goldenHourColor             : Color                                = Color(red: 1.0, green: 0.54, blue: 0.0)
+                        let sunColor                    : Color                                = sunIsUp ? .yellow : .yellow.opacity(0.3)
+                        let moonColor                   : Color                                = Color(red: 0.0, green: 0.44, blue: 1.0, opacity: 1.0)
+                        let sunTextAngleOffset          : Double                               = self.model.metric ? 9 : 12
+                        //let isDayLightSavingTime        : Bool                                 = TimeZone.current.isDaylightSavingTime()
+                        //let timeZoneOffset              : Int                                  = TimeZone.current.secondsFromGMT()
+                        var blueHourDawnAngle           : Double                               = 0.0
+                        var blueHourDawnEndAngle        : Double                               = 0.0
+                        var goldenHourDawnAngle         : Double                               = 0.0
+                        var goldenHourDawnEndAngle      : Double                               = 0.0
+                        var sunriseAngle                : Double                               = 0.0
+                        var sunsetAngle                 : Double                               = 0.0
+                        var goldenHourDuskAngle         : Double                               = 0.0
+                        var goldenHourDuskEndAngle      : Double                               = 0.0
+                        var blueHourDuskAngle           : Double                               = 0.0
+                        var blueHourDuskEndAngle        : Double                               = 0.0
+                                                
+                        let minorDirectionFontSize      : Double                               = minSize * 0.03
+                        let minorDirectionFont          : Font                                 = Font.system(size: minorDirectionFontSize)
+                        let smallDegreeFontSize         : Double                               = minSize * 0.03
+                        let smallDegreeFont             : Font                                 = Font.system(size: smallDegreeFontSize)
+                        let textColor                   : Color                                = darkMode ? Constants.TEXT_DARK : Constants.TEXT_BRIGHT
+                        
+                        let outerRingLineWidth          : Double                               = minSize * 0.1333333333
+                        let outerRingRadius             : Double                               = (minSize - (outerRingLineWidth * 0.5)) * 0.45
+                        let innerRingLineWidth          : Double                               = minSize * 0.0666666666
+                        let innerRingRadius             : Double                               = outerRingRadius - (outerRingLineWidth * 0.25) - innerRingLineWidth
+                        
+                        for (event, angles) in eventAngles {
+                            let angle   : Double = 180.0 - Helper.toDegrees(angles.0) - (self.model.currentMapHeading ?? 0.0)
+                            let endAngle: Double = 180.0 - Helper.toDegrees(angles.1) - (self.model.currentMapHeading ?? 0.0)
+                            switch event {
+                                case Constants.EPD_BLUE_HOUR_MORNING:
+                                    blueHourDuskAngle      = angle
+                                    blueHourDuskEndAngle   = endAngle
+                                case Constants.EPD_GOLDEN_HOUR_MORNING:
+                                    goldenHourDuskAngle    = angle
+                                    goldenHourDuskEndAngle = endAngle
+                                case Constants.EPD_GOLDEN_HOUR_EVENING:
+                                    goldenHourDawnAngle    = angle
+                                    goldenHourDawnEndAngle = endAngle
+                                case Constants.EPD_BLUE_HOUR_EVENING:
+                                    blueHourDawnAngle      = angle
+                                    blueHourDawnEndAngle   = endAngle
+                                case Constants.EPD_SUNRISE:
+                                    sunriseAngle           = angle
+                                case Constants.EPD_SUNSET:
+                                    sunsetAngle            = angle
+                                default:
+                                    break
+                            }
+                        }
+                        
                         
                         ctx.fill(Rectangle().path(in: bkgRect), with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
                         
@@ -61,6 +130,111 @@ struct OverlayView: View {
                             ctx.draw(photoSymbol, at: CGPoint(x: 200, y: height - offsetY + 75))
                         }
                         
+                        
+                        // Magic Hours
+                        if self.model.epdVisible {
+                            ctx.drawLayer { ctx1 in
+                                for(event, angles) in eventAngles {
+                                    let angle : Double = 180.0 - Helper.toDegrees(angles.0) + (self.model.currentMapHeading ?? 0.0)
+                                    
+                                    ctx1.translateBy(x: center.x, y: center.y)
+                                    ctx1.rotate(by: Angle(degrees: -angle))
+                                    ctx1.translateBy(x: -center.x, y: -center.y)
+                                    
+                                    let innerRadiusOffset : Double = Constants.IS_IPAD ? 0.425 : 0.725
+                                    let outerRadiusOffset : Double = Constants.IS_IPAD ? 0.36 : 0.655
+                                    
+                                    var path: Path = Path()
+                                    path.move(to: CGPoint(x: center.x, y: minSize * outerRadiusOffset))
+                                    path.addLine(to: CGPoint(x: center.x, y: minSize * innerRadiusOffset))
+                                    path.closeSubpath()
+                                    let textRadiusOffset : Double = Constants.IS_IPAD ? 0.34 : 0.625
+                                    switch event {
+                                        case Constants.EPD_SUNRISE :
+                                            let text : Text = Text(verbatim: "\(sunriseText)").foregroundColor(textColor).font(minorDirectionFont)
+                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(sunRiseSetColor), lineWidth: 1)
+                                            ctx1.drawLayer { ctx2 in
+                                                ctx2.translateBy(x: center.x, y: center.y)
+                                                ctx2.rotate(by: Angle(degrees: -sunTextAngleOffset))
+                                                ctx2.translateBy(x: -center.x, y: -center.y)
+                                                ctx2.draw(text, at: CGPoint(x: center.x, y: minSize * textRadiusOffset), anchor: .center)
+                                            }
+                                        case Constants.EPD_SUNSET  :
+                                            let text : Text = Text(verbatim: "\(sunsetText)").foregroundColor(textColor).font(minorDirectionFont)
+                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(sunRiseSetColor), lineWidth: 1)
+                                            ctx1.drawLayer { ctx2 in
+                                                ctx2.translateBy(x: center.x, y: center.y)
+                                                ctx2.rotate(by: Angle(degrees: +sunTextAngleOffset))
+                                                ctx2.translateBy(x: -center.x, y: -center.y)
+                                                ctx2.draw(text, at: CGPoint(x: center.x, y: minSize * textRadiusOffset), anchor: .center)
+                                            }
+                                        case Constants.EPD_SUN     :
+                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(sunColor), lineWidth: 1)
+                                        case Constants.EPD_MOON    :
+                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(moonColor), lineWidth: 1)
+                                        default                    : break
+                                    }
+                                    
+                                    ctx1.translateBy(x: center.x, y: center.y)
+                                    ctx1.rotate(by: Angle(degrees: angle))
+                                    ctx1.translateBy(x: -center.x, y: -center.y)
+                                }
+
+                                // Draw daylight arc
+                                var sunPath: Path = Path()
+                                sunPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius - innerRingLineWidth * 0.5, startAngle: .degrees(sunriseAngle - 90.0), endAngle: .degrees(sunsetAngle - 90.0), clockwise: true)
+                                ctx1.stroke(sunPath, with: GraphicsContext.Shading.color(sunRiseSetColor), lineWidth: 1)
+                                if sunIsUp {
+                                    var sunIsUpPath: Path = Path()
+                                    sunIsUpPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(sunriseAngle - 90.0), endAngle: .degrees(sunsetAngle - 90.0), clockwise: true)
+                                    ctx1.stroke(sunIsUpPath, with: GraphicsContext.Shading.color(sunColor.opacity(0.1)), lineWidth: innerRingLineWidth)
+                                }
+                                
+                                // Draw blue hour dawn
+                                var blueHourDawnPath: Path = Path()
+                                blueHourDawnPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(blueHourDawnAngle - 90.0), endAngle: .degrees(blueHourDawnEndAngle - 90.0), clockwise: true)
+                                ctx1.stroke(blueHourDawnPath, with: GraphicsContext.Shading.color(blueHourColor.opacity(0.4)), lineWidth: innerRingLineWidth)
+                                
+                                // Draw golden hour dawn
+                                var goldenHourDawnPath: Path = Path()
+                                goldenHourDawnPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(goldenHourDawnAngle - 90.0), endAngle: .degrees(goldenHourDawnEndAngle - 90.0), clockwise: true)
+                                ctx1.stroke(goldenHourDawnPath, with: GraphicsContext.Shading.color(goldenHourColor.opacity(0.4)), lineWidth: innerRingLineWidth)
+                                
+                                
+                                // Draw blue hour dusk
+                                var blueHourDuskPath: Path = Path()
+                                blueHourDuskPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(blueHourDuskAngle - 90.0), endAngle: .degrees(blueHourDuskEndAngle - 90.0), clockwise: true)
+                                ctx1.stroke(blueHourDuskPath, with: GraphicsContext.Shading.color(blueHourColor.opacity(0.4)), lineWidth: innerRingLineWidth)
+                                
+                                // Draw golden hour dusk
+                                var goldenHourDuskPath: Path = Path()
+                                goldenHourDuskPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(goldenHourDuskAngle - 90.0), endAngle: .degrees(goldenHourDuskEndAngle - 90.0), clockwise: true)
+                                ctx1.stroke(goldenHourDuskPath, with: GraphicsContext.Shading.color(goldenHourColor.opacity(0.4)), lineWidth: innerRingLineWidth)
+                            }
+                            
+                            // Draw text and tickmarks
+                            ctx.drawLayer { ctx1 in
+                                ctx1.translateBy(x: center.x, y: center.y)
+                                ctx1.rotate(by: Angle(degrees: -(self.model.currentMapHeading ?? 0.0)))
+                                ctx1.translateBy(x: -center.x, y: -center.y)
+                                
+                                // Draw hours of day 15°
+                                let radiusOffset: Double                               = Constants.IS_IPAD ? 0.45 : 0.75
+                                let calendar    : Calendar                             = Calendar.current
+                                for hour in stride(from: 0, to: 24, by: 1) {
+                                    let tmpDate : Date                                 = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: calendar.startOfDay(for: self.model.currentMapDate))!
+                                    let angles  : Dictionary<String, (Double, Double)> = self.model.magicHours.getEventAngles(date: tmpDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
+                                    let text    : Text                                 = Text(verbatim: "\(hour)").font(smallDegreeFont).foregroundColor(textColor)
+                                    let angle   : Double                               = 180.0 + Helper.toDegrees(angles[Constants.EPD_SUN]!.0) - (self.model.currentMapHeading ?? 0.0)
+                                    let xy      : (Double, Double)                     = Helper.rotatePointAroundRotationCenter(x: center.x, y: minSize * radiusOffset, rotationCenterX: center.x, rotationCenterY: center.y, angleDeg: angle + (self.model.currentMapHeading ?? 0.0))
+                                    ctx1.drawLayer { ctx2 in
+                                        ctx2.translateBy(x: xy.0, y: xy.1)
+                                        ctx2.rotate(by: Angle(degrees: angle + (self.model.currentMapHeading ?? 0.0)))
+                                        ctx2.draw(text, at: CGPoint(x: 0, y: 0), anchor: .center)
+                                    }
+                                }
+                            }
+                        }
                     }
                 } symbols: {
                     Image(systemName: "camera")
