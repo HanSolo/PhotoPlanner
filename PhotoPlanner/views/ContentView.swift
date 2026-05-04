@@ -15,7 +15,7 @@ struct ContentView: View {
     @Environment(PhotoPlannerModel.self) private var model
     
     let home                                  : CLLocationCoordinate2D = Constants.DEFAULT_LOCATION.coordinate
-    @State private var position               : MapCameraPosition      = .automatic
+    @State private var position               : MapCameraPosition      = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!, longitude: Properties.instance.cameraLongitude!), distance: 1500))
     @State private var modes                  : MapInteractionModes    = [.pan, .rotate, .zoom]
     @State private var cameraMarkerActive     : Bool                   = false
     @State private var motifMarkerActive      : Bool                   = false
@@ -314,18 +314,35 @@ struct ContentView: View {
                 
                 Spacer()
                 
-                HStack(spacing: 5) {
+                HStack(alignment: .bottom, spacing: 5) {
                     VStack {
                         Slider(value: self.model.apertureBinding, in: self.model.lens.minAperture...self.model.lens.maxAperture)
                         Text("f/\(String(format: "%.1f", self.model.aperture))")
                             .font(Constants.REGULAR_FONT_14)
                     }
+                                        
+                    if self.model.dofVisible {
+                        Spacer()
+                        VStack(spacing: 10) {
+                            Image.init(systemName: "arrowtriangle.left.and.line.vertical.and.arrowtriangle.right.fill")
+                                .rotationEffect(Angle(degrees: 90))
+                                .font(Constants.REGULAR_FONT_14)
+                            let dof       : Double = ((self.model.fovData?.dofInFront ?? 0.0) + (self.model.fovData?.dofBehind ?? 0.0))
+                            let dofFormat : String = dof < 1 ? "%.2f m" : dof < 10 ? "%.1f m" : "%.0f m"
+                            let dofText   : String = dof > 100 ? "∞" : String(format: dofFormat, dof)
+                            Text(dofText)
+                                .font(Constants.REGULAR_FONT_14)
+                        }
+                        Spacer()
+                    } else {
+                        Spacer()
+                    }
+                                            
                     
-                    Spacer()
                     VStack {
                         Slider(value: self.model.focalLengthBinding, in: self.model.lens.minFocalLength...self.model.lens.maxFocalLength)
                             .disabled(self.model.lens.isPrime)
-                        Text("\(String(format: "%.0f", self.model.focalLength)) mm")
+                        Text("\(String(format: "%.0f mm", self.model.focalLength))")
                             .font(Constants.REGULAR_FONT_14)
                     }
                 }

@@ -13,17 +13,17 @@ import MapKit
 
 @MainActor @Observable
 public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
-    var locationManager        : CLLocationManager?
-    var mapRegion              : MKCoordinateRegion?
+    var locationManager             : CLLocationManager?
+    var mapRegion                   : MKCoordinateRegion?
     
-    var camera                 : Camera                   = Constants.DEFAULT_CAMERA {
+    var camera                      : Camera                   = Constants.DEFAULT_CAMERA {
         didSet {
             Properties.instance.cameraId = self.camera.id            
             self.updateFoVTriangle(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation)
             if self.dofVisible { self.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation) }
         }
     }
-    var lens                   : Lens                     = Constants.DEFAULT_LENS {
+    var lens                        : Lens                     = Constants.DEFAULT_LENS {
         didSet {
             Properties.instance.lensId = self.lens.id
             self.focalLength = self.lens.minFocalLength
@@ -32,56 +32,56 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
             if self.dofVisible { self.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation) }
         }
     }
-    var orientation            : CameraOrientation        = CameraOrientation.landscape
-    var focalLength            : Double                   = Constants.DEFAULT_LENS.minFocalLength {
+    var orientation                 : CameraOrientation        = CameraOrientation.landscape
+    var focalLength                 : Double                   = Constants.DEFAULT_LENS.minFocalLength {
         didSet {
             Properties.instance.focalLength = self.focalLength
             self.updateFoVTriangle(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation)
             if self.dofVisible { self.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation) }
         }
     }
-    var focalLengthBinding     : Binding<Double> {
+    var focalLengthBinding          : Binding<Double> {
         Binding(get: { self.focalLength }, set: { self.focalLength = $0 })
     }
-    var aperture               : Double                   = Constants.DEFAULT_LENS.minAperture {
+    var aperture                    : Double                   = Constants.DEFAULT_LENS.minAperture {
         didSet {
             Properties.instance.aperture = self.aperture
             self.updateFoVTriangle(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation)
             if self.dofVisible { self.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation) }
         }
     }
-    var apertureBinding        : Binding<Double> {
+    var apertureBinding             : Binding<Double> {
         Binding(get: { self.aperture }, set: { self.aperture = $0 })
     }
-    var fovData                : FoVData?
-    var cameraMarkerData       : MarkerData?
-    var motifMarkerData        : MarkerData?
-    var currentMapLocation     : CLLocationCoordinate2D?
-    var currentMapHeading      : Double?
-    var currentMapDate         : Date                     = Date.now
-    var currentMapDateBinding  : Binding<Date> {
+    var fovData                     : FoVData?
+    var cameraMarkerData            : MarkerData?
+    var motifMarkerData             : MarkerData?
+    var currentMapLocation          : CLLocationCoordinate2D?
+    var currentMapHeading           : Double?
+    var currentMapDate              : Date                     = Date.now
+    var currentMapDateBinding       : Binding<Date> {
         .init(get: { self.currentMapDate }, set: { self.currentMapDate = $0 })
     }
-    var currentMapStyleIndex   : Int                      = 0
+    var currentMapStyleIndex        : Int                      = 0
     var currentMapStyleIndexBinding : Binding<Int> {
         Binding(get: { self.currentMapStyleIndex}, set: { self.currentMapStyleIndex = $0 })
     }
-    var epdVisible             : Bool                     = false
-    var epdVisibleBinding      : Binding<Bool> {
+    var epdVisible                  : Bool                     = false
+    var epdVisibleBinding           : Binding<Bool> {
         Binding(get: { self.epdVisible}, set: { self.epdVisible = $0 })
     }
-    var dofVisible             : Bool                     = false
-    var dofVisibleBinding      : Binding<Bool> {
+    var dofVisible                  : Bool                     = false
+    var dofVisibleBinding           : Binding<Bool> {
         Binding(get: { self.dofVisible}, set: { self.dofVisible = $0 })
     }
-    var triangleCoordinates    : [CLLocationCoordinate2D] = []
-    var minTriangleCoordinates : [CLLocationCoordinate2D] = []
-    var maxTriangleCoordinates : [CLLocationCoordinate2D] = []
-    var trapezoidCoordinates   : [CLLocationCoordinate2D] = []
-    var metric                 : Bool                     = true
-    var magicHours             : MagicHours               = MagicHours()
-    var sunTimes               : Dictionary<String, Date> = [:]
-    var moonTimes              : Dictionary<String, Date> = [:]
+    var triangleCoordinates         : [CLLocationCoordinate2D] = []
+    var minTriangleCoordinates      : [CLLocationCoordinate2D] = []
+    var maxTriangleCoordinates      : [CLLocationCoordinate2D] = []
+    var trapezoidCoordinates        : [CLLocationCoordinate2D] = []
+    var metric                      : Bool                     = true
+    var magicHours                  : MagicHours               = MagicHours()
+    var sunTimes                    : Dictionary<String, Date> = [:]
+    var moonTimes                   : Dictionary<String, Date> = [:]
     
 
     override init() {
