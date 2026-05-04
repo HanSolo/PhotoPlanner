@@ -148,6 +148,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     
     
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        // Handle authorization and update location-related state here, called on main thread.
         // Handle changes in location authorization
         let previousAuthorizationStatus = manager.authorizationStatus
         manager.requestWhenInUseAuthorization()
@@ -179,12 +180,13 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     }
     
     func checkIfLocationIsEnabled() {
-        if CLLocationManager.locationServicesEnabled() {
-            self.locationManager = CLLocationManager()
-            self.locationManager?.desiredAccuracy = kCLLocationAccuracyBest
-            self.locationManager!.delegate = self
-        } else {
-            debugPrint("Location disabled")
+        if locationManager == nil {
+            let manager = CLLocationManager()
+            manager.desiredAccuracy = kCLLocationAccuracyBest
+            manager.delegate = self
+            self.locationManager = manager
+            // Request authorization triggers callback where further handling occurs
+            manager.requestWhenInUseAuthorization()
         }
     }
         
@@ -203,3 +205,4 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     }
     */
 }
+

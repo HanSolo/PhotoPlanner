@@ -23,10 +23,10 @@ struct ContentView: View {
     @State private var isCameraMarkerDragging : Bool                   = false
     @State private var isMotifMarkerDragging  : Bool                   = false
     @State private var mapStyle               : MapStyle               = .standard
-    
     @State private var cameraViewVisible      : Bool                   = false
     @State private var lensViewVisible        : Bool                   = false
     @State private var datePickerVisible      : Bool                   = false
+    @State private var centerCameraPosition   : Bool                   = false
     
     @Query(sort: [SortDescriptor(\Camera.name, comparator: .localizedStandard)]) private var cameras: [Camera]
     @Query(sort: [SortDescriptor(\Lens.name, comparator: .localizedStandard)])   private var lenses : [Lens]
@@ -248,7 +248,7 @@ struct ContentView: View {
                         if newValue && self.cameraMarkerActive { self.cameraMarkerActive = false }
                     }
                 }
-                                                                                
+                                                           
                 Toggle(isOn: self.model.dofVisibleBinding) {
                     Image(systemName: "trapezoid.and.line.vertical")
                         .padding(7)
@@ -295,6 +295,22 @@ struct ContentView: View {
                 .toggleStyle(.button)
                 .buttonStyle(.glass)
                 .clipShape(Circle())
+                                                
+                Button {
+                    self.centerCameraPosition.toggle()
+                } label: {
+                    Image(systemName: "target")
+                        .font(Constants.REGULAR_FONT_24)
+                        .padding(7)
+                }
+                .frame(width: 44, height: 44)
+                .buttonStyle(.glass)
+                .clipShape(Circle())
+                .onChange(of: self.centerCameraPosition) {
+                    if self.model.cameraMarkerData != nil {
+                        self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: 1500))
+                    }
+                }
                 
                 Spacer()
                 
