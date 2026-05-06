@@ -20,64 +20,65 @@ struct OverlayView: View {
                 Canvas(opaque: false, colorMode: .linear, rendersAsynchronously: false) { ctx, size in
                     let fovData : FoVData? = self.model.fovData
                     if nil != fovData {
-                        let darkMode            : Bool                    = self.colorScheme == .dark
-                        let isLandscape         : Bool                    = UIDevice.current.orientation.isLandscape
-                        let width               : Double                  = size.width
-                        let height              : Double                  = size.height
-                        let minSize             : Double                  = isLandscape ? height : width
-                        let center              : CGPoint                 = CGPoint(x: width * 0.5, y: height * 0.5)
-                        let offsetX             : Double                  = 50.0
-                        let offsetY             : Double                  = 145.0
-                        let fovFill             : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_FILL_DARK   : Constants.FOV_FILL)
-                        let fovStroke           : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE)
-                        let cameraOrientation   : CameraOrientation       = fovData!.orientation
-                        let fovWidth            : Double                  = fovData!.fovWidth
-                        let fovHeight           : Double                  = fovData!.fovHeight
-                        let distance            : Double                  = fovData!.distance
-                        let fov                 : CGRect                  = CGRect(x: width - offsetX, y: height - offsetY, width: 36, height: 24)
-                        let fovText             :  Text                    = Text(verbatim: "\(String(format: fovWidth >= 10 ? "%.0f" : "%.1f", fovWidth))m x \(String(format: fovHeight >= 10 ? "%.0f" : "%.1f", fovHeight))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
-                        let distanceText        : Text                    = Text(verbatim: "← \(String(format: distance >= 10 ? "%.0f" : "%.1f", distance))m →").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
-                        let fovCenterX          : Double                  = width - offsetX + 18
-                        let fovCenterY          : Double                  = height - offsetY + 12
+                        let darkMode               : Bool                                 = self.colorScheme == .dark
+                        let isLandscape            : Bool                                 = UIDevice.current.orientation.isLandscape
+                        let width                  : Double                               = size.width
+                        let height                 : Double                               = size.height
+                        let minSize                : Double                               = isLandscape ? height : width
+                        let center                 : CGPoint                              = CGPoint(x: width * 0.5, y: height * 0.5)
+                        let offsetX                : Double                               = 50.0
+                        let offsetY                : Double                               = 145.0
+                        let fovFill                : GraphicsContext.Shading              = GraphicsContext.Shading.color(darkMode ? Constants.FOV_FILL_DARK   : Constants.FOV_FILL)
+                        let fovStroke              : GraphicsContext.Shading              = GraphicsContext.Shading.color(darkMode ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE)
+                        let cameraOrientation      : CameraOrientation                    = fovData!.orientation
+                        let fovWidth               : Double                               = fovData!.fovWidth
+                        let fovHeight              : Double                               = fovData!.fovHeight
+                        let distance               : Double                               = fovData!.distance
+                        let fov                    : CGRect                               = CGRect(x: width - offsetX, y: height - offsetY, width: 36, height: 24)
+                        let fovText                :  Text                                = Text(verbatim: "\(String(format: fovWidth >= 10 ? "%.0f" : "%.1f", fovWidth))m x \(String(format: fovHeight >= 10 ? "%.0f" : "%.1f", fovHeight))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
+                        let distanceText           : Text                                 = Text(verbatim: "← \(String(format: distance >= 10 ? "%.0f" : "%.1f", distance))m →").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
+                        let fovCenterX             : Double                               = width - offsetX + 18
+                        let fovCenterY             : Double                               = height - offsetY + 12
                         
-                        let bkgRect             : CGRect                  = CGRect(x: 10, y: height - 103, width: width - 20, height: 103)
+                        let bkgRect                : CGRect                               = CGRect(x: 10, y: height - 103, width: width - 20, height: 103)
+                        let lineWidth              : CGFloat                              = Constants.IS_IPAD ? 2.0 : 1.0
                         
-                        
-                        let eventTimes                  : Dictionary<String, Date>             = self.model.magicHours.getTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
-                        let eventAngles                 : Dictionary<String, (Double, Double)> = self.model.magicHours.getEventAngles(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
-                        let formatString                : String                               = self.model.metric ? Constants.TWENTY_FOUR_HOUR_FORMAT : Constants.TWELVE_HOUR_FORMAT
-                        let sunriseText                 : String                               = Helper.dateToString(fromDate: eventTimes[Constants.EPD_SUNRISE]!, formatString: formatString)
-                        let sunsetText                  : String                               = Helper.dateToString(fromDate: eventTimes[Constants.EPD_SUNSET]!, formatString: formatString)
-                        let sunIsUp                     : Bool                                 = self.model.currentMapDate >= eventTimes[Constants.EPD_SUNRISE]! && self.model.currentMapDate <= eventTimes[Constants.EPD_SUNSET]!
-                        //let moonIsUp                    : Bool                                 = now >= eventTimes[Constants.EPD_MOONRISE]! && now <= eventTimes[Constants.EPD_MOONSET]!
-                        let sunRiseSetColor             : Color                                = .orange
-                        let blueHourColor               : Color                                = .blue
-                        let goldenHourColor             : Color                                = Color(red: 1.0, green: 0.54, blue: 0.0)
-                        let sunColor                    : Color                                = sunIsUp ? .yellow : .yellow.opacity(0.3)
-                        let moonColor                   : Color                                = Color(red: 0.0, green: 0.44, blue: 1.0, opacity: 1.0)
-                        let sunTextAngleOffset          : Double                               = self.model.metric ? 9 : 12
-                        //let isDayLightSavingTime        : Bool                                 = TimeZone.current.isDaylightSavingTime()
-                        //let timeZoneOffset              : Int                                  = TimeZone.current.secondsFromGMT()
-                        var blueHourDawnAngle           : Double                               = 0.0
-                        var blueHourDawnEndAngle        : Double                               = 0.0
-                        var goldenHourDawnAngle         : Double                               = 0.0
-                        var goldenHourDawnEndAngle      : Double                               = 0.0
-                        var sunriseAngle                : Double                               = 0.0
-                        var sunsetAngle                 : Double                               = 0.0
-                        var goldenHourDuskAngle         : Double                               = 0.0
-                        var goldenHourDuskEndAngle      : Double                               = 0.0
-                        var blueHourDuskAngle           : Double                               = 0.0
-                        var blueHourDuskEndAngle        : Double                               = 0.0
+                        let eventTimes             : Dictionary<String, Date>             = self.model.magicHours.getTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
+                        let eventAngles            : Dictionary<String, (Double, Double)> = self.model.magicHours.getEventAngles(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
+                        let formatString           : String                               = self.model.metric ? Constants.TWENTY_FOUR_HOUR_FORMAT : Constants.TWELVE_HOUR_FORMAT
+                        let sunriseText            : String                               = Helper.dateToString(fromDate: eventTimes[Constants.EPD_SUNRISE]!, formatString: formatString)
+                        let sunsetText             : String                               = Helper.dateToString(fromDate: eventTimes[Constants.EPD_SUNSET]!, formatString: formatString)
+                        let sunIsUp                : Bool                                 = self.model.currentMapDate >= eventTimes[Constants.EPD_SUNRISE]! && self.model.currentMapDate <= eventTimes[Constants.EPD_SUNSET]!
+                        //let moonIsUp               : Bool                                 = now >= eventTimes[Constants.EPD_MOONRISE]! && now <= eventTimes[Constants.EPD_MOONSET]!
+                        let sunRiseSetColor        : Color                                = .orange
+                        let blueHourColor          : Color                                = .blue
+                        let goldenHourColor        : Color                                = Color(red: 1.0, green: 0.54, blue: 0.0)
+                        let sunColor               : Color                                = sunIsUp ? .yellow : .yellow.opacity(0.3)
+                        let moonColor              : Color                                = Color(red: 0.0, green: 0.44, blue: 1.0, opacity: 1.0)
+                        let sunTextAngleOffset     : Double                               = self.model.metric ? 9 : 12
+                        //let isDayLightSavingTime   : Bool                                 = TimeZone.current.isDaylightSavingTime()
+                        //let timeZoneOffset         : Int                                  = TimeZone.current.secondsFromGMT()
+                        var blueHourDawnAngle      : Double                               = 0.0
+                        var blueHourDawnEndAngle   : Double                               = 0.0
+                        var goldenHourDawnAngle    : Double                               = 0.0
+                        var goldenHourDawnEndAngle : Double                               = 0.0
+                        var sunriseAngle           : Double                               = 0.0
+                        var sunsetAngle            : Double                               = 0.0
+                        var goldenHourDuskAngle    : Double                               = 0.0
+                        var goldenHourDuskEndAngle : Double                               = 0.0
+                        var blueHourDuskAngle      : Double                               = 0.0
+                        var blueHourDuskEndAngle   : Double                               = 0.0
                                                 
-                        let minorDirectionFontSize      : Double                               = minSize * 0.03
-                        let minorDirectionFont          : Font                                 = Font.system(size: minorDirectionFontSize)
-                        let smallDegreeFontSize         : Double                               = minSize * 0.03
-                        let smallDegreeFont             : Font                                 = Font.system(size: smallDegreeFontSize)
-                        let textColor                   : Color                                = darkMode ? Constants.TEXT_DARK : Constants.TEXT_BRIGHT
+                        let minorDirectionFontSize : Double                               = minSize * 0.03
+                        let minorDirectionFont     : Font                                 = Font.system(size: minorDirectionFontSize)
+                        let smallDegreeFontSize    : Double                               = minSize * 0.03
+                        let smallDegreeFont        : Font                                 = Font.system(size: smallDegreeFontSize)
+                        let textColor              : Color                                = darkMode ? Constants.TEXT_DARK : Constants.TEXT_BRIGHT
                                                 
-                        let innerRingLineWidth          : Double                               = minSize * 0.0666666666
-                        let innerRingRadius             : Double                               = minSize * 0.25
-                        let outerRingRadius             : Double                               = innerRingRadius + innerRingLineWidth
+                        let innerRingLineWidth     : Double                               = minSize * 0.0666666666
+                        let innerRingRadius        : Double                               = minSize * 0.25
+                        let outerRingRadius        : Double                               = innerRingRadius + innerRingLineWidth
+                        
                         
                         for (event, angles) in eventAngles {
                             let angle   : Double = 180.0 - Helper.toDegrees(angles.0) - (self.model.currentMapHeading ?? 0.0)
@@ -133,6 +134,9 @@ struct OverlayView: View {
                         // Magic Hours
                         if self.model.epdVisible {
                             ctx.drawLayer { ctx1 in
+                                
+                                let eventLineWidth : CGFloat = Constants.IS_IPAD ? 2 : 1
+                                
                                 for(event, angles) in eventAngles {
                                     let angle : Double = 180.0 - Helper.toDegrees(angles.0) + (self.model.currentMapHeading ?? 0.0)
                                     
@@ -144,7 +148,6 @@ struct OverlayView: View {
                                     path.move(to: CGPoint(x: center.x, y: center.y - innerRingRadius))
                                     path.addLine(to: CGPoint(x: center.x, y: center.y - outerRingRadius))
                                     path.closeSubpath()
-                                    let eventLineWidth : CGFloat = Constants.IS_IPAD ? 2 : 1
                                     switch event {
                                         case Constants.EPD_SUNRISE :
                                             let text : Text = Text(verbatim: "\(sunriseText)").foregroundColor(textColor).font(minorDirectionFont)

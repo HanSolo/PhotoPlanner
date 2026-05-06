@@ -29,8 +29,12 @@ struct ContentView: View {
     @State private var helpViewVisible        : Bool                   = false
     @State private var centerCameraPosition   : Bool                   = false
     
+    
     @Query(sort: [SortDescriptor(\Camera.name, comparator: .localizedStandard)]) private var cameras: [Camera]
     @Query(sort: [SortDescriptor(\Lens.name, comparator: .localizedStandard)])   private var lenses : [Lens]
+    
+    let lineWidth    : CGFloat = Constants.IS_IPAD ? 1.0 : 0.5
+    let fovLineWidth : CGFloat = Constants.IS_IPAD ? 2.0 : 1.0
     
     
     var body: some View {
@@ -66,29 +70,28 @@ struct ContentView: View {
                                                 
                         if self.model.fovData != nil {
                             MapPolyline(points: [self.model.fovData!.cameraLocation, self.model.fovData!.motifLocation])
-                                .stroke(Constants.CENTER_LINE_STROKE, lineWidth: 0.5)
+                                .stroke(Constants.CENTER_LINE_STROKE, lineWidth: lineWidth)
                         }
                         
                         if self.model.lens.isPrime { // Prime lens
                             MapPolygon(coordinates: self.model.triangleCoordinates)
                                 .foregroundStyle(Color.clear)
-                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: 0.5)
+                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: fovLineWidth)
                         } else { // Zoom lens
                             MapPolygon(coordinates: self.model.triangleCoordinates)
                                 .foregroundStyle(self.colorScheme == .dark ? Constants.FOV_FILL_DARK : Constants.FOV_FILL)
-                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: 0.5)
+                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: fovLineWidth)
                             MapPolygon(coordinates: self.model.minTriangleCoordinates)
                                 .foregroundStyle(Color.clear)
-                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: 0.5)
-                            
+                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: lineWidth)                                            
                             MapPolygon(coordinates: self.model.maxTriangleCoordinates)
                                 .foregroundStyle(Color.clear)
-                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: 0.5)
+                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: lineWidth)
                         }
                         if self.model.dofVisible {
                             MapPolygon(coordinates: self.model.trapezoidCoordinates)
                                 .foregroundStyle(self.colorScheme == .dark ? Constants.DOF_FILL_DARK : Constants.DOF_FILL)
-                                .stroke(self.colorScheme == .dark ? Constants.DOF_STROKE_DARK : Constants.DOF_STROKE, lineWidth: 0.5)
+                                .stroke(self.colorScheme == .dark ? Constants.DOF_STROKE_DARK : Constants.DOF_STROKE, lineWidth: lineWidth)
                         }
                     }
                     .onTapGestureBugFix { type, location  in
