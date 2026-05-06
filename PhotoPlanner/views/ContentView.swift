@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var cameraViewVisible      : Bool                   = false
     @State private var lensViewVisible        : Bool                   = false
     @State private var datePickerVisible      : Bool                   = false
+    @State private var helpViewVisible        : Bool                   = false
     @State private var centerCameraPosition   : Bool                   = false
     
     @Query(sort: [SortDescriptor(\Camera.name, comparator: .localizedStandard)]) private var cameras: [Camera]
@@ -162,6 +163,10 @@ struct ContentView: View {
                     }
                 }
             }
+            
+            OverlayView()
+                .allowsHitTesting(false)
+            
             VStack(alignment: .leading, spacing: 10) {
                 Picker("", selection: self.model.currentMapStyleIndexBinding) {
                     Text("Std").tag(0)
@@ -248,7 +253,7 @@ struct ContentView: View {
                         if newValue && self.cameraMarkerActive { self.cameraMarkerActive = false }
                     }
                 }
-                                                           
+                                      
                 Toggle(isOn: self.model.dofVisibleBinding) {
                     Image(systemName: "trapezoid.and.line.vertical")
                         .padding(7)
@@ -314,6 +319,18 @@ struct ContentView: View {
                 
                 Spacer()
                 
+                Button {
+                    self.helpViewVisible = true
+                } label: {
+                    Image(systemName: "questionmark.circle")
+                        .font(Constants.REGULAR_FONT_24)
+                        .padding(7)
+                }
+                .frame(width: 44, height: 44)
+                .buttonStyle(.glass)
+                .clipShape(Circle())
+                .padding(EdgeInsets(top: 0, leading: 0, bottom: 40, trailing: 0))
+                
                 HStack(alignment: .bottom, spacing: 5) {
                     VStack {
                         Slider(value: self.model.apertureBinding, in: self.model.lens.minAperture...self.model.lens.maxAperture)
@@ -346,12 +363,16 @@ struct ContentView: View {
                             .font(Constants.REGULAR_FONT_14)
                     }
                 }
-                .padding(EdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5))
-                .background(self.colorScheme == .dark ? .black.opacity(0.5) : .white.opacity(0.5))
+                .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 5))
             }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
-            OverlayView()
-                .allowsHitTesting(false)
+            
+            if self.helpViewVisible {
+                HelpView()
+                    .onTapGesture {
+                        self.helpViewVisible = false
+                    }
+            }
         }
         .sheet(isPresented: $cameraViewVisible) {
             CameraView(cameras: self.cameras)

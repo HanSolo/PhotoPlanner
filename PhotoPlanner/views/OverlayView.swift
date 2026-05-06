@@ -26,21 +26,21 @@ struct OverlayView: View {
                         let height            : Double                  = size.height
                         let minSize           : Double                  = (width < height ? width : height) * (Constants.IS_IPAD ? isLandscape ? 0.85 : 0.9 : 0.96)
                         let center            : CGPoint                 = CGPoint(x: width * 0.5, y: height * 0.5)
-                        let offsetX           : Double                  = 100.0
-                        let offsetY           : Double                  = 170.0
+                        let offsetX           : Double                  = 50.0
+                        let offsetY           : Double                  = 145.0
                         let fovFill           : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_FILL_DARK   : Constants.FOV_FILL)
                         let fovStroke         : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE)
                         let cameraOrientation : CameraOrientation       = fovData!.orientation
                         let fovWidth          : Double                  = fovData!.fovWidth
                         let fovHeight         : Double                  = fovData!.fovHeight
                         let distance          : Double                  = fovData!.distance
-                        let fov               : CGRect                  = CGRect(x: width - offsetX, y: height - offsetY, width: 72, height: 48)
+                        let fov               : CGRect                  = CGRect(x: width - offsetX, y: height - offsetY, width: 36, height: 24)
                         let fovText           : Text                    = Text(verbatim: "\(String(format: fovWidth >= 10 ? "%.0f" : "%.1f", fovWidth))m x \(String(format: fovHeight >= 10 ? "%.0f" : "%.1f", fovHeight))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
                         let distanceText      : Text                    = Text(verbatim: "← \(String(format: distance >= 10 ? "%.0f" : "%.1f", distance))m →").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
-                        let fovCenterX        : Double                  = width - offsetX + 36
-                        let fovCenterY        : Double                  = height - offsetY + 24
+                        let fovCenterX        : Double                  = width - offsetX + 18
+                        let fovCenterY        : Double                  = height - offsetY + 12
                         
-                        let bkgRect           : CGRect                  = CGRect(x: 10, y: height - 110, width: width - 20, height: 30)
+                        let bkgRect           : CGRect                  = CGRect(x: 10, y: height - 103, width: width - 20, height: 103)
                         
                         
                         let eventTimes                  : Dictionary<String, Date>             = self.model.magicHours.getTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
@@ -120,14 +120,14 @@ struct OverlayView: View {
                             ctx.fill(Rectangle().path(in: fov), with: fovFill)
                             ctx.stroke(Rectangle().path(in: fov), with: fovStroke)
                         }
-                        ctx.draw(fovText, at: CGPoint(x: fovCenterX, y: height - offsetY + 75))
+                        ctx.draw(fovText, at: CGPoint(x: width - 60, y: height - offsetY + 60))
                         
                         if let cameraSymbol = ctx.resolveSymbol(id: 1) {
-                            ctx.draw(cameraSymbol, at: CGPoint(x: 50, y: height - offsetY + 75))
+                            ctx.draw(cameraSymbol, at: CGPoint(x: 50, y: height - offsetY + 60))
                         }
-                        ctx.draw(distanceText, at: CGPoint(x: 125, y: height - offsetY + 75))
+                        ctx.draw(distanceText, at: CGPoint(x: 125, y: height - offsetY + 60))
                         if let photoSymbol = ctx.resolveSymbol(id: 2) {
-                            ctx.draw(photoSymbol, at: CGPoint(x: 200, y: height - offsetY + 75))
+                            ctx.draw(photoSymbol, at: CGPoint(x: 200, y: height - offsetY + 60))
                         }
                         
                         
