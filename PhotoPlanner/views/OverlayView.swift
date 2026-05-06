@@ -20,27 +20,27 @@ struct OverlayView: View {
                 Canvas(opaque: false, colorMode: .linear, rendersAsynchronously: false) { ctx, size in
                     let fovData : FoVData? = self.model.fovData
                     if nil != fovData {
-                        let darkMode          : Bool                    = self.colorScheme == .dark
-                        let isLandscape       : Bool                    = UIDevice.current.orientation.isLandscape
-                        let width             : Double                  = size.width
-                        let height            : Double                  = size.height
-                        let minSize           : Double                  = (width < height ? width : height) * (Constants.IS_IPAD ? isLandscape ? 0.85 : 0.9 : 0.96)
-                        let center            : CGPoint                 = CGPoint(x: width * 0.5, y: height * 0.5)
-                        let offsetX           : Double                  = 50.0
-                        let offsetY           : Double                  = 145.0
-                        let fovFill           : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_FILL_DARK   : Constants.FOV_FILL)
-                        let fovStroke         : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE)
-                        let cameraOrientation : CameraOrientation       = fovData!.orientation
-                        let fovWidth          : Double                  = fovData!.fovWidth
-                        let fovHeight         : Double                  = fovData!.fovHeight
-                        let distance          : Double                  = fovData!.distance
-                        let fov               : CGRect                  = CGRect(x: width - offsetX, y: height - offsetY, width: 36, height: 24)
-                        let fovText           : Text                    = Text(verbatim: "\(String(format: fovWidth >= 10 ? "%.0f" : "%.1f", fovWidth))m x \(String(format: fovHeight >= 10 ? "%.0f" : "%.1f", fovHeight))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
-                        let distanceText      : Text                    = Text(verbatim: "← \(String(format: distance >= 10 ? "%.0f" : "%.1f", distance))m →").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
-                        let fovCenterX        : Double                  = width - offsetX + 18
-                        let fovCenterY        : Double                  = height - offsetY + 12
+                        let darkMode            : Bool                    = self.colorScheme == .dark
+                        let isLandscape         : Bool                    = UIDevice.current.orientation.isLandscape
+                        let width               : Double                  = size.width
+                        let height              : Double                  = size.height
+                        let minSize             : Double                  = isLandscape ? height : width
+                        let center              : CGPoint                 = CGPoint(x: width * 0.5, y: height * 0.5)
+                        let offsetX             : Double                  = 50.0
+                        let offsetY             : Double                  = 145.0
+                        let fovFill             : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_FILL_DARK   : Constants.FOV_FILL)
+                        let fovStroke           : GraphicsContext.Shading = GraphicsContext.Shading.color(darkMode ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE)
+                        let cameraOrientation   : CameraOrientation       = fovData!.orientation
+                        let fovWidth            : Double                  = fovData!.fovWidth
+                        let fovHeight           : Double                  = fovData!.fovHeight
+                        let distance            : Double                  = fovData!.distance
+                        let fov                 : CGRect                  = CGRect(x: width - offsetX, y: height - offsetY, width: 36, height: 24)
+                        let fovText             :  Text                    = Text(verbatim: "\(String(format: fovWidth >= 10 ? "%.0f" : "%.1f", fovWidth))m x \(String(format: fovHeight >= 10 ? "%.0f" : "%.1f", fovHeight))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
+                        let distanceText        : Text                    = Text(verbatim: "← \(String(format: distance >= 10 ? "%.0f" : "%.1f", distance))m →").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
+                        let fovCenterX          : Double                  = width - offsetX + 18
+                        let fovCenterY          : Double                  = height - offsetY + 12
                         
-                        let bkgRect           : CGRect                  = CGRect(x: 10, y: height - 103, width: width - 20, height: 103)
+                        let bkgRect             : CGRect                  = CGRect(x: 10, y: height - 103, width: width - 20, height: 103)
                         
                         
                         let eventTimes                  : Dictionary<String, Date>             = self.model.magicHours.getTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
@@ -74,11 +74,10 @@ struct OverlayView: View {
                         let smallDegreeFontSize         : Double                               = minSize * 0.03
                         let smallDegreeFont             : Font                                 = Font.system(size: smallDegreeFontSize)
                         let textColor                   : Color                                = darkMode ? Constants.TEXT_DARK : Constants.TEXT_BRIGHT
-                        
-                        let outerRingLineWidth          : Double                               = minSize * 0.1333333333
-                        let outerRingRadius             : Double                               = (minSize - (outerRingLineWidth * 0.5)) * 0.45
+                                                
                         let innerRingLineWidth          : Double                               = minSize * 0.0666666666
-                        let innerRingRadius             : Double                               = outerRingRadius - (outerRingLineWidth * 0.25) - innerRingLineWidth
+                        let innerRingRadius             : Double                               = minSize * 0.25
+                        let outerRingRadius             : Double                               = innerRingRadius + innerRingLineWidth
                         
                         for (event, angles) in eventAngles {
                             let angle   : Double = 180.0 - Helper.toDegrees(angles.0) - (self.model.currentMapHeading ?? 0.0)
@@ -140,38 +139,35 @@ struct OverlayView: View {
                                     ctx1.translateBy(x: center.x, y: center.y)
                                     ctx1.rotate(by: Angle(degrees: -angle))
                                     ctx1.translateBy(x: -center.x, y: -center.y)
-                                    
-                                    let innerRadiusOffset : Double = Constants.IS_IPAD ? 0.425 : 0.725
-                                    let outerRadiusOffset : Double = Constants.IS_IPAD ? 0.36 : 0.655
-                                    
+                                                                                                            
                                     var path: Path = Path()
-                                    path.move(to: CGPoint(x: center.x, y: minSize * outerRadiusOffset))
-                                    path.addLine(to: CGPoint(x: center.x, y: minSize * innerRadiusOffset))
+                                    path.move(to: CGPoint(x: center.x, y: center.y - innerRingRadius))
+                                    path.addLine(to: CGPoint(x: center.x, y: center.y - outerRingRadius))
                                     path.closeSubpath()
-                                    let textRadiusOffset : Double = Constants.IS_IPAD ? 0.34 : 0.625
+                                    let eventLineWidth : CGFloat = Constants.IS_IPAD ? 2 : 1
                                     switch event {
                                         case Constants.EPD_SUNRISE :
                                             let text : Text = Text(verbatim: "\(sunriseText)").foregroundColor(textColor).font(minorDirectionFont)
-                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(sunRiseSetColor), lineWidth: 1)
+                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(sunRiseSetColor), lineWidth: eventLineWidth)
                                             ctx1.drawLayer { ctx2 in
                                                 ctx2.translateBy(x: center.x, y: center.y)
                                                 ctx2.rotate(by: Angle(degrees: -sunTextAngleOffset))
                                                 ctx2.translateBy(x: -center.x, y: -center.y)
-                                                ctx2.draw(text, at: CGPoint(x: center.x, y: minSize * textRadiusOffset), anchor: .center)
+                                                ctx2.draw(text, at: CGPoint(x: center.x, y: center.y - outerRingRadius - minorDirectionFontSize), anchor: .center)
                                             }
                                         case Constants.EPD_SUNSET  :
                                             let text : Text = Text(verbatim: "\(sunsetText)").foregroundColor(textColor).font(minorDirectionFont)
-                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(sunRiseSetColor), lineWidth: 1)
+                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(sunRiseSetColor), lineWidth: eventLineWidth)
                                             ctx1.drawLayer { ctx2 in
                                                 ctx2.translateBy(x: center.x, y: center.y)
                                                 ctx2.rotate(by: Angle(degrees: +sunTextAngleOffset))
                                                 ctx2.translateBy(x: -center.x, y: -center.y)
-                                                ctx2.draw(text, at: CGPoint(x: center.x, y: minSize * textRadiusOffset), anchor: .center)
+                                                ctx2.draw(text, at: CGPoint(x: center.x, y: center.y - outerRingRadius - minorDirectionFontSize), anchor: .center)
                                             }
                                         case Constants.EPD_SUN     :
-                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(sunColor), lineWidth: 1)
+                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(sunColor), lineWidth: eventLineWidth)
                                         case Constants.EPD_MOON    :
-                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(moonColor), lineWidth: 1)
+                                            ctx1.stroke(path, with: GraphicsContext.Shading.color(moonColor), lineWidth: eventLineWidth)
                                         default                    : break
                                     }
                                     
@@ -182,33 +178,33 @@ struct OverlayView: View {
 
                                 // Draw daylight arc
                                 var sunPath: Path = Path()
-                                sunPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius - innerRingLineWidth * 0.5, startAngle: .degrees(sunriseAngle - 90.0), endAngle: .degrees(sunsetAngle - 90.0), clockwise: true)
+                                sunPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(sunriseAngle - 90.0), endAngle: .degrees(sunsetAngle - 90.0), clockwise: true)
                                 ctx1.stroke(sunPath, with: GraphicsContext.Shading.color(sunRiseSetColor), lineWidth: 1)
                                 if sunIsUp {
                                     var sunIsUpPath: Path = Path()
-                                    sunIsUpPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(sunriseAngle - 90.0), endAngle: .degrees(sunsetAngle - 90.0), clockwise: true)
-                                    ctx1.stroke(sunIsUpPath, with: GraphicsContext.Shading.color(sunColor.opacity(0.1)), lineWidth: innerRingLineWidth)
+                                    sunIsUpPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius + innerRingLineWidth * 0.5, startAngle: .degrees(sunriseAngle - 90.0), endAngle: .degrees(sunsetAngle - 90.0), clockwise: true)
+                                    ctx1.stroke(sunIsUpPath, with: GraphicsContext.Shading.color(sunColor.opacity(0.15)), lineWidth: innerRingLineWidth)
                                 }
                                 
                                 // Draw blue hour dawn
                                 var blueHourDawnPath: Path = Path()
-                                blueHourDawnPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(blueHourDawnAngle - 90.0), endAngle: .degrees(blueHourDawnEndAngle - 90.0), clockwise: true)
+                                blueHourDawnPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius + innerRingLineWidth * 0.5, startAngle: .degrees(blueHourDawnAngle - 90.0), endAngle: .degrees(blueHourDawnEndAngle - 90.0), clockwise: true)
                                 ctx1.stroke(blueHourDawnPath, with: GraphicsContext.Shading.color(blueHourColor.opacity(0.4)), lineWidth: innerRingLineWidth)
                                 
                                 // Draw golden hour dawn
                                 var goldenHourDawnPath: Path = Path()
-                                goldenHourDawnPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(goldenHourDawnAngle - 90.0), endAngle: .degrees(goldenHourDawnEndAngle - 90.0), clockwise: true)
+                                goldenHourDawnPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius + innerRingLineWidth * 0.5, startAngle: .degrees(goldenHourDawnAngle - 90.0), endAngle: .degrees(goldenHourDawnEndAngle - 90.0), clockwise: true)
                                 ctx1.stroke(goldenHourDawnPath, with: GraphicsContext.Shading.color(goldenHourColor.opacity(0.4)), lineWidth: innerRingLineWidth)
                                 
                                 
                                 // Draw blue hour dusk
                                 var blueHourDuskPath: Path = Path()
-                                blueHourDuskPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(blueHourDuskAngle - 90.0), endAngle: .degrees(blueHourDuskEndAngle - 90.0), clockwise: true)
+                                blueHourDuskPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius + innerRingLineWidth * 0.5, startAngle: .degrees(blueHourDuskAngle - 90.0), endAngle: .degrees(blueHourDuskEndAngle - 90.0), clockwise: true)
                                 ctx1.stroke(blueHourDuskPath, with: GraphicsContext.Shading.color(blueHourColor.opacity(0.4)), lineWidth: innerRingLineWidth)
                                 
                                 // Draw golden hour dusk
                                 var goldenHourDuskPath: Path = Path()
-                                goldenHourDuskPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius, startAngle: .degrees(goldenHourDuskAngle - 90.0), endAngle: .degrees(goldenHourDuskEndAngle - 90.0), clockwise: true)
+                                goldenHourDuskPath.addArc(center: CGPoint(x: center.x, y: center.y), radius: innerRingRadius + innerRingLineWidth * 0.5, startAngle: .degrees(goldenHourDuskAngle - 90.0), endAngle: .degrees(goldenHourDuskEndAngle - 90.0), clockwise: true)
                                 ctx1.stroke(goldenHourDuskPath, with: GraphicsContext.Shading.color(goldenHourColor.opacity(0.4)), lineWidth: innerRingLineWidth)
                             }
                             
@@ -219,14 +215,13 @@ struct OverlayView: View {
                                 ctx1.translateBy(x: -center.x, y: -center.y)
                                 
                                 // Draw hours of day 15°
-                                let radiusOffset: Double                               = Constants.IS_IPAD ? 0.45 : 0.75
                                 let calendar    : Calendar                             = Calendar.current
                                 for hour in stride(from: 0, to: 24, by: 1) {
                                     let tmpDate : Date                                 = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: calendar.startOfDay(for: self.model.currentMapDate))!
                                     let angles  : Dictionary<String, (Double, Double)> = self.model.magicHours.getEventAngles(date: tmpDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
                                     let text    : Text                                 = Text(verbatim: "\(hour)").font(smallDegreeFont).foregroundColor(textColor)
                                     let angle   : Double                               = 180.0 + Helper.toDegrees(angles[Constants.EPD_SUN]!.0) - (self.model.currentMapHeading ?? 0.0)
-                                    let xy      : (Double, Double)                     = Helper.rotatePointAroundRotationCenter(x: center.x, y: minSize * radiusOffset, rotationCenterX: center.x, rotationCenterY: center.y, angleDeg: angle + (self.model.currentMapHeading ?? 0.0))
+                                    let xy      : (Double, Double)                     = Helper.rotatePointAroundRotationCenter(x: center.x, y: center.y + innerRingRadius - smallDegreeFontSize, rotationCenterX: center.x, rotationCenterY: center.y, angleDeg: angle + (self.model.currentMapHeading ?? 0.0))
                                     ctx1.drawLayer { ctx2 in
                                         ctx2.translateBy(x: xy.0, y: xy.1)
                                         ctx2.rotate(by: Angle(degrees: angle + (self.model.currentMapHeading ?? 0.0)))
