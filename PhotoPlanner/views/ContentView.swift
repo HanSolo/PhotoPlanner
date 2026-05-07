@@ -159,9 +159,7 @@ struct ContentView: View {
                         MapCompass()
                     }
                     .mapStyle(self.mapStyle)
-                    .onAppear {
-                        self.model.cameraMarkerData = MarkerData(coordinate: Constants.DEFAULT_LOCATION.coordinate, screenPoint: CGPoint(x: geo.size.width / 2, y: geo.size.height / 2))
-                        self.model.motifMarkerData  = MarkerData(coordinate: Constants.DEFAULT_LOCATION.coordinate, screenPoint: CGPoint(x: geo.size.width / 2, y: geo.size.height / 2))
+                    .onAppear {                        
                         self.model.checkIfLocationIsEnabled()
                     }
                 }
@@ -399,10 +397,10 @@ struct ContentView: View {
             let motifPoint           : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: savedMotifLatitude, longitude: savedMotifLongitude))
             
             self.model.camera         = cameras.filter({ $0.id == savedCameraId }).first ?? Constants.DEFAULT_CAMERA
-            self.model.lens           = lenses.filter( { $0.id == savedLensId }).first ?? Constants.DEFAULT_LENS
+            self.model.lens           = lenses.filter({ $0.id == savedLensId }).first ?? Constants.DEFAULT_LENS
             self.model.aperture       = savedAperture
             self.model.focalLength    = savedFocalLength
-                        
+                                    
             self.model.cameraMarkerData = MarkerData(coordinate: cameraPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
             self.model.motifMarkerData  = MarkerData(coordinate: motifPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
             self.model.updateFoVTriangle(cameraPoint: cameraPoint, motifPoint: motifPoint, focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)

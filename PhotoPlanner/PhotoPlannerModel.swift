@@ -85,7 +85,6 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     
 
     override init() {
-        //Task { await requestAuthorization() }
         super.init()
         self.sunTimes  = self.magicHours.getTimes(date: self.currentMapDate, lat: self.currentMapLocation?.latitude ?? 0.0, lon: self.currentMapLocation?.longitude ?? 0.0)
         self.moonTimes = self.magicHours.getMoonTimes(date: self.currentMapDate, lat: self.currentMapLocation?.latitude ?? 0.0, lon: self.currentMapLocation?.longitude ?? 0.0)
@@ -98,9 +97,6 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
         
         do {
             self.fovData = try Helper.calc(camera: cameraPoint, motif: motifPoint, focalLengthInMM: focalLength, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
-            //Helper.setInfoLabel(label: distanceLabel!, image: UIImage(systemName: "arrow.up.left.and.arrow.down.right")!, imageColor: Constants.YELLOW, size: CGSize(width: 12, height: 12), text: "Distance: ", value1: fovData?.distance ?? 0, decimals1: 1, unit1: Constants.UNIT_LENGTH)
-            //Helper.setInfoLabel(label: widthLabel!, image: UIImage(named: "width.png")!, imageColor: Constants.YELLOW, size: CGSize(width: 12, height: 12), text: "Width: ", value1: fovData?.fovWidth ?? 0, decimals1: 1, unit1: Constants.UNIT_LENGTH, value2: Helper.toDegrees(radians: fovData?.fovWidthAngle ?? 0), decimals2: 1, unit2: Constants.UNIT_ANGLE)
-            //Helper.setInfoLabel(label: heightLabel!, image: UIImage(named: "height.png")!, imageColor: Constants.YELLOW, size: CGSize(width: 12, height: 12), text: "Height: ", value1: fovData?.fovHeight ?? 0, decimals1: 1, unit1: Constants.UNIT_LENGTH, value2: Helper.toDegrees(radians: fovData?.fovHeightAngle ?? 0), decimals2: 1, unit2: Constants.UNIT_ANGLE)
         } catch {
             print(error)
         }
@@ -189,20 +185,5 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
             manager.requestWhenInUseAuthorization()
         }
     }
-        
-
-    /*
-    func requestAuthorization() async {
-        do {
-            let success = try await HealthKitManager.shared.requestAuthorization()
-                self.isAuthorized = success
-            if success {
-                await fetchAllHealthData()
-            }
-        } catch {
-            self.errorMessage = error.localizedDescription
-        }
-    }
-    */
 }
 

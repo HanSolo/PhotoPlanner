@@ -216,14 +216,14 @@ struct OverlayView: View {
                                 ctx1.translateBy(x: center.x, y: center.y)
                                 ctx1.rotate(by: Angle(degrees: -(self.model.currentMapHeading ?? 0.0)))
                                 ctx1.translateBy(x: -center.x, y: -center.y)
-                                
+                                                                                                
                                 // Draw hours of day 15°
                                 let calendar    : Calendar                             = Calendar.current
                                 for hour in stride(from: 0, to: 24, by: 1) {
-                                    let tmpDate : Date                                 = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: calendar.startOfDay(for: self.model.currentMapDate))!
+                                    let tmpDate : Date                                 = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: self.model.currentMapDate)!
                                     let angles  : Dictionary<String, (Double, Double)> = self.model.magicHours.getEventAngles(date: tmpDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
                                     let text    : Text                                 = Text(verbatim: "\(hour)").font(smallDegreeFont).foregroundColor(textColor)
-                                    let angle   : Double                               = 180.0 + Helper.toDegrees(angles[Constants.EPD_SUN]!.0) - (self.model.currentMapHeading ?? 0.0)
+                                    let angle   : Double                               = Helper.toDegrees(angles[Constants.EPD_SUN]!.0) - (self.model.currentMapHeading ?? 0.0)
                                     let xy      : (Double, Double)                     = Helper.rotatePointAroundRotationCenter(x: center.x, y: center.y + innerRingRadius - smallDegreeFontSize, rotationCenterX: center.x, rotationCenterY: center.y, angleDeg: angle + (self.model.currentMapHeading ?? 0.0))
                                     ctx1.drawLayer { ctx2 in
                                         ctx2.translateBy(x: xy.0, y: xy.1)
