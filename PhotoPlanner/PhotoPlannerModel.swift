@@ -16,6 +16,8 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var locationManager             : CLLocationManager?
     var mapRegion                   : MKCoordinateRegion?
     
+    var networkMonitor              : NetworkMonitor           = NetworkMonitor()
+    var elevationService            : ElevationService         = ElevationService()
     var camera                      : Camera                   = Constants.DEFAULT_CAMERA {
         didSet {
             Properties.instance.cameraId = self.camera.id            
@@ -82,6 +84,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var magicHours                  : MagicHours               = MagicHours()
     var sunTimes                    : Dictionary<String, Date> = [:]
     var moonTimes                   : Dictionary<String, Date> = [:]
+    var elevationProfile            : ElevationProfile?
     
 
     override init() {
@@ -142,6 +145,15 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     }
     
     
+    func getElevation() async {
+        if self.networkMonitor.isConnectedToInternet && self.fovData != nil{
+            do {
+                self.elevationProfile = try await elevationService.elevationProfile(from: self.fovData!.cameraLocation.coordinate, to: self.fovData!.motifLocation.coordinate, interval: 50, cameraHeight: Constants.DEFAULT_OBSERVER_HEIGHT, motifHeight: 0.0)
+            } catch {
+                print("Failed: \(error.localizedDescription)")
+            }
+        }
+    }
     
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         // Handle authorization and update location-related state here, called on main thread.

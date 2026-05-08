@@ -27,6 +27,7 @@ struct ContentView: View {
     @State private var lensViewVisible        : Bool                   = false
     @State private var datePickerVisible      : Bool                   = false
     @State private var helpViewVisible        : Bool                   = false
+    @State private var elevationViewVisible   : Bool                   = false
     @State private var centerCameraPosition   : Bool                   = false
     
     
@@ -301,6 +302,22 @@ struct ContentView: View {
                 .toggleStyle(.button)
                 .buttonStyle(.glass)
                 .clipShape(Circle())
+                
+                Toggle(isOn: self.$elevationViewVisible) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .padding(7)
+                }
+                .frame(width: 44, height: 44)
+                .toggleStyle(.button)
+                .buttonStyle(.glass)
+                .clipShape(Circle())
+                .onChange(of: self.elevationViewVisible) {
+                    if self.elevationViewVisible {
+                        Task {
+                            await self.model.getElevation()
+                        }
+                    }
+                }
                                                 
                 Button {
                     self.centerCameraPosition.toggle()
@@ -367,6 +384,10 @@ struct ContentView: View {
                 .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 5))
             }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+            
+            if self.elevationViewVisible {
+                ElevationProfileView(profile: self.model.elevationProfile)
+            }
             
             if self.helpViewVisible {
                 HelpView()
