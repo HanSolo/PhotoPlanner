@@ -9,22 +9,22 @@ import SwiftUI
 
 
 struct ElevationProfileView: View {
+    @Environment(\.colorScheme) private var colorScheme
     let profile: ElevationProfile?
 
     var body: some View {        
         GeometryReader { geometry in
             Canvas { ctx, size in
+                let darkMode : Bool = self.colorScheme == .dark
                 
                 if self.profile == nil { return }
                 
                 guard profile!.points.count >= 2 else { return }
 
-                let elevations   = profile!.points.map(\.elevation)
-                let minElevation = elevations.min()!
-                // Make sure the camera and motif eye points are included in
-                // the vertical scale even if they sit above the terrain
-                let maxElevation = max(elevations.max()!, profile!.cameraEyeAltitude, profile!.motifAltitude)
-                let range = max(maxElevation - minElevation, 1)
+                let elevations   : [Double] = profile!.points.map(\.elevation)
+                let minElevation : Double   = elevations.min()!
+                let maxElevation : Double   = max(elevations.max()!, profile!.cameraEyeAltitude, profile!.motifAltitude)
+                let range        : Double   = max(maxElevation - minElevation, 1)
 
                 func x(for index: Int) -> CGFloat {
                     CGFloat(index) / CGFloat(profile!.points.count - 1) * size.width
@@ -68,7 +68,7 @@ struct ElevationProfileView: View {
                 losPath.addLine(to: motifPoint)
 
                 // Red if blocked, orange if clear
-                let losColor: Color = profile!.hasLineOfSight ? .orange : .red
+                let losColor: Color = profile!.hasLineOfSight ? .white : .red
                 ctx.stroke(
                     losPath,
                     with: .color(losColor.opacity(0.8)),
@@ -82,6 +82,14 @@ struct ElevationProfileView: View {
                 // Motif pin at motif height
                 ctx.fill(Path(ellipseIn: CGRect(x: motifPoint.x - 3, y: motifPoint.y - 3, width: 6, height: 6)),with: .color(.white))
                 ctx.stroke(Path(ellipseIn: CGRect(x: motifPoint.x - 3, y: motifPoint.y - 3, width: 6, height: 6)),with: .color(.blue), lineWidth: 1.5)
+                
+                let fontSize       : Double = 10
+                let font           : Font   = Font.system(size: fontSize)
+                let textColor      : Color  = darkMode ? Constants.TEXT_DARK : Constants.TEXT_BRIGHT
+                let cameraAltitude : Text   = Text(verbatim: "\(String(format: profile!.cameraEyeAltitude >= 10 ? "%.0f" : "%.1f", profile!.cameraEyeAltitude))m").font(font).foregroundColor(textColor)
+                let motifAltitude  : Text   = Text(verbatim: "\(String(format: profile!.motifAltitude >= 10 ? "%.0f" : "%.1f", profile!.motifAltitude))m").font(font).foregroundColor(textColor)
+                ctx.draw(cameraAltitude, at: CGPoint(x: cameraPoint.x + 5, y: size.height - fontSize * 1.5))
+                ctx.draw(motifAltitude, at: CGPoint(x: motifPoint.x, y: size.height - (size.height / 2)))
                 
                 // Draw line for surface
                 var surface : Path = Path()

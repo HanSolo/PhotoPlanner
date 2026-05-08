@@ -41,7 +41,7 @@ struct OverlayView: View {
                         let fovCenterY             : Double                               = height - offsetY + 12
                         
                         let bkgRect                : CGRect                               = CGRect(x: 10, y: height - 103, width: width - 20, height: 103)
-                        let lineWidth              : CGFloat                              = Constants.IS_IPAD ? 2.0 : 1.0
+                        //let lineWidth              : CGFloat                              = Constants.IS_IPAD ? 2.0 : 1.0
                         
                         let eventTimes             : Dictionary<String, Date>             = self.model.magicHours.getTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
                         let eventAngles            : Dictionary<String, (Double, Double)> = self.model.magicHours.getEventAngles(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
