@@ -305,12 +305,13 @@ struct ContentView: View {
                 
                 Toggle(isOn: self.$elevationViewVisible) {
                     Image(systemName: "chart.line.uptrend.xyaxis")
-                        .padding(7)
+                        .padding(10)
                 }
                 .frame(width: 44, height: 44)
                 .toggleStyle(.button)
                 .buttonStyle(.glass)
                 .clipShape(Circle())
+                .disabled(!self.model.networkMonitor.isConnected || self.model.fovData?.distance ?? 0 >= 4000)
                 .onChange(of: self.elevationViewVisible) {
                     if self.elevationViewVisible {
                         Task {
@@ -347,7 +348,7 @@ struct ContentView: View {
                 .frame(width: 44, height: 44)
                 .buttonStyle(.glass)
                 .clipShape(Circle())
-                .padding(EdgeInsets(top: 0, leading: 0, bottom: 40, trailing: 0))
+                .padding(EdgeInsets(top: 0, leading: 0, bottom: 90, trailing: 0))
                 
                 HStack(alignment: .bottom, spacing: 5) {
                     VStack {

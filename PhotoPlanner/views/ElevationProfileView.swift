@@ -88,8 +88,8 @@ struct ElevationProfileView: View {
                 let textColor      : Color  = darkMode ? Constants.TEXT_DARK : Constants.TEXT_BRIGHT
                 let cameraAltitude : Text   = Text(verbatim: "\(String(format: profile!.cameraEyeAltitude >= 10 ? "%.0f" : "%.1f", profile!.cameraEyeAltitude))m").font(font).foregroundColor(textColor)
                 let motifAltitude  : Text   = Text(verbatim: "\(String(format: profile!.motifAltitude >= 10 ? "%.0f" : "%.1f", profile!.motifAltitude))m").font(font).foregroundColor(textColor)
-                ctx.draw(cameraAltitude, at: CGPoint(x: cameraPoint.x + 5, y: size.height - fontSize * 1.5))
-                ctx.draw(motifAltitude, at: CGPoint(x: motifPoint.x, y: size.height - (size.height / 2)))
+                ctx.draw(cameraAltitude, at: CGPoint(x: cameraPoint.x + 5, y: size.height - fontSize * 1.5), anchor: .leading)
+                ctx.draw(motifAltitude, at: CGPoint(x: motifPoint.x - 5, y: size.height - fontSize * 1.5), anchor: .trailing)
                 
                 // Draw line for surface
                 var surface : Path = Path()

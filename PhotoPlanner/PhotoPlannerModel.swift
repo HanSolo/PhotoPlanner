@@ -101,7 +101,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
         do {
             self.fovData = try Helper.calc(camera: cameraPoint, motif: motifPoint, focalLengthInMM: focalLength, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
         } catch {
-            print(error)
+            debugPrint(error)
         }
                 
         // Update FoV Triangle
@@ -150,7 +150,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
             do {
                 self.elevationProfile = try await elevationService.elevationProfile(from: self.fovData!.cameraLocation.coordinate, to: self.fovData!.motifLocation.coordinate, interval: 50, cameraHeight: Constants.DEFAULT_OBSERVER_HEIGHT, motifHeight: 0.0)
             } catch {
-                print("Failed: \(error.localizedDescription)")
+                debugPrint("Failed: \(error.localizedDescription)")
             }
         }
     }
@@ -172,11 +172,11 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
         }
         switch location.authorizationStatus {
         case .notDetermined:
-            print("Location authorization is not determined.")
+            debugPrint("Location authorization is not determined.")
         case .restricted:
-            print("Location is restricted.")
+            debugPrint("Location is restricted.")
         case .denied:
-            print("Location permission denied.")
+            debugPrint("Location permission denied.")
         case .authorizedAlways, .authorizedWhenInUse:
             // Update map region with user's location
             if let location = location.location {

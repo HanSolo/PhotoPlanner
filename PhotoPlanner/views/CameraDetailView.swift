@@ -64,7 +64,7 @@ struct CameraDetailView: View {
                         self.model.camera = camera
                     }
                 } catch {
-                    print(error.localizedDescription)
+                    debugPrint(error.localizedDescription)
                 }
                 dismiss()
             }

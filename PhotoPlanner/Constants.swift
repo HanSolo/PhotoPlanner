@@ -73,7 +73,7 @@ public class Constants {
     public static let FOV_FILL_DARK                  : Color       = FOV_COLOR.opacity(0.3)
     public static let FOV_STROKE_DARK                : Color       = Color.white
     public static let DOF_COLOR_DARK                 : Color       = Color.pink
-    public static let DOF_FILL_DARK                  : Color       = DOF_COLOR.opacity(0.1)
+    public static let DOF_FILL_DARK                  : Color       = DOF_COLOR.opacity(0.15)
     public static let DOF_STROKE_DARK                : Color       = DOF_COLOR
     public static let CENTER_LINE_STROKE_DARK        : Color       = Color.white
     public static let TEXT_DARK                      : Color       = Color.white.opacity(0.75)
@@ -83,7 +83,7 @@ public class Constants {
     public static let FOV_FILL                       : Color       = FOV_COLOR.opacity(0.3)
     public static let FOV_STROKE                     : Color       = Color.black
     public static let DOF_COLOR                      : Color       = Color.pink
-    public static let DOF_FILL                       : Color       = DOF_COLOR.opacity(0.1)
+    public static let DOF_FILL                       : Color       = DOF_COLOR.opacity(0.15)
     public static let DOF_STROKE                     : Color       = DOF_COLOR
     public static let CENTER_LINE_STROKE             : Color       = Color.black
         

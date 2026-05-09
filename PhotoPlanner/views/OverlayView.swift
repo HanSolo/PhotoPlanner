@@ -35,7 +35,7 @@ struct OverlayView: View {
                         let fovHeight              : Double                               = fovData!.fovHeight
                         let distance               : Double                               = fovData!.distance
                         let fov                    : CGRect                               = CGRect(x: width - offsetX, y: height - offsetY, width: 36, height: 24)
-                        let fovText                :  Text                                = Text(verbatim: "\(String(format: fovWidth >= 10 ? "%.0f" : "%.1f", fovWidth))m x \(String(format: fovHeight >= 10 ? "%.0f" : "%.1f", fovHeight))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
+                        let fovText                : Text                                 = Text(verbatim: "\(String(format: fovWidth >= 10 ? "%.0f" : "%.1f", fovWidth))m x \(String(format: fovHeight >= 10 ? "%.0f" : "%.1f", fovHeight))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
                         let distanceText           : Text                                 = Text(verbatim: "← \(String(format: distance >= 10 ? "%.0f" : "%.1f", distance))m →").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
                         let fovCenterX             : Double                               = width - offsetX + 18
                         let fovCenterY             : Double                               = height - offsetY + 12
@@ -120,14 +120,14 @@ struct OverlayView: View {
                             ctx.fill(Rectangle().path(in: fov), with: fovFill)
                             ctx.stroke(Rectangle().path(in: fov), with: fovStroke)
                         }
-                        ctx.draw(fovText, at: CGPoint(x: width - 60, y: height - offsetY + 60))
+                        ctx.draw(fovText, at: CGPoint(x: width - 20, y: height - offsetY + 60), anchor: .trailing)
                         
                         if let cameraSymbol = ctx.resolveSymbol(id: 1) {
-                            ctx.draw(cameraSymbol, at: CGPoint(x: 50, y: height - offsetY + 60))
+                            ctx.draw(cameraSymbol, at: CGPoint(x: 20, y: height - offsetY + 60), anchor: .leading)
                         }
-                        ctx.draw(distanceText, at: CGPoint(x: 125, y: height - offsetY + 60))
+                        ctx.draw(distanceText, at: CGPoint(x: 102, y: height - offsetY + 60), anchor: .center)
                         if let photoSymbol = ctx.resolveSymbol(id: 2) {
-                            ctx.draw(photoSymbol, at: CGPoint(x: 200, y: height - offsetY + 60))
+                            ctx.draw(photoSymbol, at: CGPoint(x: 160, y: height - offsetY + 60), anchor: .leading)
                         }
                         
                         

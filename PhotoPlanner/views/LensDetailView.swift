@@ -138,7 +138,7 @@ struct LensDetailView: View {
                         self.model.lens = lens
                     }
                 } catch {
-                    print(error.localizedDescription)
+                    debugPrint(error.localizedDescription)
                 }
                 dismiss()
             }

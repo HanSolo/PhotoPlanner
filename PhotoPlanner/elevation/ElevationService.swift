@@ -52,39 +52,33 @@ actor ElevationService {
     }
     
     private func fetchChunk(for coordinates: [CLLocationCoordinate2D]) async throws -> [ElevationPoint] {
-        guard let url = URL(string: baseURL) else { throw ElevationError.invalidURL }
-
-        // OpenTopoData expects: "locations=lat,lon|lat,lon|..."
+        //guard let url = URL(string: baseURL) else { throw ElevationError.invalidURL }
         let locationString = coordinates.map { "\($0.latitude),\($0.longitude)" }.joined(separator: "|")
 
         var components = URLComponents(string: baseURL)!
         components.queryItems = [URLQueryItem(name: "locations", value: locationString)]
 
-        var request = URLRequest(url: components.url!)
+        var request : URLRequest = URLRequest(url: components.url!)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        // Free tier limit: max 100 locations per request, 1 req/sec
         request.timeoutInterval = 30
 
         let (data, response) = try await session.data(for: request)
-
-        if let responseString = String(data: data, encoding: .utf8) {
-            print("Response: \(responseString)")
-        }
+        //if let responseString = String(data: data, encoding: .utf8) { debugPrint(responseString) }
 
         guard (response as? HTTPURLResponse)?.statusCode == 200 else {
             throw ElevationError.invalidResponse
         }
-
-        // OpenTopoData response shape:
-        // {"status":"OK","results":[{"elevation":423.0,"location":{"lat":47.55,"lng":7.58}},...]}
+        
         struct OpenTopoResponse: Decodable {
             let status  : String
             let results : [Result]
+            
             struct Result  : Decodable {
                 let elevation : Double
                 let location  : Location
             }
+            
             struct Location: Decodable {
                 let lat : Double
                 let lng : Double
@@ -98,10 +92,9 @@ actor ElevationService {
         }
     }
 
-
     func elevationProfile(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D, interval: CLLocationDistance = 100, cameraHeight: Double = 1.5, motifHeight: Double = 0.0) async throws -> ElevationProfile {
-            let coordinates = interpolatedCoordinates(from: start, to: end, interval: interval)
-            let points      = try await fetchElevations(for: coordinates)
+            let coordinates : [CLLocationCoordinate2D] = interpolatedCoordinates(from: start, to: end, interval: interval)
+            let points      : [ElevationPoint]         = try await fetchElevations(for: coordinates)
             return ElevationProfile(points: points, cameraHeight: cameraHeight, motifHeight: motifHeight)
         }
 }

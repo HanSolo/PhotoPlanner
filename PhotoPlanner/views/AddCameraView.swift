@@ -59,7 +59,7 @@ struct AddCameraView: View {
                 do {
                     try context.save()
                 } catch {
-                    print(error.localizedDescription)
+                    debugPrint(error.localizedDescription)
                 }
                 dismiss()
             }
