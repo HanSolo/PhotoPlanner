@@ -254,7 +254,7 @@ struct ContentView: View {
                     .clipShape(Circle())
                     
                     Spacer()
-                
+                    
                     Toggle(isOn: $motifMarkerActive) {
                         Image(systemName: "photo.circle")
                             .font(Constants.REGULAR_FONT_24)
@@ -268,36 +268,21 @@ struct ContentView: View {
                         if newValue && self.cameraMarkerActive { self.cameraMarkerActive = false }
                     }
                 }
-                           
-                HStack {
-                    Toggle(isOn: self.model.dofVisibleBinding) {
-                        Image(systemName: "trapezoid.and.line.vertical")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.model.dofVisible) { oldValue, newValue in
-                        if newValue {
-                            self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        self.teleconverterViewVisible = true
-                    } label: {
-                        Image(systemName: "t.circle")
-                            .font(Constants.REGULAR_FONT_24)
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
+                
+                Toggle(isOn: self.model.dofVisibleBinding) {
+                    Image(systemName: "trapezoid.and.line.vertical")
+                        .padding(7)
                 }
-                                                                                
+                .frame(width: 44, height: 44)
+                .toggleStyle(.button)
+                .buttonStyle(.glass)
+                .clipShape(Circle())
+                .onChange(of: self.model.dofVisible) { oldValue, newValue in
+                    if newValue {
+                        self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
+                    }
+                }
+                
                 Toggle(isOn: $isPortrait) {
                     Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90.camera")
                         .padding(7)
@@ -320,7 +305,7 @@ struct ContentView: View {
                 .frame(width: 44, height: 44)
                 .toggleStyle(.button)
                 .buttonStyle(.glass)
-                .clipShape(Circle())    
+                .clipShape(Circle())
                 
                 Toggle(isOn: self.model.epdVisibleBinding) {
                     Image(systemName: "sun.max")
@@ -347,7 +332,7 @@ struct ContentView: View {
                         }
                     }
                 }
-                                                
+                
                 Button {
                     self.centerCameraPosition.toggle()
                 } label: {
@@ -366,22 +351,36 @@ struct ContentView: View {
                 
                 Spacer()
                 
-                Button {
-                    self.helpViewVisible = true
-                } label: {
-                    Image(systemName: "questionmark.circle")
-                        .font(Constants.REGULAR_FONT_24)
-                        .padding(7)
+                HStack {
+                    Button {
+                        self.helpViewVisible = true
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .font(Constants.REGULAR_FONT_24)
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    
+                    Spacer()
+                    
+                    Button {
+                        self.teleconverterViewVisible = true
+                    } label: {
+                        Image(systemName: "t.circle")
+                            .font(Constants.REGULAR_FONT_24)
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
                 }
-                .frame(width: 44, height: 44)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
                 .padding(EdgeInsets(top: 0, leading: 0, bottom: 90, trailing: 0))
                 
                 // Aperture Slider
                 HStack(alignment: .bottom, spacing: 5) {
                     VStack {
-                        //Slider(value: self.model.apertureBinding, in: self.model.lens.minAperture...self.model.lens.maxAperture)
                         Slider(value: self.model.apertureBinding, in: self.model.minAperture...self.model.maxAperture)
                         Text("f/\(String(format: "%.1f", self.model.aperture))")
                             .font(Constants.REGULAR_FONT_14)
@@ -406,7 +405,6 @@ struct ContentView: View {
                                             
                     // Focal Length Slider
                     VStack {
-                        //Slider(value: self.model.focalLengthBinding, in: self.model.lens.minFocalLength...self.model.lens.maxFocalLength)
                         Slider(value: self.model.focalLengthBinding, in: self.model.minFocalLength...self.model.maxFocalLength)
                             .disabled(self.model.lens.isPrime)
                         Text("\(String(format: "%.0f mm", self.model.focalLength))")
