@@ -14,21 +14,22 @@ struct ContentView: View {
     @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
     
-    let home                                  : CLLocationCoordinate2D = Constants.DEFAULT_LOCATION.coordinate
-    @State private var position               : MapCameraPosition      = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!, longitude: Properties.instance.cameraLongitude!), distance: 1500))
-    @State private var modes                  : MapInteractionModes    = [.pan, .rotate, .zoom]
-    @State private var cameraMarkerActive     : Bool                   = false
-    @State private var motifMarkerActive      : Bool                   = false
-    @State private var isPortrait             : Bool                   = false
-    @State private var isCameraMarkerDragging : Bool                   = false
-    @State private var isMotifMarkerDragging  : Bool                   = false
-    @State private var mapStyle               : MapStyle               = .standard
-    @State private var cameraViewVisible      : Bool                   = false
-    @State private var lensViewVisible        : Bool                   = false
-    @State private var datePickerVisible      : Bool                   = false
-    @State private var helpViewVisible        : Bool                   = false
-    @State private var elevationViewVisible   : Bool                   = false
-    @State private var centerCameraPosition   : Bool                   = false
+    let home                                    : CLLocationCoordinate2D = Constants.DEFAULT_LOCATION.coordinate
+    @State private var position                 : MapCameraPosition      = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!, longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
+    @State private var modes                    : MapInteractionModes    = [.pan, .rotate, .zoom]
+    @State private var cameraMarkerActive       : Bool                   = false
+    @State private var motifMarkerActive        : Bool                   = false
+    @State private var isPortrait               : Bool                   = false
+    @State private var isCameraMarkerDragging   : Bool                   = false
+    @State private var isMotifMarkerDragging    : Bool                   = false
+    @State private var mapStyle                 : MapStyle               = .standard
+    @State private var cameraViewVisible        : Bool                   = false
+    @State private var lensViewVisible          : Bool                   = false
+    @State private var teleconverterViewVisible : Bool                   = false
+    @State private var datePickerVisible        : Bool                   = false
+    @State private var helpViewVisible          : Bool                   = false
+    @State private var elevationViewVisible     : Bool                   = false
+    @State private var centerCameraPosition     : Bool                   = false
     
     
     @Query(sort: [SortDescriptor(\Camera.name, comparator: .localizedStandard)]) private var cameras: [Camera]
@@ -40,6 +41,7 @@ struct ContentView: View {
     
     var body: some View {
         ZStack (alignment: .topLeading) {
+            // MapView
             GeometryReader { geo in
                 MapReader { mapProxy in
                     Map(position: $position, interactionModes: [.pan, .rotate, .zoom]) {
@@ -156,6 +158,7 @@ struct ContentView: View {
                         self.model.motifMarkerData    = mapProxy.markerData(coordinate: self.model.motifMarkerData!.coordinate, geometryProxy: geo)
                         self.model.currentMapLocation = pos.region.center
                         self.model.currentMapHeading  = pos.camera.heading
+                        Properties.instance.distance  =  pos.camera.distance
                     }
                     .mapControls {
                         MapScaleView()
@@ -168,9 +171,17 @@ struct ContentView: View {
                 }
             }
             
+            // OverlayView
             OverlayView()
                 .allowsHitTesting(false)
             
+            // ElevationView
+            if self.elevationViewVisible {
+                ElevationProfileView(profile: self.model.elevationProfile)
+                    .allowsTightening(false)
+            }
+                        
+            // Controls
             VStack(alignment: .leading, spacing: 10) {
                 Picker("", selection: self.model.currentMapStyleIndexBinding) {
                     Text("Std").tag(0)
@@ -257,19 +268,34 @@ struct ContentView: View {
                         if newValue && self.cameraMarkerActive { self.cameraMarkerActive = false }
                     }
                 }
-                                      
-                Toggle(isOn: self.model.dofVisibleBinding) {
-                    Image(systemName: "trapezoid.and.line.vertical")
-                        .padding(7)
-                }
-                .frame(width: 44, height: 44)
-                .toggleStyle(.button)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
-                .onChange(of: self.model.dofVisible) { oldValue, newValue in
-                    if newValue {
-                        self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
+                           
+                HStack {
+                    Toggle(isOn: self.model.dofVisibleBinding) {
+                        Image(systemName: "trapezoid.and.line.vertical")
+                            .padding(7)
                     }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .onChange(of: self.model.dofVisible) { oldValue, newValue in
+                        if newValue {
+                            self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Button {
+                        self.teleconverterViewVisible = true
+                    } label: {
+                        Image(systemName: "t.circle")
+                            .font(Constants.REGULAR_FONT_24)
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
                 }
                                                                                 
                 Toggle(isOn: $isPortrait) {
@@ -334,7 +360,7 @@ struct ContentView: View {
                 .clipShape(Circle())
                 .onChange(of: self.centerCameraPosition) {
                     if self.model.cameraMarkerData != nil {
-                        self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: 1500))
+                        self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
                     }
                 }
                 
@@ -352,9 +378,11 @@ struct ContentView: View {
                 .clipShape(Circle())
                 .padding(EdgeInsets(top: 0, leading: 0, bottom: 90, trailing: 0))
                 
+                // Aperture Slider
                 HStack(alignment: .bottom, spacing: 5) {
                     VStack {
-                        Slider(value: self.model.apertureBinding, in: self.model.lens.minAperture...self.model.lens.maxAperture)
+                        //Slider(value: self.model.apertureBinding, in: self.model.lens.minAperture...self.model.lens.maxAperture)
+                        Slider(value: self.model.apertureBinding, in: self.model.minAperture...self.model.maxAperture)
                         Text("f/\(String(format: "%.1f", self.model.aperture))")
                             .font(Constants.REGULAR_FONT_14)
                     }
@@ -376,9 +404,10 @@ struct ContentView: View {
                         Spacer()
                     }
                                             
-                    
+                    // Focal Length Slider
                     VStack {
-                        Slider(value: self.model.focalLengthBinding, in: self.model.lens.minFocalLength...self.model.lens.maxFocalLength)
+                        //Slider(value: self.model.focalLengthBinding, in: self.model.lens.minFocalLength...self.model.lens.maxFocalLength)
+                        Slider(value: self.model.focalLengthBinding, in: self.model.minFocalLength...self.model.maxFocalLength)
                             .disabled(self.model.lens.isPrime)
                         Text("\(String(format: "%.0f mm", self.model.focalLength))")
                             .font(Constants.REGULAR_FONT_14)
@@ -387,11 +416,7 @@ struct ContentView: View {
                 .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 5))
             }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
-            
-            if self.elevationViewVisible {
-                ElevationProfileView(profile: self.model.elevationProfile)
-            }
-            
+                                    
             if self.helpViewVisible {
                 HelpView()
                     .onTapGesture {
@@ -408,11 +433,15 @@ struct ContentView: View {
         .sheet(isPresented: $datePickerVisible) {
             DateTimeView()
         }
+        .sheet(isPresented: $teleconverterViewVisible) {
+            TeleconverterView()
+        }
         .task {
             let savedCameraId        : String     = Properties.instance.cameraId        ?? Constants.DEFAULT_CAMERA.id
             let savedLensId          : String     = Properties.instance.lensId          ?? Constants.DEFAULT_LENS.id
             let savedAperture        : Double     = Properties.instance.aperture        ?? 2.8
             let savedFocalLength     : Double     = Properties.instance.focalLength     ?? 24
+            let savedDistance        : Double     = Properties.instance.distance        ?? 1500
             let savedCameraLatitude  : Double     = Properties.instance.cameraLatitude  ?? Constants.DEFAULT_LOCATION.coordinate.latitude
             let savedCameraLongitude : Double     = Properties.instance.cameraLongitude ?? Constants.DEFAULT_LOCATION.coordinate.longitude
             let savedMotifLatitude   : Double     = Properties.instance.motifLatitude   ?? Constants.DEFAULT_LOCATION.coordinate.latitude
@@ -424,6 +453,7 @@ struct ContentView: View {
             self.model.lens           = lenses.filter({ $0.id == savedLensId }).first ?? Constants.DEFAULT_LENS
             self.model.aperture       = savedAperture
             self.model.focalLength    = savedFocalLength
+            self.model.cameraDistance = savedDistance
                                     
             self.model.cameraMarkerData = MarkerData(coordinate: cameraPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
             self.model.motifMarkerData  = MarkerData(coordinate: motifPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))

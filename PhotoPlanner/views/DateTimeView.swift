@@ -10,7 +10,7 @@ import CoreLocation
 
 
 struct DateTimeView: View {
-    @Environment(\.colorScheme)          var colorScheme
+    @Environment(\.colorScheme)          private var colorScheme
     @Environment(\.dismiss)              private var dismiss
     @Environment(PhotoPlannerModel.self) private var model
     

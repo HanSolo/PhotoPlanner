@@ -20,7 +20,9 @@ extension Key {
     static let cameraId        : Key = "cameraId"
     static let aperture        : Key = "aperture"
     static let focalLength     : Key = "focalLength"
-    
+    static let distance        : Key = "distance"
+    static let tc1Factor       : Key = "tc1Factor"
+    static let tc2Factor       : Key = "tc2Factor"
 }
 
 
@@ -53,6 +55,15 @@ public struct Properties {
     
     @UserDefault(key: .focalLength, defaultValue: 24)
     var focalLength: Double?
+    
+    @UserDefault(key: .distance, defaultValue: 1500)
+    var distance: Double?
+    
+    @UserDefault(key: .tc1Factor, defaultValue: 1.0)
+    var tc1Factor: Double?
+    
+    @UserDefault(key: .tc2Factor, defaultValue: 1.0)
+    var tc2Factor: Double?
     
     
     

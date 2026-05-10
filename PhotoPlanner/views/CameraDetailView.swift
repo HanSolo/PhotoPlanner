@@ -10,7 +10,7 @@ import SwiftData
 
 
 struct CameraDetailView: View {
-    @Environment(\.colorScheme)          var colorScheme
+    @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
     @Environment(\.modelContext)         private var context
     @Environment(\.dismiss)              private var dismiss

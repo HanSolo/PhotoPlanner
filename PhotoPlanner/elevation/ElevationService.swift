@@ -30,7 +30,8 @@ actor ElevationService {
         let stepCount = max(1, Int((totalDistance / interval).rounded()))
         return (0...stepCount).map { step in
             let fraction = Double(step) / Double(stepCount)
-            return start.interpolated(to: end, fraction: fraction)
+            return interpolate(from: start, to: end, fraction: fraction)
+            //return start.interpolated(to: end, fraction: fraction)
         }
     }
 
@@ -97,9 +98,13 @@ actor ElevationService {
             let points      : [ElevationPoint]         = try await fetchElevations(for: coordinates)
             return ElevationProfile(points: points, cameraHeight: cameraHeight, motifHeight: motifHeight)
         }
+    
+    func interpolate(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D, fraction: Double) -> CLLocationCoordinate2D {
+        return CLLocationCoordinate2D(latitude:  start.latitude  + (end.latitude  - start.latitude)  * fraction, longitude: start.longitude + (end.longitude - start.longitude) * fraction)
+    }
 }
 
-
+// TODO: Check whether it's still needed, replaced by interpolate method in ElevationService
 extension CLLocationCoordinate2D {
 
     func interpolated(to other: CLLocationCoordinate2D, fraction: Double) -> CLLocationCoordinate2D {
