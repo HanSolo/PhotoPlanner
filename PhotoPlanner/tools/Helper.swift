@@ -33,25 +33,31 @@ public class Helper {
         let cb: Double = abs(x2 - x1)
         return hypot(ac, cb)
     }
-    
-    public static func calc(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation) throws -> FoVData {
+        
+    public static func calcFoV(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation, tc1: Teleconverter, tc2: Teleconverter) throws -> FoVData {
         let distance : Double = camera.distance(to: motif)
         
-        if focalLengthInMM < 8 || focalLengthInMM > 2400 { throw FoVError.invalidArgument(message: "Error, focal length must be between 8mm and 2400mm") }
-        if aperture < 0.7 || aperture > 99 { throw FoVError.invalidArgument(message: "Error, aperture must be between f/0.7 and f/99"); }
-        if distance < 0.01 || distance > 9999 { throw FoVError.invalidArgument(message: "Error, distance must be between 0.01m and 9999m"); }
-
+        if focalLengthInMM < 8    || focalLengthInMM > 2400 { throw FoVError.invalidArgument(message: "Error, focal length must be between 8mm and 2400mm") }
+        if aperture        < 0.7  || aperture        >   99 { throw FoVError.invalidArgument(message: "Error, aperture must be between f/0.7 and f/99"); }
+        if distance        < 0.01 || distance        > 9999 { throw FoVError.invalidArgument(message: "Error, distance must be between 0.01m and 9999m"); }
+            
         let format : SensorFormat = SensorFormat.allCases[Int(sensorFormat)]
         
         let cropFactor: Double = format.cropFactor
 
-        // Do all calculations in metres (because that's sensible).
-        let focalLength: Double = focalLengthInMM / 1000.0
+        // Modified values form Teleconverter 1 and 2
+        let tc1ModifiedValues : Teleconverter.TcModifiedValues = tc1.calculate(focalLength: focalLengthInMM, aperture: aperture)
+        let tc2ModifiedValues : Teleconverter.TcModifiedValues = tc2.calculate(focalLength: tc1ModifiedValues.exactFocalLength, aperture: tc1ModifiedValues.exactAperture)
+        let modifiedFocalLength : Double = tc2ModifiedValues.exactFocalLength
+        let modifiedAperture    : Double = tc2ModifiedValues.exactAperture
+        
+        // Do all calculations in metres.
+        let focalLength: Double = modifiedFocalLength / 1000.0 //focalLengthInMM / 1000.0
 
         // Let the circle of confusion be 0.0290mm for 35mm film.
         let circleOfConfusion: Double = (0.0290 / 1000.0) / cropFactor
 
-        let hyperFocal    : Double = (focalLength * focalLength) / (aperture * circleOfConfusion) + focalLength
+        let hyperFocal    : Double = (focalLength * focalLength) / (modifiedAperture * circleOfConfusion) + focalLength
         let nearLimit     : Double = ((hyperFocal - focalLength) * distance) / (hyperFocal + distance - 2 * focalLength);
 
         let infinite      : Bool   = (hyperFocal - distance) < 0.00000001
@@ -62,7 +68,7 @@ public class Helper {
         let total         : Double = farLimit - nearLimit
 
         let d             : Double = sqrt((format.width * format.width) + (format.height * format.height))
-        let diagonalAngle : Double = 2.0 * atan(d / (2.0 * focalLengthInMM))
+        let diagonalAngle : Double = 2.0 * atan(d / (2.0 * modifiedFocalLength)) //focalLengthInMM))
         let diagonalLength: Double = ((distance * sin(diagonalAngle / 2.0)) / cos(diagonalAngle / 2.0)) * 2.0
         let phi           : Double = asin(2.0 / 3.605551)
         let fovWidth      : Double
@@ -82,12 +88,12 @@ public class Helper {
         let fovHeightAngle: Double = 2 * asin(halfFovHeight / sqrt((distance * distance) + (halfFovHeight * halfFovHeight)))
         let radius        : Double = sqrt((halfFovWidth * halfFovWidth) + (distance * distance))
                 
-        return FoVData(camera: camera, motif: motif, focalLength: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation, infinite: infinite, hyperFocal: hyperFocal, nearLimit: nearLimit, farLimit: farLimit, frontPercent: frontPercent, behindPercent: behindPercent, total: total, diagonalAngle: diagonalAngle, diagonalLength: diagonalLength, fovWidth: fovWidth, fovWidthAngle: fovWidthAngle, fovHeight: fovHeight, fovHeightAngle: fovHeightAngle, radius: radius)
+        return FoVData(camera: camera, motif: motif, focalLength: modifiedFocalLength /*focalLengthInMM*/, aperture: modifiedAperture /*aperture*/, sensorFormat: sensorFormat, orientation: orientation, infinite: infinite, hyperFocal: hyperFocal, nearLimit: nearLimit, farLimit: farLimit, frontPercent: frontPercent, behindPercent: behindPercent, total: total, diagonalAngle: diagonalAngle, diagonalLength: diagonalLength, fovWidth: fovWidth, fovWidthAngle: fovWidthAngle, fovHeight: fovHeight, fovHeightAngle: fovHeightAngle, radius: radius)
     }
     
-    public static func updateTriangle(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation) -> [CLLocationCoordinate2D] {
+    public static func updateTriangle(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation, tc1: Teleconverter, tc2: Teleconverter) -> [CLLocationCoordinate2D] {
         do {
-            let fovData: FoVData = try calc(camera: camera, motif: motif, focalLengthInMM: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
+            let fovData: FoVData = try calcFoV(camera: camera, motif: motif, focalLengthInMM: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation, tc1: tc1, tc2: tc2)
             return calcTrianglePoints(data: fovData)
         } catch {
             // Handle error here
@@ -103,9 +109,9 @@ public class Helper {
         return [ p1Coordinates, p2Coordinates, p3Coordinates ]
     }
     
-    public static func updateTrapezoid(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation) -> [CLLocationCoordinate2D] {
+    public static func updateTrapezoid(camera: MKMapPoint, motif: MKMapPoint, focalLengthInMM: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation, tc1: Teleconverter, tc2: Teleconverter) -> [CLLocationCoordinate2D] {
         do {
-            let data: FoVData = try calc(camera: camera, motif: motif, focalLengthInMM: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation)
+            let data: FoVData = try calcFoV(camera: camera, motif: motif, focalLengthInMM: focalLengthInMM, aperture: aperture, sensorFormat: sensorFormat, orientation: orientation, tc1: tc1, tc2: tc2)
             return calcTrapezoidPoints(data: data)
         } catch {
             // Handle error here

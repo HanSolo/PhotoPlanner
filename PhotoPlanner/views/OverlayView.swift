@@ -39,6 +39,8 @@ struct OverlayView: View {
                         let distanceText           : Text                                 = Text(verbatim: "← \(String(format: distance >= 10 ? "%.0f" : "%.1f", distance))m →").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
                         let fovCenterX             : Double                               = width - offsetX + 18
                         let fovCenterY             : Double                               = height - offsetY + 12
+                        let hyperFocalDistance     : Double                               = fovData!.hyperFocal
+                        let hyperFocalText         : Text                                 = Text(verbatim: "Hyperfocal dist. \(String(format: hyperFocalDistance < 10 ? "%.1f" : "%.0f", hyperFocalDistance))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
                         
                         let bkgRect                : CGRect                               = CGRect(x: 10, y: height - 103, width: width - 20, height: 103)
                         //let lineWidth              : CGFloat                              = Constants.IS_IPAD ? 2.0 : 1.0
@@ -104,9 +106,10 @@ struct OverlayView: View {
                                     break
                             }
                         }
-                        
-                        
+                                                                        
                         ctx.fill(Rectangle().path(in: bkgRect), with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
+                        
+                        ctx.draw(hyperFocalText, at: CGPoint(x: 20, y: height - offsetY + 12), anchor: .leading)
                         
                         if cameraOrientation == .portrait {
                             ctx.drawLayer { ctx1 in
