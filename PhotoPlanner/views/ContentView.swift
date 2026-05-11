@@ -13,8 +13,9 @@ import MapKit
 struct ContentView: View {
     @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
-    
+        
     let home                                    : CLLocationCoordinate2D = Constants.DEFAULT_LOCATION.coordinate
+    @State private var sunQualityViewModel      : SunQualityViewModel    = SunQualityViewModel()
     @State private var position                 : MapCameraPosition      = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!, longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
     @State private var modes                    : MapInteractionModes    = [.pan, .rotate, .zoom]
     @State private var cameraMarkerActive       : Bool                   = false
@@ -27,6 +28,7 @@ struct ContentView: View {
     @State private var lensViewVisible          : Bool                   = false
     @State private var teleconverterViewVisible : Bool                   = false
     @State private var datePickerVisible        : Bool                   = false
+    @State private var sunsetPredictionVisible  : Bool                   = false
     @State private var helpViewVisible          : Bool                   = false
     @State private var elevationViewVisible     : Bool                   = false
     @State private var centerCameraPosition     : Bool                   = false
@@ -158,7 +160,7 @@ struct ContentView: View {
                         self.model.motifMarkerData    = mapProxy.markerData(coordinate: self.model.motifMarkerData!.coordinate, geometryProxy: geo)
                         self.model.currentMapLocation = pos.region.center
                         self.model.currentMapHeading  = pos.camera.heading
-                        Properties.instance.distance  =  pos.camera.distance
+                        Properties.instance.distance  = pos.camera.distance
                     }
                     .mapControls {
                         MapScaleView()
@@ -316,6 +318,31 @@ struct ContentView: View {
                 .buttonStyle(.glass)
                 .clipShape(Circle())
                 
+                Button {
+                    self.sunsetPredictionVisible.toggle()
+                } label: {
+                    Image(systemName: "sunset")
+                        .padding(7)
+                }
+                .frame(width: 44, height: 44)
+                .buttonStyle(.glass)
+                .clipShape(Circle())
+                .disabled(!self.model.networkMonitor.isConnected)
+                .onChange(of: self.sunsetPredictionVisible) {
+                    if self.model.cameraMarkerData != nil {
+                        let now          : Date                   = Date()
+                        let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                        let shootAzimuth : Double                 = self.model.currentMapHeading ?? 0.0
+                        let sunPos       : SunPos                 = Helper.calcSunPos(at: location, time: now)
+                        var solarEvent   : SolarEvent {
+                            SolarEvent(time: now, type: .sunset)
+                        }
+                        Task {
+                            await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth, sunPos: sunPos)
+                        }
+                    }
+                }
+                
                 Toggle(isOn: self.$elevationViewVisible) {
                     Image(systemName: "chart.line.uptrend.xyaxis")
                         .padding(10)
@@ -414,7 +441,11 @@ struct ContentView: View {
                 .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 5))
             }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
-                                    
+                   
+            if self.sunQualityViewModel.isVisible {
+                SunQualityMapOverlay(vm: sunQualityViewModel)
+            }
+            
             if self.helpViewVisible {
                 HelpView()
                     .onTapGesture {

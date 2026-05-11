@@ -6,15 +6,16 @@
 //
 
 import Foundation
+import CoreLocation
 
 
 struct MagicHours {
-    let rad   :Double = .pi / 180.0
-    let dayMs :Double = 1000.0 * 60.0 * 60.0 * 24.0
-    let J1970 :Double = 2440588.0
-    let J2000 :Double = 2451545.0
-    let J0    :Double = 0.0009
-    var e     :Double = 23.4397 * .pi / 180.0
+    let rad   : Double = .pi / 180.0
+    let dayMs : Double = 1000.0 * 60.0 * 60.0 * 24.0
+    let J1970 : Double = 2440588.0
+    let J2000 : Double = 2451545.0
+    let J0    : Double = 0.0009
+    var e     : Double = 23.4397 * .pi / 180.0
     
     /*
      sunrise         sunrise (top edge of the sun appears on the horizon)
@@ -150,10 +151,6 @@ struct MagicHours {
         ]
     
         for i in 0..<times.count {
-            //let angle : Double = (times[i])[0] as! Double
-            //let Jset  : Double = getSetJ(height: angle * rad, lw: lw, phi: phi, dec: dec, n: n, M: M, L: L)
-            //let Jrise : Double = Jnoon - (Jset - Jnoon)
-            
             let h0       : Double = ((times[i])[0] as! Double + dh) * rad
             let Jset     : Double = getSetJ(height: h0, lw: lw, phi: phi, dec: dec, n: n, M: M, L: L)
             let Jrise    : Double = Jnoon - (Jset - Jnoon)
