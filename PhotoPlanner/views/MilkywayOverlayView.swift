@@ -124,7 +124,7 @@ struct MilkywayOverlayView: View {
                 strokePath.addLine(to: point)
             }
         }
-        ctx.stroke(strokePath, with: .color(.white.opacity(0.25)), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
+        ctx.stroke(strokePath, with: .color(.white.opacity(0.4)), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
 
         // Visible portion stroke — brighter
         var visiblePath : Path = Path()
@@ -156,8 +156,8 @@ struct MilkywayOverlayView: View {
         var line : Path = Path()
         line.move(to:    CGPoint(x: leftPad,               y: horizonY))
         line.addLine(to: CGPoint(x: size.width - rightPad, y: horizonY))
-        ctx.stroke(line, with: .color(.white.opacity(0.3)), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-        ctx.draw(Text("0°").font(.system(size: 7)).foregroundStyle(.white.opacity(0.4)), at: CGPoint(x: leftPad - 4, y: horizonY), anchor: .trailing )
+        ctx.stroke(line, with: .color(.white.opacity(0.4)), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+        ctx.draw(Text("0°").font(.system(size: 7)).foregroundStyle(.white.opacity(0.5)), at: CGPoint(x: leftPad - 4, y: horizonY), anchor: .trailing )
     }
 
     private func drawPeakCallout(ctx: GraphicsContext, size: CGSize) {
@@ -208,7 +208,7 @@ struct MilkywayOverlayView: View {
             ctx.draw(
                 Text("Core rises \(timeFormatter.string(from: start))")
                     .font(.system(size: 7).monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.5)),
+                    .foregroundStyle(.white.opacity(0.6)),
                 at: CGPoint(x: 16, y: y), anchor: .leading
             )
         }
@@ -217,7 +217,7 @@ struct MilkywayOverlayView: View {
             ctx.draw(
                 Text("Sets \(timeFormatter.string(from: end))")
                     .font(.system(size: 7).monospacedDigit())
-                    .foregroundStyle(.white.opacity(0.5)),
+                    .foregroundStyle(.white.opacity(0.6)),
                 at: CGPoint(x: size.width - 16, y: y), anchor: .trailing
             )
         }
@@ -227,7 +227,7 @@ struct MilkywayOverlayView: View {
             ctx.draw(
                 Text("Milky Way core not visible tonight")
                     .font(.system(size: 8))
-                    .foregroundStyle(.white.opacity(0.4)),
+                    .foregroundStyle(.white.opacity(0.6)),
                 at: CGPoint(x: size.width / 2, y: size.height / 2), anchor: .center
             )
         }
@@ -256,7 +256,7 @@ struct MilkywayOverlayView: View {
             ctx.draw(
                 Text(String(format: "%02d", hour))
                     .font(.system(size: 7).monospacedDigit())
-                    .foregroundStyle(.white.opacity(slot.isVisible ? 0.6 : 0.25)),
+                    .foregroundStyle(.white.opacity(slot.isVisible ? 0.75 : 0.25)),
                 at: CGPoint(x: x, y: y),
                 anchor: .center
             )
@@ -267,7 +267,7 @@ struct MilkywayOverlayView: View {
         ctx.draw(
             Text("MILKY WAY CORE")
                 .font(.system(size: 8, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.45))
+                .foregroundStyle(.white.opacity(0.6))
                 .kerning(1.2),
             at: CGPoint(x: size.width / 2, y: 14), anchor: .center
         )
