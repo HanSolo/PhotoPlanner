@@ -17,11 +17,12 @@ struct DailyQualityTimeline {
 
     
     struct HourSlot: Identifiable {
-        let id          : UUID = UUID()
-        let time        : Date
-        let score       : SunriseSunsetScore?  // nil during night
-        let sunAltitude : Double               // degrees
-        let sunAzimuth  : Double               // degrees
-        let isSunUp     : Bool                 // includes civil twilight
+        let id           : UUID = UUID()
+        let time         : Date
+        let score        : SunriseSunsetScore?  // nil during night
+        let sunAltitude  : Double               // degrees
+        let sunAzimuth   : Double               // degrees
+        let isSunUp      : Bool                 // includes civil twilight
+        let isGoldenHour : Bool
     }
 }

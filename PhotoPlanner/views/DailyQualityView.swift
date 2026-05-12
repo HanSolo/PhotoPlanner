@@ -49,11 +49,26 @@ struct DailyQualityView: View {
                     for (i, slot) in slots.enumerated() {
                         let x : CGFloat = CGFloat(i) * barWidth
 
+                        /*
                         guard slot.isSunUp, let score : SunriseSunsetScore = slot.score else {
                             ctx.fill(Path(roundedRect: CGRect(x: x + 1, y: size.height - 3, width: barWidth - 2, height: 3), cornerRadius: 1), with: .color(.white.opacity(0.08)))
                             continue
                         }
+                        */
+                        
+                        guard slot.isSunUp else {
+                            ctx.fill(Path(roundedRect: CGRect(x: x + 1, y: size.height - 3, width: max(1, barWidth - 2), height: 3), cornerRadius: 1),with: .color(.white.opacity(0.08)))
+                                continue
+                            }
+                        
+                        // Sun is up but not golden hour — subtle mid bar
+                        guard slot.isGoldenHour else {
+                            ctx.fill(Path(roundedRect: CGRect(x: x + 1, y: size.height - 8, width: max(1, barWidth - 2), height: 8), cornerRadius: 1), with: .color(.white.opacity(0.08)))
+                            continue
+                        }
 
+                        guard let score = slot.score else { continue }
+                        
                         let fraction  : Double  = gradeFraction(score.overall)
                         let barHeight : CGFloat = max(4, (size.height - padTop) * fraction)
                         let y         : CGFloat = size.height - barHeight

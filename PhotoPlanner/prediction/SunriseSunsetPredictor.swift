@@ -39,10 +39,11 @@ actor SunriseSunsetPredictor {
             let localWindow = hourlyForecast.forecast.filter {
                 abs($0.date.timeIntervalSince(hour.date)) <= 3600
             }
-            let isSunUp : Bool                = sunPos.altitude > -6
-            let score   : SunriseSunsetScore? = isSunUp ? self.calcScore(window: localWindow, primary: hour, event: SolarEvent(time: hour.date, type: .goldenHour), directional: directional) : nil
+            let isSunUp : Bool                = sunPos.altitude > -6            
+            
+            let score   : SunriseSunsetScore? = isSunUp ? self.calcScore(window: localWindow, primary: hour, event: SolarEvent(time: hour.date, type: .goldenHour), directional: directional, sunAltitude: sunPos.altitude) : nil
 
-            return DailyQualityTimeline.HourSlot(time: hour.date, score: score, sunAltitude: sunPos.altitude, sunAzimuth: sunPos.azimuth, isSunUp: isSunUp)
+            return DailyQualityTimeline.HourSlot(time: hour.date, score: score, sunAltitude: sunPos.altitude, sunAzimuth: sunPos.azimuth, isSunUp: isSunUp, isGoldenHour: sunPos.altitude >= -6 && sunPos.altitude <= 12)
         }
 
         let solarNoon   = getSolarNoonTime(at: location, startOfDay: startOfDay)
@@ -61,10 +62,10 @@ actor SunriseSunsetPredictor {
         return DirectionalCloudInfo(sunAzimuth: sunAzimuth, shootAzimuth: shootAzimuth, angularDifference: absDiff, shootingTowardSun: absDiff < 45, shootingAwaySun: absDiff > 135)
     }
 
-    func calcScore(window: [HourWeather], primary: HourWeather, event: SolarEvent, directional: DirectionalCloudInfo) -> SunriseSunsetScore {
+    func calcScore(window: [HourWeather], primary: HourWeather, event: SolarEvent, directional: DirectionalCloudInfo, sunAltitude: Double) -> SunriseSunsetScore {
         var reasons: [String] = []
         
-        // -- Directional context --
+        // Directional context
         switch directional.angularDifference {
             case ..<45:
                 reasons.append("Shooting toward sun — backlit, lens flare risk")
@@ -76,7 +77,29 @@ actor SunriseSunsetPredictor {
                 reasons.append("Shooting away from sun — reflected colour on clouds")
         }
 
-        // -- Cloud score — varies by shooting direction --
+        let altitudeScore: Double
+        switch sunAltitude {
+            case ..<(-6):
+                // Civil twilight — blue hour, still worth scoring
+                altitudeScore = 0.6
+            case (-6)..<0:
+                // Just below horizon — peak blue hour
+                altitudeScore = 0.9
+            case 0..<6:
+                // Just above horizon — golden hour peak
+                altitudeScore = 1.0
+            case 6..<12:
+                // Still golden light but fading
+                altitudeScore = 0.7
+            case 12..<20:
+                // Warm light but no longer golden
+                altitudeScore = 0.3
+            default:
+                // Midday — irrelevant for sunrise/sunset prediction
+                altitudeScore = 0.05
+        }
+        
+        // Cloud score — varies by shooting direction
         let cloud     : Double = primary.cloudCover   // 0.0–1.0
         let cloudScore: Double
 
@@ -276,6 +299,11 @@ actor SunriseSunsetPredictor {
 
         // Apply humidity as a hard cap — this is the key change
         composite = min(composite, humidityCap)
+        
+        // Altitude proximity — applied last as a hard multiplier
+        // so midday hours can never score well regardless of conditions
+        composite *= altitudeScore
+        
         composite = min(1.0, max(0.0, composite))
 
         // Raise the bar for top grades
