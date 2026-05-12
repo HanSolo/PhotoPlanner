@@ -144,6 +144,16 @@ public class Helper {
         return bearing
     }
     
+    public static func calcAzimuth(location1: CLLocationCoordinate2D, location2: CLLocationCoordinate2D) -> Double {
+        let lat1     : Double = toRadians(location1.latitude)
+        let lat2     : Double = toRadians(location2.latitude)
+        let deltaLon : Double = toRadians(location2.longitude - location1.longitude)
+        let x        : Double = sin(deltaLon) * cos(lat2)
+        let y        : Double = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(deltaLon)
+        let bearing  : Double = atan2(x, y)
+        return (toDegrees(bearing) + 360).truncatingRemainder(dividingBy: 360) // Convert to degrees and normalize to 0–360
+    }
+
     public static func calcBearingInDegree(location1: CLLocationCoordinate2D, location2: CLLocationCoordinate2D) -> Double {
         return calcBearingInDegree(lat1: location1.latitude, lon1: location1.longitude, lat2: location2.latitude, lon2: location2.longitude)
     }

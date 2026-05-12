@@ -332,7 +332,7 @@ struct ContentView: View {
                     if self.model.cameraMarkerData != nil {
                         let now          : Date                   = Date()
                         let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                        let shootAzimuth : Double                 = self.model.currentMapHeading ?? 0.0
+                        let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.motifMarkerData!.coordinate)
                         let sunPos       : SunPos                 = Helper.calcSunPos(at: location, time: now)
                         var solarEvent   : SolarEvent {
                             SolarEvent(time: now, type: .sunset)

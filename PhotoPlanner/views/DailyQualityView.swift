@@ -31,10 +31,10 @@ struct DailyQualityView: View {
                 Spacer()
                 
                 if let sunrise = timeline.bestSunrise {
-                    gradeTag(label: "Sunrise", slot: sunrise)
+                    gradeTag(label: "Rise", slot: sunrise)
                 }
                 if let sunset = timeline.bestSunset {
-                    gradeTag(label: "Sunset", slot: sunset)
+                    gradeTag(label: "Set", slot: sunset)
                 }
             }
 
@@ -75,7 +75,7 @@ struct DailyQualityView: View {
             HStack(spacing: 0) {
                 ForEach(Array(timeline.slots.enumerated()), id: \.offset) { i, slot in
                     let hourString : String = hourFormatter.string(from: slot.time)
-                    let show       : Bool   = (Int(hourString) ?? 0) % 6 == 0
+                    let show       : Bool   = (Int(hourString) ?? 0) % 3 == 0
                     Text(show ? hourString : "")
                         .font(.system(size: 7).monospacedDigit())
                         .foregroundStyle(.white.opacity(0.4))
@@ -106,7 +106,7 @@ struct DailyQualityView: View {
         case .fair:        return 0.35
         case .good:        return 0.58
         case .great:       return 0.80
-        case .spectacular: return 1.00
+        case .grand: return 1.00
         }
     }
 }

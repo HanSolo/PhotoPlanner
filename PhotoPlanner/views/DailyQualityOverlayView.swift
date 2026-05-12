@@ -29,7 +29,7 @@ struct DailyQualityOverlayView: View {
         case .fair:        return 1
         case .good:        return 2
         case .great:       return 3
-        case .spectacular: return 4
+        case .grand: return 4
         }
     }
 }
