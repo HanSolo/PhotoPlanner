@@ -16,6 +16,7 @@ struct ContentView: View {
         
     let home                                    : CLLocationCoordinate2D = Constants.DEFAULT_LOCATION.coordinate
     @State private var sunQualityViewModel      : SunQualityViewModel    = SunQualityViewModel()
+    @State private var milkywayViewModel        : MilkywayViewModel      = MilkywayViewModel()
     @State private var position                 : MapCameraPosition      = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!, longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
     @State private var modes                    : MapInteractionModes    = [.pan, .rotate, .zoom]
     @State private var cameraMarkerActive       : Bool                   = false
@@ -29,6 +30,7 @@ struct ContentView: View {
     @State private var teleconverterViewVisible : Bool                   = false
     @State private var datePickerVisible        : Bool                   = false
     @State private var sunsetPredictionVisible  : Bool                   = false
+    @State private var milkywayVisible          : Bool                   = false
     @State private var helpViewVisible          : Bool                   = false
     @State private var elevationViewVisible     : Bool                   = false
     @State private var centerCameraPosition     : Bool                   = false
@@ -271,17 +273,37 @@ struct ContentView: View {
                     }
                 }
                 
-                Toggle(isOn: self.model.dofVisibleBinding) {
-                    Image(systemName: "trapezoid.and.line.vertical")
-                        .padding(7)
-                }
-                .frame(width: 44, height: 44)
-                .toggleStyle(.button)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
-                .onChange(of: self.model.dofVisible) { oldValue, newValue in
-                    if newValue {
-                        self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
+                HStack {
+                    Toggle(isOn: self.model.dofVisibleBinding) {
+                        Image(systemName: "trapezoid.and.line.vertical")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .onChange(of: self.model.dofVisible) { oldValue, newValue in
+                        if newValue {
+                            self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Button {
+                        self.centerCameraPosition.toggle()
+                    } label: {
+                        Image(systemName: "target")
+                            .font(Constants.REGULAR_FONT_24)
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .onChange(of: self.centerCameraPosition) {
+                        if self.model.cameraMarkerData != nil {
+                            self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
+                        }
                     }
                 }
                 
@@ -359,20 +381,23 @@ struct ContentView: View {
                         }
                     }
                 }
-                
-                Button {
-                    self.centerCameraPosition.toggle()
-                } label: {
-                    Image(systemName: "target")
+                                
+                Toggle(isOn: self.$milkywayVisible) {
+                    Image(systemName: "star.circle")
                         .font(Constants.REGULAR_FONT_24)
                         .padding(7)
                 }
                 .frame(width: 44, height: 44)
+                .toggleStyle(.button)
                 .buttonStyle(.glass)
                 .clipShape(Circle())
-                .onChange(of: self.centerCameraPosition) {
+                .onChange(of: self.milkywayVisible) {
                     if self.model.cameraMarkerData != nil {
-                        self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
+                        let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                        let date     : Date                   = self.model.currentMapDate
+                        Task {
+                            await self.milkywayViewModel.fetch(at: location, on: date)
+                        }
                     }
                 }
                 
@@ -444,6 +469,10 @@ struct ContentView: View {
                    
             if self.sunQualityViewModel.isVisible {
                 SunQualityMapOverlay(vm: sunQualityViewModel)
+            }
+            
+            if self.milkywayVisible {
+                MilkywayMapOverlay(vm: milkywayViewModel)
             }
             
             if self.helpViewVisible {

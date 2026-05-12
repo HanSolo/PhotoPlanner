@@ -331,6 +331,11 @@ public class Helper {
 
         return SunPos(altitude: altitude, azimuth: azimuth)
     }
+    
+    public static func fetchTimeZone(for location: CLLocationCoordinate2D) async throws -> TimeZone? {
+        let request = MKReverseGeocodingRequest(location: CLLocation(latitude: location.latitude, longitude: location.longitude))
+        return try await request?.mapItems.first?.timeZone
+    }
 }
 
 

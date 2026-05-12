@@ -17,7 +17,7 @@ actor SunriseSunsetPredictor {
 
 
     func getDailyTimeline(at location: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, sunPos: SunPos) async throws -> DailyQualityTimeline {
-        let timeZone   = try await fetchTimeZone(for: location) ?? .current
+        let timeZone   = try await Helper.fetchTimeZone(for: location) ?? .current
         var calendar   = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
 
@@ -200,7 +200,7 @@ actor SunriseSunsetPredictor {
 
             // Light precipitation — can still produce colour
             case .drizzle, .freezingDrizzle, .sunShowers:
-                conditionPenalty = 0.4
+                conditionPenalty = 0.7 // it was 0.4, moved to 0.7 - 0.8 might be better
             case .sunFlurries:
                 conditionPenalty = 0.5   // snow flurries with sun can be beautiful
 
@@ -339,12 +339,7 @@ actor SunriseSunsetPredictor {
 
         return SunPos(altitude: altitude, azimuth: azimuth)
     }
-    
-    private func fetchTimeZone(for location: CLLocationCoordinate2D) async throws -> TimeZone? {
-        let request  = MKReverseGeocodingRequest(location: CLLocation(latitude: location.latitude, longitude: location.longitude))
-        return try await request?.mapItems.first?.timeZone
-    }
-    
+        
     private func gradeValue(_ grade: SunriseSunsetScore.Grade) -> Int {
         switch grade {
             case .poor        : return 0
