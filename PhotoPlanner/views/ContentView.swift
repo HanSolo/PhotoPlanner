@@ -17,6 +17,7 @@ struct ContentView: View {
     let home                                    : CLLocationCoordinate2D = Constants.DEFAULT_LOCATION.coordinate
     @State private var sunQualityViewModel      : SunQualityViewModel    = SunQualityViewModel()
     @State private var milkywayViewModel        : MilkywayViewModel      = MilkywayViewModel()
+    @State private var moonViewModel            : MoonViewModel          = MoonViewModel()
     @State private var position                 : MapCameraPosition      = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!, longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
     @State private var modes                    : MapInteractionModes    = [.pan, .rotate, .zoom]
     @State private var cameraMarkerActive       : Bool                   = false
@@ -30,6 +31,7 @@ struct ContentView: View {
     @State private var teleconverterViewVisible : Bool                   = false
     @State private var datePickerVisible        : Bool                   = false
     @State private var sunsetPredictionVisible  : Bool                   = false
+    @State private var moonPhaseVisible         : Bool                   = false
     @State private var milkywayVisible          : Bool                   = false
     @State private var helpViewVisible          : Bool                   = false
     @State private var elevationViewVisible     : Bool                   = false
@@ -187,24 +189,37 @@ struct ContentView: View {
                         
             // Controls
             VStack(alignment: .leading, spacing: 10) {
-                Picker("", selection: self.model.currentMapStyleIndexBinding) {
-                    Text("Std").tag(0)
-                        .font(Constants.REGULAR_FONT_14)
-                    Text("Sat").tag(1)
-                        .font(Constants.REGULAR_FONT_14)
-                        .rotationEffect(Angle(degrees: 90))
-                    Text("Hyb").tag(2)
-                        .font(Constants.REGULAR_FONT_14)
-                        .rotationEffect(Angle(degrees: 90))
-                }
-                .pickerStyle(.segmented)
-                .onChange(of: self.model.currentMapStyleIndex) { oldValue, newValue in
-                    switch newValue {
-                    case  0: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
-                    case  1: self.mapStyle = MapStyle.imagery()
-                    case  2: self.mapStyle = MapStyle.hybrid(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
-                    default: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
+                HStack {
+                    Picker("", selection: self.model.currentMapStyleIndexBinding) {
+                        Text("Std").tag(0)
+                            .font(Constants.REGULAR_FONT_14)
+                        Text("Sat").tag(1)
+                            .font(Constants.REGULAR_FONT_14)
+                            .rotationEffect(Angle(degrees: 90))
+                        Text("Hyb").tag(2)
+                            .font(Constants.REGULAR_FONT_14)
+                            .rotationEffect(Angle(degrees: 90))
                     }
+                    .pickerStyle(.segmented)
+                    .onChange(of: self.model.currentMapStyleIndex) { oldValue, newValue in
+                        switch newValue {
+                        case  0: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
+                        case  1: self.mapStyle = MapStyle.imagery()
+                        case  2: self.mapStyle = MapStyle.hybrid(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
+                        default: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
+                        }
+                    }
+                    
+                    Button {
+                        self.helpViewVisible = true
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            //.font(Constants.REGULAR_FONT_24)
+                            .padding(7)
+                    }
+                    .frame(width: 22, height: 22)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
                 }
                 
                 HStack {
@@ -340,48 +355,50 @@ struct ContentView: View {
                 .buttonStyle(.glass)
                 .clipShape(Circle())
                 
-                Button {
-                    self.sunsetPredictionVisible.toggle()
-                } label: {
+                Toggle(isOn: self.$sunsetPredictionVisible) {
                     Image(systemName: "sunset")
                         .padding(7)
-                }
-                .frame(width: 44, height: 44)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
-                .disabled(!self.model.networkMonitor.isConnected)
-                .onChange(of: self.sunsetPredictionVisible) {
-                    if self.model.cameraMarkerData != nil {
-                        let now          : Date                   = Date()
-                        let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                        let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.motifMarkerData!.coordinate)
-                        let sunPos       : SunPos                 = Helper.calcSunPos(at: location, time: now)
-                        var solarEvent   : SolarEvent {
-                            SolarEvent(time: now, type: .sunset)
-                        }
-                        Task {
-                            await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth, sunPos: sunPos)
-                        }
-                    }
-                }
-                
-                Toggle(isOn: self.$elevationViewVisible) {
-                    Image(systemName: "chart.line.uptrend.xyaxis")
-                        .padding(10)
                 }
                 .frame(width: 44, height: 44)
                 .toggleStyle(.button)
                 .buttonStyle(.glass)
                 .clipShape(Circle())
-                .disabled(!self.model.networkMonitor.isConnected || self.model.fovData?.distance ?? 0 >= 4000)
-                .onChange(of: self.elevationViewVisible) {
-                    if self.elevationViewVisible {
-                        Task {
-                            await self.model.getElevation()
+                .onChange(of: self.sunsetPredictionVisible) {
+                    if self.sunsetPredictionVisible {
+                        if self.model.cameraMarkerData != nil {
+                            let now          : Date                   = Date()
+                            let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                            let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.motifMarkerData!.coordinate)
+                            let sunPos       : SunPos                 = Helper.calcSunPos(at: location, time: now)
+                            var solarEvent   : SolarEvent {
+                                SolarEvent(time: now, type: .sunset)
+                            }
+                            Task {
+                                await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth, sunPos: sunPos)
+                            }
                         }
                     }
                 }
                                 
+                Toggle(isOn: self.$moonPhaseVisible) {
+                    Image(systemName: "moon")
+                        .padding(7)
+                }
+                .frame(width: 44, height: 44)
+                .toggleStyle(.button)
+                .buttonStyle(.glass)
+                .clipShape(Circle())
+                .onChange(of: self.moonPhaseVisible) {
+                    if self.model.cameraMarkerData != nil {
+                        Task {
+                            let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                            let date     : Date                   = self.model.currentMapDate
+                            let timeZone : TimeZone               = try await Helper.fetchTimeZone(for: location) ?? .current
+                            self.moonViewModel.fetch(at: location, time: date, timeZone: timeZone)
+                        }
+                    }
+                }
+                
                 Toggle(isOn: self.$milkywayVisible) {
                     Image(systemName: "star.circle")
                         .font(Constants.REGULAR_FONT_24)
@@ -400,20 +417,24 @@ struct ContentView: View {
                         }
                     }
                 }
-                
-                Spacer()
-                
+
                 HStack {
-                    Button {
-                        self.helpViewVisible = true
-                    } label: {
-                        Image(systemName: "questionmark.circle")
-                            .font(Constants.REGULAR_FONT_24)
-                            .padding(7)
+                    Toggle(isOn: self.$elevationViewVisible) {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                            .padding(10)
                     }
                     .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
                     .buttonStyle(.glass)
                     .clipShape(Circle())
+                    .disabled(!self.model.networkMonitor.isConnected || self.model.fovData?.distance ?? 0 >= 4000)
+                    .onChange(of: self.elevationViewVisible) {
+                        if self.elevationViewVisible {
+                            Task {
+                                await self.model.getElevation()
+                            }
+                        }
+                    }
                     
                     Spacer()
                     
@@ -428,9 +449,11 @@ struct ContentView: View {
                     .buttonStyle(.glass)
                     .clipShape(Circle())
                 }
-                .padding(EdgeInsets(top: 0, leading: 0, bottom: 90, trailing: 0))
+                
+                Spacer()
                 
                 // Aperture Slider
+                
                 HStack(alignment: .bottom, spacing: 5) {
                     VStack {
                         Slider(value: self.model.apertureBinding, in: self.model.minAperture...self.model.maxAperture)
@@ -467,8 +490,12 @@ struct ContentView: View {
             }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
                    
-            if self.sunQualityViewModel.isVisible {
+            if self.sunsetPredictionVisible {
                 SunQualityMapOverlay(vm: sunQualityViewModel)
+            }
+            
+            if self.moonPhaseVisible {
+                MoonPhaseMapOverlay(vm: moonViewModel)
             }
             
             if self.milkywayVisible {

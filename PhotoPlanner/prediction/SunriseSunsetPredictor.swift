@@ -34,16 +34,16 @@ actor SunriseSunsetPredictor {
         guard !dayHours.isEmpty else { throw PredictionError.noForecastData }
 
         let slots: [DailyQualityTimeline.HourSlot] = dayHours.map { hour in
-            let sunPos      = calcSunPos(at: location, time: hour.date)
-            let directional = getDirectionalInfo(sunAzimuth:   sunPos.azimuth, shootAzimuth: shootAzimuth)
-            let localWindow = hourlyForecast.forecast.filter {
+            let sunPos       : SunPos               = calcSunPos(at: location, time: hour.date)
+            let directional  : DirectionalCloudInfo = getDirectionalInfo(sunAzimuth:   sunPos.azimuth, shootAzimuth: shootAzimuth)
+            let localWindow  : [HourWeather]        = hourlyForecast.forecast.filter {
                 abs($0.date.timeIntervalSince(hour.date)) <= 3600
             }
-            let isSunUp : Bool                = sunPos.altitude > -6            
-            
-            let score   : SunriseSunsetScore? = isSunUp ? self.calcScore(window: localWindow, primary: hour, event: SolarEvent(time: hour.date, type: .goldenHour), directional: directional, sunAltitude: sunPos.altitude) : nil
+            let isSunUp      : Bool                 = sunPos.altitude > -6
+            let isGoldenHour : Bool                 = sunPos.altitude >= -4 && sunPos.altitude <= 6
+            let score        : SunriseSunsetScore?  = isSunUp ? self.calcScore(window: localWindow, primary: hour, event: SolarEvent(time: hour.date, type: .goldenHour), directional: directional, sunAltitude: sunPos.altitude) : nil
 
-            return DailyQualityTimeline.HourSlot(time: hour.date, score: score, sunAltitude: sunPos.altitude, sunAzimuth: sunPos.azimuth, isSunUp: isSunUp, isGoldenHour: sunPos.altitude >= -6 && sunPos.altitude <= 12)
+            return DailyQualityTimeline.HourSlot(time: hour.date, score: score, sunAltitude: sunPos.altitude, sunAzimuth: sunPos.azimuth, isSunUp: isSunUp, isGoldenHour: isGoldenHour)
         }
 
         let solarNoon   = getSolarNoonTime(at: location, startOfDay: startOfDay)

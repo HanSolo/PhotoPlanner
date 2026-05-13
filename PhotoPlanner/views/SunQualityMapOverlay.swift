@@ -19,9 +19,9 @@ struct SunQualityMapOverlay: View {
                 DailyQualityOverlayView(timeline: daily)
                     .padding(.horizontal, 10)  // side margins only
                     .padding(.bottom, 10)
-                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .bottom)))
-                    .onTapGesture { withAnimation { vm.dismiss() } }
-                    .onAppear { scheduleAutoDismiss() }
+                    //.transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .bottom)))
+                    //.onTapGesture { withAnimation { vm.dismiss() } }
+                    //.onAppear { scheduleAutoDismiss() }
             }
 
             if vm.isLoading {
@@ -30,11 +30,11 @@ struct SunQualityMapOverlay: View {
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                     .padding(12)
-                    .transition(.opacity)
+                    //.transition(.opacity)
             }
         }
-        .animation(.easeInOut(duration: 0.25), value: vm.dailyTimeline != nil)
-        .animation(.easeInOut(duration: 0.2),  value: vm.isLoading)
+        //.animation(.easeInOut(duration: 0.25), value: vm.dailyTimeline != nil)
+        //.animation(.easeInOut(duration: 0.2),  value: vm.isLoading)
     }
 
     private func scheduleAutoDismiss() {

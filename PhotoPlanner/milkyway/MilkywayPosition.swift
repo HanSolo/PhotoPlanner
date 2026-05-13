@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 import CoreLocation
 
-// MARK: - Models
 
 struct MilkywayPosition {
     let time:          Date
@@ -28,11 +27,11 @@ struct MilkywayPosition {
 
         var color: Color {
             switch self {
-            case .notVisible: return .gray
-            case .poor:       return .blue.opacity(0.6)
-            case .fair:       return .indigo
-            case .good:       return .purple
-            case .excellent:  return .white
+                case .notVisible : return .gray
+                case .poor       : return .blue.opacity(0.6)
+                case .fair       : return .indigo
+                case .good       : return .purple
+                case .excellent  : return .white
             }
         }
     }

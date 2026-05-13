@@ -49,13 +49,6 @@ struct DailyQualityView: View {
                     for (i, slot) in slots.enumerated() {
                         let x : CGFloat = CGFloat(i) * barWidth
 
-                        /*
-                        guard slot.isSunUp, let score : SunriseSunsetScore = slot.score else {
-                            ctx.fill(Path(roundedRect: CGRect(x: x + 1, y: size.height - 3, width: barWidth - 2, height: 3), cornerRadius: 1), with: .color(.white.opacity(0.08)))
-                            continue
-                        }
-                        */
-                        
                         guard slot.isSunUp else {
                             ctx.fill(Path(roundedRect: CGRect(x: x + 1, y: size.height - 3, width: max(1, barWidth - 2), height: 3), cornerRadius: 1),with: .color(.white.opacity(0.08)))
                                 continue

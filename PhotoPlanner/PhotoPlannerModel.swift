@@ -230,7 +230,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     
     func checkIfLocationIsEnabled() {
         if locationManager == nil {
-            let manager = CLLocationManager()
+            let manager : CLLocationManager = CLLocationManager()
             manager.desiredAccuracy = kCLLocationAccuracyBest
             manager.delegate = self
             self.locationManager = manager

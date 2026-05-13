@@ -115,7 +115,7 @@ struct HelpView: View {
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                 
                 HStack {
-                    Text("Show elevation")
+                    Text("Show moon phase")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.leading)
@@ -124,7 +124,7 @@ struct HelpView: View {
                     Spacer()
                 }
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
-                
+                                                                                        
                 HStack {
                     Text("Show Milkyway core")
                         .font(font)
@@ -136,10 +136,8 @@ struct HelpView: View {
                 }
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                                                 
-                Spacer()
-                
                 HStack {
-                    Text("Help")
+                    Text("Show elevation")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.leading)
@@ -153,7 +151,9 @@ struct HelpView: View {
                         .multilineTextAlignment(.trailing)
                         .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 50))
                 }
-                .padding(EdgeInsets(top: 0, leading: 0, bottom: 175, trailing: 0))
+                .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
+                
+                Spacer()
             }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
         }

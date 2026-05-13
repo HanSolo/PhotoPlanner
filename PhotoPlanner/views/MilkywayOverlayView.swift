@@ -11,14 +11,18 @@ import CoreLocation
 
 
 struct MilkywayOverlayView: View {
-    let timeline: MilkywayTimeline
-
-    private let timeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "HH:mm"
-        return f
-    }()
+    private let timeline      : MilkywayTimeline
+    private let timeFormatter : DateFormatter
     
+    
+    init(timeline: MilkywayTimeline) {
+        self.timeline      = timeline
+        let f              = DateFormatter()
+        f.dateFormat       = "HH:mm"
+        f.timeZone         = timeline.timeZone
+        self.timeFormatter = f
+    }
+        
 
     var body: some View {
         GeometryReader { geometry in
