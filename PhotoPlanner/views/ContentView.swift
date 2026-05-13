@@ -21,10 +21,10 @@ struct ContentView: View {
     @State private var position                 : MapCameraPosition      = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!, longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
     @State private var modes                    : MapInteractionModes    = [.pan, .rotate, .zoom]
     @State private var cameraMarkerActive       : Bool                   = false
-    @State private var motifMarkerActive        : Bool                   = false
-    @State private var isPortrait               : Bool                   = false
+    @State private var subjectMarkerActive      : Bool                   = false
+    @State private var isPortrait               : Bool                   = !Properties.instance.landscape!
     @State private var isCameraMarkerDragging   : Bool                   = false
-    @State private var isMotifMarkerDragging    : Bool                   = false
+    @State private var isSubjectMarkerDragging  : Bool                   = false
     @State private var mapStyle                 : MapStyle               = .standard
     @State private var cameraViewVisible        : Bool                   = false
     @State private var lensViewVisible          : Bool                   = false
@@ -36,13 +36,17 @@ struct ContentView: View {
     @State private var helpViewVisible          : Bool                   = false
     @State private var elevationViewVisible     : Bool                   = false
     @State private var centerCameraPosition     : Bool                   = false
-    
-    
+        
     @Query(sort: [SortDescriptor(\Camera.name, comparator: .localizedStandard)]) private var cameras: [Camera]
     @Query(sort: [SortDescriptor(\Lens.name, comparator: .localizedStandard)])   private var lenses : [Lens]
     
     let lineWidth    : CGFloat = Constants.IS_IPAD ? 1.0 : 0.5
     let fovLineWidth : CGFloat = Constants.IS_IPAD ? 2.0 : 1.0
+    
+    init() {
+        UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(red: 0.25, green: 0.56, blue: 0.96, alpha: 1.00)
+        UISegmentedControl.appearance().backgroundColor          = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.5)
+    }
     
     
     var body: some View {
@@ -55,22 +59,23 @@ struct ContentView: View {
                             Annotation("", coordinate: self.model.cameraMarkerData!.coordinate) {
                                 ZStack(alignment: .center) {
                                     VStack(alignment: .center, spacing: 2) {
-                                        Image(systemName: "camera.circle")
-                                            .font(.system(size: 24))
-                                            .padding(2)
-                                            .foregroundStyle(self.cameraMarkerActive ? .blue : (self.colorScheme == .dark ? .white.opacity(0.5) : .black.opacity(0.5)))
+                                        Image(self.cameraMarkerActive ? "cameraPinActive" : "cameraPin")
+                                            .resizable()
+                                            .frame(width: 48, height: 48)
+                                            .offset(y: -24)
                                     }
                                 }
                             }
                         }
-                        if self.model.motifMarkerData != nil {
-                            Annotation("", coordinate: self.model.motifMarkerData!.coordinate) {
+                        if self.model.subjectMarkerData != nil {
+                            Annotation("", coordinate: self.model.subjectMarkerData!.coordinate) {
                                 ZStack(alignment: .center) {
                                     VStack(alignment: .center, spacing: 2) {
-                                        Image(systemName: "photo.circle")
-                                            .font(.system(size: 24))
-                                            .padding(2)
-                                            .foregroundStyle(self.motifMarkerActive ? .blue : self.colorScheme == .dark ? .white.opacity(0.1) : .black.opacity(0.1))
+                                        Image(self.subjectMarkerActive ? "subjectPinActive" : "subjectPin")
+                                            .resizable()
+                                            .frame(width: 48, height: 48)
+                                            .offset(y: -24)
+                                            .opacity(self.subjectMarkerActive ? 1.0 : 0.1)
                                     }
                                 }
                             }
@@ -78,7 +83,7 @@ struct ContentView: View {
                         UserAnnotation()
                                                 
                         if self.model.fovData != nil {
-                            MapPolyline(points: [self.model.fovData!.cameraLocation, self.model.fovData!.motifLocation])
+                            MapPolyline(points: [self.model.fovData!.cameraLocation, self.model.fovData!.subjectLocation])
                                 .stroke(Constants.CENTER_LINE_STROKE, lineWidth: lineWidth)
                         }
                         
@@ -110,14 +115,14 @@ struct ContentView: View {
                                 Properties.instance.cameraLatitude  = self.model.cameraMarkerData!.coordinate.latitude
                                 Properties.instance.cameraLongitude = self.model.cameraMarkerData!.coordinate.longitude
                                 if self.elevationViewVisible { self.elevationViewVisible = false }
-                            } else if self.motifMarkerActive {
-                                self.model.motifMarkerData = mapProxy.markerData(screenCoordinate: location!, geometryProxy: geo)
-                                Properties.instance.motifLatitude  = self.model.motifMarkerData!.coordinate.latitude
-                                Properties.instance.motifLongitude = self.model.motifMarkerData!.coordinate.longitude
+                            } else if self.subjectMarkerActive {
+                                self.model.subjectMarkerData = mapProxy.markerData(screenCoordinate: location!, geometryProxy: geo)
+                                Properties.instance.subjectLatitude  = self.model.subjectMarkerData!.coordinate.latitude
+                                Properties.instance.subjectLongitude = self.model.subjectMarkerData!.coordinate.longitude
                                 if self.elevationViewVisible { self.elevationViewVisible = false }
                             }
-                            self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
-                            if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
+                            self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+                            if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
                         }
                     }
                     .highPriorityGesture(DragGesture(minimumDistance: 1)
@@ -133,35 +138,35 @@ struct ContentView: View {
                                     return
                                 }
                                 self.model.cameraMarkerData = mapProxy.markerData(screenCoordinate: drag.location, geometryProxy: geo)
-                                self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
-                                if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
-                            } else if self.motifMarkerActive {
-                                guard self.model.motifMarkerData != nil else { return }
-                                if isMotifMarkerDragging {
+                                self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+                                if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
+                            } else if self.subjectMarkerActive {
+                                guard self.model.subjectMarkerData != nil else { return }
+                                if isSubjectMarkerDragging {
                                     if self.elevationViewVisible { self.elevationViewVisible = false }
-                                } else if self.model.motifMarkerData!.touchArea.contains(drag.startLocation) {
-                                    isMotifMarkerDragging = true
+                                } else if self.model.subjectMarkerData!.touchArea.contains(drag.startLocation) {
+                                    isSubjectMarkerDragging = true
                                     setMapInteraction(enabled: false)
                                 } else {
                                     return
                                 }
-                                self.model.motifMarkerData = mapProxy.markerData(screenCoordinate: drag.location, geometryProxy: geo)
-                                self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
-                                if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
+                                self.model.subjectMarkerData = mapProxy.markerData(screenCoordinate: drag.location, geometryProxy: geo)
+                                self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+                                if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
                             }
                         }
                         .onEnded { drag in
                             setMapInteraction(enabled: true)
                             isCameraMarkerDragging = false
-                            isMotifMarkerDragging  = false
+                            isSubjectMarkerDragging  = false
                         }
                     )
                     .onMapCameraChange(frequency: .onEnd) { pos in
                         guard self.model.cameraMarkerData != nil else { return }
                         self.model.cameraMarkerData = mapProxy.markerData(coordinate: self.model.cameraMarkerData!.coordinate, geometryProxy: geo)
                         
-                        guard self.model.motifMarkerData != nil else { return }
-                        self.model.motifMarkerData    = mapProxy.markerData(coordinate: self.model.motifMarkerData!.coordinate, geometryProxy: geo)
+                        guard self.model.subjectMarkerData != nil else { return }
+                        self.model.subjectMarkerData    = mapProxy.markerData(coordinate: self.model.subjectMarkerData!.coordinate, geometryProxy: geo)
                         self.model.currentMapLocation = pos.region.center
                         self.model.currentMapHeading  = pos.camera.heading
                         Properties.instance.distance  = pos.camera.distance
@@ -171,7 +176,16 @@ struct ContentView: View {
                         MapCompass()
                     }
                     .mapStyle(self.mapStyle)
-                    .onAppear {                        
+                    /*
+                    .overlay {
+                        Rectangle()
+                            .fill(.white.opacity(0.25))
+                            .blendMode(.saturation)
+                            .ignoresSafeArea()
+                            .allowsHitTesting(false)
+                    }
+                    */
+                    .onAppear {
                         self.model.checkIfLocationIsEnabled()
                     }
                 }
@@ -214,7 +228,6 @@ struct ContentView: View {
                         self.helpViewVisible = true
                     } label: {
                         Image(systemName: "questionmark.circle")
-                            //.font(Constants.REGULAR_FONT_24)
                             .padding(7)
                     }
                     .frame(width: 22, height: 22)
@@ -248,16 +261,16 @@ struct ContentView: View {
                     Spacer()
                     
                     Toggle(isOn: $cameraMarkerActive) {
-                        Image(systemName: "camera.circle")
-                            .font(Constants.REGULAR_FONT_24)
-                            .padding(7)
+                        Image("cameraPin")
+                            .resizable()
+                            .frame(width: 32, height: 32)
                     }
                     .frame(width: 44, height: 44)
                     .toggleStyle(.button)
                     .buttonStyle(.glass)
                     .clipShape(Circle())
                     .onChange(of: self.cameraMarkerActive) { oldValue, newValue in
-                        if newValue && self.motifMarkerActive { self.motifMarkerActive = false }
+                        if newValue && self.subjectMarkerActive { self.subjectMarkerActive = false }
                     }
                 }
                 
@@ -274,16 +287,16 @@ struct ContentView: View {
                     
                     Spacer()
                     
-                    Toggle(isOn: $motifMarkerActive) {
-                        Image(systemName: "photo.circle")
-                            .font(Constants.REGULAR_FONT_24)
-                            .padding(7)
+                    Toggle(isOn: $subjectMarkerActive) {
+                        Image("subjectPin")
+                            .resizable()
+                            .frame(width: 32, height: 32)
                     }
                     .frame(width: 44, height: 44)
                     .toggleStyle(.button)
                     .buttonStyle(.glass)
                     .clipShape(Circle())
-                    .onChange(of: self.motifMarkerActive) { oldValue, newValue in
+                    .onChange(of: self.subjectMarkerActive) { oldValue, newValue in
                         if newValue && self.cameraMarkerActive { self.cameraMarkerActive = false }
                     }
                 }
@@ -299,7 +312,7 @@ struct ContentView: View {
                     .clipShape(Circle())
                     .onChange(of: self.model.dofVisible) { oldValue, newValue in
                         if newValue {
-                            self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
+                            self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
                         }
                     }
                     
@@ -333,8 +346,8 @@ struct ContentView: View {
                 .clipShape(Circle())
                 .onChange(of: self.isPortrait) { oldValue, newValue in
                     self.model.orientation = newValue ? .portrait : .landscape
-                    self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
-                    if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), motifPoint: MKMapPoint(self.model.motifMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
+                    self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+                    if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
                 }
                 
                 Toggle(isOn: self.$datePickerVisible) {
@@ -368,7 +381,7 @@ struct ContentView: View {
                         if self.model.cameraMarkerData != nil {
                             let now          : Date                   = Date()
                             let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                            let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.motifMarkerData!.coordinate)
+                            let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.subjectMarkerData!.coordinate)
                             let sunPos       : SunPos                 = Helper.calcSunPos(at: location, time: now)
                             var solarEvent   : SolarEvent {
                                 SolarEvent(time: now, type: .sunset)
@@ -393,7 +406,7 @@ struct ContentView: View {
                         Task {
                             let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
                             let date     : Date                   = self.model.currentMapDate
-                            let timeZone : TimeZone               = try await Helper.fetchTimeZone(for: location) ?? .current
+                            let timeZone : TimeZone               = await Helper.fetchTimeZone(for: location)
                             self.moonViewModel.fetch(at: location, time: date, timeZone: timeZone)
                         }
                     }
@@ -453,7 +466,6 @@ struct ContentView: View {
                 Spacer()
                 
                 // Aperture Slider
-                
                 HStack(alignment: .bottom, spacing: 5) {
                     VStack {
                         Slider(value: self.model.apertureBinding, in: self.model.minAperture...self.model.maxAperture)
@@ -522,27 +534,27 @@ struct ContentView: View {
             TeleconverterView()
         }
         .task {
-            let savedCameraId        : String     = Properties.instance.cameraId        ?? Constants.DEFAULT_CAMERA.id
-            let savedLensId          : String     = Properties.instance.lensId          ?? Constants.DEFAULT_LENS.id
-            let savedAperture        : Double     = Properties.instance.aperture        ?? 2.8
-            let savedFocalLength     : Double     = Properties.instance.focalLength     ?? 24
-            let savedDistance        : Double     = Properties.instance.distance        ?? 1500
-            let savedCameraLatitude  : Double     = Properties.instance.cameraLatitude  ?? Constants.DEFAULT_LOCATION.coordinate.latitude
-            let savedCameraLongitude : Double     = Properties.instance.cameraLongitude ?? Constants.DEFAULT_LOCATION.coordinate.longitude
-            let savedMotifLatitude   : Double     = Properties.instance.motifLatitude   ?? Constants.DEFAULT_LOCATION.coordinate.latitude
-            let savedMotifLongitude  : Double     = Properties.instance.motifLongitude  ?? Constants.DEFAULT_LOCATION.coordinate.longitude
-            let cameraPoint          : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: savedCameraLatitude, longitude: savedCameraLongitude))
-            let motifPoint           : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: savedMotifLatitude, longitude: savedMotifLongitude))
+            let savedCameraId         : String     = Properties.instance.cameraId         ?? Constants.DEFAULT_CAMERA.id
+            let savedLensId           : String     = Properties.instance.lensId           ?? Constants.DEFAULT_LENS.id
+            let savedAperture         : Double     = Properties.instance.aperture         ?? 2.8
+            let savedFocalLength      : Double     = Properties.instance.focalLength      ?? 24
+            let savedDistance         : Double     = Properties.instance.distance         ?? 1500
+            let savedCameraLatitude   : Double     = Properties.instance.cameraLatitude   ?? Constants.DEFAULT_LOCATION.coordinate.latitude
+            let savedCameraLongitude  : Double     = Properties.instance.cameraLongitude  ?? Constants.DEFAULT_LOCATION.coordinate.longitude
+            let savedSubjectLatitude  : Double     = Properties.instance.subjectLatitude  ?? Constants.DEFAULT_LOCATION.coordinate.latitude
+            let savedSubjectLongitude : Double     = Properties.instance.subjectLongitude ?? Constants.DEFAULT_LOCATION.coordinate.longitude
+            let cameraPoint           : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: savedCameraLatitude, longitude: savedCameraLongitude))
+            let subjectPoint          : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: savedSubjectLatitude, longitude: savedSubjectLongitude))
             
-            self.model.camera         = cameras.filter({ $0.id == savedCameraId }).first ?? Constants.DEFAULT_CAMERA
-            self.model.lens           = lenses.filter({ $0.id == savedLensId }).first ?? Constants.DEFAULT_LENS
+            self.model.camera         = cameras.filter({ $0.id == savedCameraId }).first  ?? Constants.DEFAULT_CAMERA
+            self.model.lens           = lenses.filter({ $0.id == savedLensId }).first     ?? Constants.DEFAULT_LENS
             self.model.aperture       = savedAperture
             self.model.focalLength    = savedFocalLength
             self.model.cameraDistance = savedDistance
                                     
             self.model.cameraMarkerData = MarkerData(coordinate: cameraPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
-            self.model.motifMarkerData  = MarkerData(coordinate: motifPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
-            self.model.updateFoVTriangle(cameraPoint: cameraPoint, motifPoint: motifPoint, focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+            self.model.subjectMarkerData  = MarkerData(coordinate: subjectPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
+            self.model.updateFoVTriangle(cameraPoint: cameraPoint, subjectPoint: subjectPoint, focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
         }
     }
     

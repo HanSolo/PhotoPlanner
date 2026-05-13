@@ -9,16 +9,16 @@ import Foundation
 
 
 struct ElevationProfile {
-    let points       : [ElevationPoint]
-    let cameraHeight : Double   // meter above ground at start
-    let motifHeight  : Double   // meter above ground at end
+    let points        : [ElevationPoint]
+    let cameraHeight  : Double   // meter above ground at start
+    let subjectHeight : Double   // meter above ground at end
 
     var cameraEyeAltitude: Double {
         (points.first?.elevation ?? 0) + cameraHeight
     }
 
-    var motifAltitude: Double {
-        (points.last?.elevation ?? 0) + motifHeight
+    var subjectAltitude: Double {
+        (points.last?.elevation ?? 0) + subjectHeight
     }
 
     var hasLineOfSight: Bool {
@@ -27,7 +27,7 @@ struct ElevationProfile {
 
         return points.enumerated().allSatisfy { index, point in
             let fraction    : Double = Double(index) / totalCount
-            let losAltitude : Double = cameraEyeAltitude + fraction * (motifAltitude - cameraEyeAltitude)
+            let losAltitude : Double = cameraEyeAltitude + fraction * (subjectAltitude - cameraEyeAltitude)
             return point.elevation <= losAltitude
         }
     }

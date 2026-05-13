@@ -15,7 +15,7 @@ class MoonViewModel {
     var moonPhase: MoonPhase?
 
     func fetch(at coordinate: CLLocationCoordinate2D, time: Date,timeZone: TimeZone) {
-            moonPhase = MoonCalculator.phase(at: coordinate, time: time, timeZone: timeZone)
+            moonPhase = MoonCalculator.calcMoonPhase(at: coordinate, time: time, timeZone: timeZone)
         }
 
     func dismiss() { moonPhase = nil }

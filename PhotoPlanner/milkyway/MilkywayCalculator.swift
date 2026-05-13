@@ -27,8 +27,8 @@ struct MilkywayCalculator {
         return MilkywayPosition(time: time, altitude: altitude, azimuth: azimuth, isVisible: isCoreVisible, coreAltitude: altitude, quality: quality)
     }
 
-    static func getNightTimeline(at coordinate: CLLocationCoordinate2D, on date: Date, stepMinutes: Int = 15) async throws -> MilkywayTimeline {
-        let timeZone   : TimeZone = try await Helper.fetchTimeZone(for: coordinate) ?? .current
+    static func getNightTimeline(at coordinate: CLLocationCoordinate2D, on date: Date, stepMinutes: Int = 15) async -> MilkywayTimeline {
+        let timeZone   : TimeZone = await Helper.fetchTimeZone(for: coordinate)
         var calendar   : Calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         

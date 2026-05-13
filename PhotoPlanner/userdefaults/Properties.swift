@@ -12,17 +12,18 @@ import MapKit
 
 
 extension Key {
-    static let cameraLatitude  : Key = "cameraLatitude"
-    static let cameraLongitude : Key = "cameraLongitude"
-    static let motifLatitude   : Key = "motifLatitude"
-    static let motifLongitude  : Key = "motifLongitude"
-    static let lensId          : Key = "lensId"
-    static let cameraId        : Key = "cameraId"
-    static let aperture        : Key = "aperture"
-    static let focalLength     : Key = "focalLength"
-    static let distance        : Key = "distance"
-    static let tc1Factor       : Key = "tc1Factor"
-    static let tc2Factor       : Key = "tc2Factor"
+    static let cameraLatitude   : Key = "cameraLatitude"
+    static let cameraLongitude  : Key = "cameraLongitude"
+    static let subjectLatitude  : Key = "motifLatitude"
+    static let subjectLongitude : Key = "motifLongitude"
+    static let landscape        : Key = "landscape"
+    static let lensId           : Key = "lensId"
+    static let cameraId         : Key = "cameraId"
+    static let aperture         : Key = "aperture"
+    static let focalLength      : Key = "focalLength"
+    static let distance         : Key = "distance"
+    static let tc1Factor        : Key = "tc1Factor"
+    static let tc2Factor        : Key = "tc2Factor"
 }
 
 
@@ -38,12 +39,15 @@ public struct Properties {
     @UserDefault(key: .cameraLongitude, defaultValue: Constants.DEFAULT_LOCATION.coordinate.longitude)
     var cameraLongitude: Double?
     
-    @UserDefault(key: .motifLatitude, defaultValue: Constants.DEFAULT_LOCATION.coordinate.latitude)
-    var motifLatitude: Double?
+    @UserDefault(key: .subjectLatitude, defaultValue: Constants.DEFAULT_LOCATION.coordinate.latitude)
+    var subjectLatitude: Double?
     
-    @UserDefault(key: .motifLongitude, defaultValue: Constants.DEFAULT_LOCATION.coordinate.longitude)
-    var motifLongitude: Double?
+    @UserDefault(key: .subjectLongitude, defaultValue: Constants.DEFAULT_LOCATION.coordinate.longitude)
+    var subjectLongitude: Double?
         
+    @UserDefault(key: .landscape, defaultValue: true)
+    var landscape: Bool?
+    
     @UserDefault(key: .cameraId, defaultValue: "")
     var cameraId: String?
     
@@ -64,7 +68,6 @@ public struct Properties {
     
     @UserDefault(key: .tc2Factor, defaultValue: 1.0)
     var tc2Factor: Double?
-    
     
     
     private init() {}

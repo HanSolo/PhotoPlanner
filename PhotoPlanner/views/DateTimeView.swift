@@ -33,8 +33,8 @@ struct DateTimeView: View {
         let ghEveningEndText  : String                   = Helper.dateToString(fromDate: self.model.sunTimes[Constants.EPD_BLUE_HOUR_DUSK]!, formatString: formatString)
         let bhEveningText     : String                   = Helper.dateToString(fromDate: self.model.sunTimes[Constants.EPD_BLUE_HOUR_DUSK]!, formatString: formatString)
         let bhEveningEndText  : String                   = Helper.dateToString(fromDate: self.model.sunTimes[Constants.EPD_BLUE_HOUR_DUSK_END]!, formatString: formatString)
-        let moonriseText      : String                   = self.model.moonTimes.contains{ $0.key == Constants.EPD_RISE } ? Helper.dateToString(fromDate: self.model.moonTimes[Constants.EPD_RISE]!, formatString: formatString) : ""
-        let moonsetText       : String                   = self.model.moonTimes.contains{ $0.key == Constants.EPD_SET } ? Helper.dateToString(fromDate: self.model.moonTimes[Constants.EPD_SET]!, formatString: formatString) : ""
+        let moonriseText      : String                   = self.model.moonTimes.moonRise != nil ? Helper.dateToString(fromDate: self.model.moonTimes.moonRise!, formatString: formatString) : ""
+        let moonsetText       : String                   = self.model.moonTimes.moonSet != nil ? Helper.dateToString(fromDate: self.model.moonTimes.moonSet!, formatString: formatString) : ""
         let daylightHoursText : String                   = Helper.secondsToHHMMString(seconds: (self.model.sunTimes[Constants.EPD_SUNSET]!.timeIntervalSince1970 - self.model.sunTimes[Constants.EPD_SUNRISE]!.timeIntervalSince1970))
         
 
@@ -57,10 +57,12 @@ struct DateTimeView: View {
             
             DatePicker("Select Date and Time", selection: self.model.currentMapDateBinding)
                 .labelsHidden()
+                /*
                 .onChange(of: self.model.currentMapDate) {
                     self.model.sunTimes  = self.model.magicHours.getTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
                     self.model.moonTimes = self.model.magicHours.getMoonTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
                 }
+                */
             
             Form {
                 List {
@@ -120,8 +122,7 @@ struct DateTimeView: View {
                 }
                 .listSectionSpacing(0)
                 .task {
-                    self.model.sunTimes  = self.model.magicHours.getTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
-                    self.model.moonTimes = self.model.magicHours.getMoonTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
+                    await self.model.updateSunAndMoonTimes()                    
                 }
             }
             

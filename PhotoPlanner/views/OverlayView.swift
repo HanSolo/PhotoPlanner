@@ -238,15 +238,13 @@ struct OverlayView: View {
                         }
                     }
                 } symbols: {
-                    Image(systemName: "camera")
+                    Image("cameraPin")
                         .resizable()
-                        .frame(width: 24, height: 19.417)
-                        .foregroundColor(self.colorScheme == .dark ? .white : .black)
+                        .frame(width: 24, height: 24)
                         .tag(1)
-                    Image(systemName: "photo")
+                    Image("subjectPin")
                         .resizable()
-                        .frame(width: 24, height: 18.738)
-                        .foregroundColor(self.colorScheme == .dark ? .white : .black)
+                        .frame(width: 24, height: 24)
                         .tag(2)
                 }
             }

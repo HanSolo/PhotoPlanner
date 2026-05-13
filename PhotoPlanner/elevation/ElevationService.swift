@@ -93,10 +93,10 @@ actor ElevationService {
         }
     }
 
-    func elevationProfile(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D, interval: CLLocationDistance = 100, cameraHeight: Double = 1.5, motifHeight: Double = 0.0) async throws -> ElevationProfile {
+    func elevationProfile(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D, interval: CLLocationDistance = 100, cameraHeight: Double = 1.5, subjectHeight: Double = 0.0) async throws -> ElevationProfile {
             let coordinates : [CLLocationCoordinate2D] = interpolatedCoordinates(from: start, to: end, interval: interval)
             let points      : [ElevationPoint]         = try await fetchElevations(for: coordinates)
-            return ElevationProfile(points: points, cameraHeight: cameraHeight, motifHeight: motifHeight)
+            return ElevationProfile(points: points, cameraHeight: cameraHeight, subjectHeight: subjectHeight)
         }
     
     func interpolate(from start: CLLocationCoordinate2D, to end: CLLocationCoordinate2D, fraction: Double) -> CLLocationCoordinate2D {

@@ -10,40 +10,40 @@ import MapKit
 
 
 public class FoVData {
-    public let cameraLocation            : MKMapPoint
-    public let motifLocation             : MKMapPoint
-    public let focalLength               : Double
-    public let aperture                  : Double
-    public let distance                  : Double
-    public let sensorFormat              : Int
-    public let orientation               : CameraOrientation
-    public let infinite                  : Bool
-    public let hyperFocal                : Double
-    public let nearLimit                 : Double
-    public let farLimit                  : Double
-    public let frontPercent              : Double
-    public let behindPercent             : Double
-    public let total                     : Double
-    public let diagonalAngle             : Double
-    public let diagonalLength            : Double
-    public let fovWidth                  : Double
-    public let fovWidthAngle             : Double
-    public let fovHeight                 : Double
-    public let fovHeightAngle            : Double
-    public let radius                    : Double
-    public let angleBetweenCameraAndMotif: Double
-    public let dofInFront                : Double
-    public let dofBehind                 : Double
+    public let cameraLocation               : MKMapPoint
+    public let subjectLocation              : MKMapPoint
+    public let focalLength                  : Double
+    public let aperture                     : Double
+    public let distance                     : Double
+    public let sensorFormat                 : Int
+    public let orientation                  : CameraOrientation
+    public let infinite                     : Bool
+    public let hyperFocal                   : Double
+    public let nearLimit                    : Double
+    public let farLimit                     : Double
+    public let frontPercent                 : Double
+    public let behindPercent                : Double
+    public let total                        : Double
+    public let diagonalAngle                : Double
+    public let diagonalLength               : Double
+    public let fovWidth                     : Double
+    public let fovWidthAngle                : Double
+    public let fovHeight                    : Double
+    public let fovHeightAngle               : Double
+    public let radius                       : Double
+    public let angleBetweenCameraAndSubject : Double
+    public let dofInFront                   : Double
+    public let dofBehind                    : Double
     
     
-    init(camera: MKMapPoint, motif: MKMapPoint, focalLength: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation,
+    init(camera: MKMapPoint, subject: MKMapPoint, focalLength: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation,
          infinite: Bool, hyperFocal: Double, nearLimit: Double, farLimit: Double, frontPercent: Double, behindPercent: Double, total: Double,
          diagonalAngle: Double, diagonalLength: Double, fovWidth: Double, fovWidthAngle: Double, fovHeight: Double, fovHeightAngle: Double, radius: Double) {
         self.cameraLocation             = camera
-        self.motifLocation              = motif
+        self.subjectLocation            = subject
         self.focalLength                = focalLength
         self.aperture                   = aperture
-        self.distance                   = camera.distance(to: motif)
+        self.distance                   = camera.distance(to: subject)
         self.sensorFormat               = sensorFormat
         self.orientation                = orientation
         self.infinite                   = infinite
@@ -60,7 +60,7 @@ public class FoVData {
         self.fovHeight                  = fovHeight
         self.fovHeightAngle             = fovHeightAngle
         self.radius                     = radius
-        self.angleBetweenCameraAndMotif = Helper.toRadians(Helper.calcBearingInDegree(location1: camera.coordinate, location2: motif.coordinate))
+        self.angleBetweenCameraAndSubject = Helper.toRadians(Helper.calcBearingInDegree(location1: camera.coordinate, location2: subject.coordinate))
         self.dofInFront                 = distance - nearLimit
         self.dofBehind                  = infinite ? 10000 : farLimit - distance
     }

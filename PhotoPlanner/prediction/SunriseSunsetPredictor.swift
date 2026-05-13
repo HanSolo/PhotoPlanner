@@ -17,7 +17,7 @@ actor SunriseSunsetPredictor {
 
 
     func getDailyTimeline(at location: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, sunPos: SunPos) async throws -> DailyQualityTimeline {
-        let timeZone   = try await Helper.fetchTimeZone(for: location) ?? .current
+        let timeZone   = await Helper.fetchTimeZone(for: location)
         var calendar   = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
 

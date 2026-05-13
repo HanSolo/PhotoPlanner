@@ -18,12 +18,7 @@ class MilkywayViewModel {
 
     func fetch(at coordinate: CLLocationCoordinate2D, on date: Date) async {
         isLoading = true
-        do {
-            timeline = try await MilkywayCalculator.getNightTimeline(at: coordinate, on: date)
-        } catch {
-            debugPrint(error)
-        }
-        
+        timeline  = await MilkywayCalculator.getNightTimeline(at: coordinate, on: date)
         isLoading = false
     }
 

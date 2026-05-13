@@ -23,7 +23,7 @@ struct ElevationProfileView: View {
 
                 let elevations   : [Double] = profile!.points.map(\.elevation)
                 let minElevation : Double   = elevations.min()!
-                let maxElevation : Double   = max(elevations.max()!, profile!.cameraEyeAltitude, profile!.motifAltitude)
+                let maxElevation : Double   = max(elevations.max()!, profile!.cameraEyeAltitude, profile!.subjectAltitude)
                 let range        : Double   = max(maxElevation - minElevation, 1)
 
                 func x(for index: Int) -> CGFloat {
@@ -61,7 +61,7 @@ struct ElevationProfileView: View {
                 ctx.stroke(strokePath, with: .color(.blue), lineWidth: 1.5)
 
                 let cameraPoint : CGPoint = CGPoint(x: x(for: 0), y: y(for: profile!.cameraEyeAltitude))
-                let motifPoint  : CGPoint = CGPoint(x: x(for: profile!.points.count - 1), y: y(for: profile!.motifAltitude))
+                let motifPoint  : CGPoint = CGPoint(x: x(for: profile!.points.count - 1), y: y(for: profile!.subjectAltitude))
 
                 var losPath = Path()
                 losPath.move(to: cameraPoint)
@@ -87,7 +87,7 @@ struct ElevationProfileView: View {
                 let font           : Font   = Font.system(size: fontSize)
                 let textColor      : Color  = darkMode ? Constants.TEXT_DARK : Constants.TEXT_BRIGHT
                 let cameraAltitude : Text   = Text(verbatim: "\(String(format: profile!.cameraEyeAltitude >= 10 ? "%.0f" : "%.1f", profile!.cameraEyeAltitude))m").font(font).foregroundColor(textColor)
-                let motifAltitude  : Text   = Text(verbatim: "\(String(format: profile!.motifAltitude >= 10 ? "%.0f" : "%.1f", profile!.motifAltitude))m").font(font).foregroundColor(textColor)
+                let motifAltitude  : Text   = Text(verbatim: "\(String(format: profile!.subjectAltitude >= 10 ? "%.0f" : "%.1f", profile!.subjectAltitude))m").font(font).foregroundColor(textColor)
                 ctx.draw(cameraAltitude, at: CGPoint(x: cameraPoint.x + 5, y: size.height - fontSize * 1.5), anchor: .leading)
                 ctx.draw(motifAltitude, at: CGPoint(x: motifPoint.x - 5, y: size.height - fontSize * 1.5), anchor: .trailing)
                 
