@@ -23,6 +23,6 @@ struct DailyQualityTimeline {
         let sunAltitude  : Double               // degrees
         let sunAzimuth   : Double               // degrees
         let isSunUp      : Bool                 // includes civil twilight
-        let isGoldenHour : Bool
+        let isGoldenHour : Bool                
     }
 }

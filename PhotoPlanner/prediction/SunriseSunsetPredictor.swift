@@ -16,43 +16,62 @@ actor SunriseSunsetPredictor {
     private let weatherService : WeatherService = WeatherService.shared
 
 
-    func getDailyTimeline(at location: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, sunPos: SunPos) async throws -> DailyQualityTimeline {
-        let timeZone   = await Helper.fetchTimeZone(for: location)
-        var calendar   = Calendar(identifier: .gregorian)
+    func getDailyTimeline(at location: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double) async throws -> DailyQualityTimeline {
+        let timeZone   : TimeZone = await Helper.fetchTimeZone(for: location)
+        var calendar   : Calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
 
-        let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay   = startOfDay.addingTimeInterval(86400)
+        let startOfDay : Date = calendar.startOfDay(for: date)
+        let endOfDay   : Date = startOfDay.addingTimeInterval(86400)
         
-        // Request hourly forecast for the specific date range
-        let hourlyForecast = try await weatherService.weather(for: CLLocation(latitude: location.latitude, longitude: location.longitude), including: .hourly(startDate: startOfDay, endDate: endOfDay))
-
-        let dayHours = hourlyForecast.forecast.filter {
+        let hourlyForecast : Forecast<HourWeather> = try await weatherService.weather(for: CLLocation(latitude: location.latitude, longitude: location.longitude), including: .hourly(startDate: startOfDay, endDate: endOfDay))
+                
+        let dayHours : [HourWeather] = hourlyForecast.forecast.filter {
             $0.date >= startOfDay && $0.date < endOfDay
         }
 
         guard !dayHours.isEmpty else { throw PredictionError.noForecastData }
 
-        let slots: [DailyQualityTimeline.HourSlot] = dayHours.map { hour in
-            let sunPos       : SunPos               = calcSunPos(at: location, time: hour.date)
-            let directional  : DirectionalCloudInfo = getDirectionalInfo(sunAzimuth:   sunPos.azimuth, shootAzimuth: shootAzimuth)
-            let localWindow  : [HourWeather]        = hourlyForecast.forecast.filter {
+        // Find indices of slots that bracket horizon crossings
+        var horizonBrackets : Set<Int> = []
+        for i in 1..<dayHours.count {
+            let prevAlt : Double = calcSunPos(at: location, time: dayHours[i - 1].date).altitude
+            let currAlt : Double = calcSunPos(at: location, time: dayHours[i].date).altitude
+            if (prevAlt < 0 && currAlt >= 0) || (prevAlt >= 0 && currAlt < 0) {
+                horizonBrackets.insert(i - 1)
+                horizonBrackets.insert(i)
+            }
+        }
+                
+        let slots : [DailyQualityTimeline.HourSlot] = dayHours.enumerated().map { index, hour in
+            let sunPos      : SunPos               = calcSunPos(at: location, time: hour.date)
+            let directional : DirectionalCloudInfo = getDirectionalInfo(sunAzimuth:   sunPos.azimuth, shootAzimuth: shootAzimuth)
+            let localWindow : [HourWeather]        = hourlyForecast.forecast.filter {
                 abs($0.date.timeIntervalSince(hour.date)) <= 3600
             }
-            let isSunUp      : Bool                 = sunPos.altitude > -6
-            let isGoldenHour : Bool                 = sunPos.altitude >= -4 && sunPos.altitude <= 6
-            let score        : SunriseSunsetScore?  = isSunUp ? self.calcScore(window: localWindow, primary: hour, event: SolarEvent(time: hour.date, type: .goldenHour), directional: directional, sunAltitude: sunPos.altitude) : nil
+
+            let isBracket    : Bool = horizonBrackets.contains(index)
+            let isSunUp      : Bool = sunPos.altitude > -6 || isBracket
+            let isGoldenHour : Bool = (sunPos.altitude >= -6 && sunPos.altitude <= 12) || isBracket
+
+            // If this slot brackets a horizon crossing treat it as
+            // altitude 2° (peak golden hour) for scoring purposes
+            let scoringAltitude : Double = isBracket ? 2.0 : sunPos.altitude
+
+            let score : SunriseSunsetScore? = isSunUp ? self.calcScore(window: localWindow, primary: hour, event: SolarEvent(time: hour.date, type: .goldenHour), directional: directional, sunAltitude: scoringAltitude) : nil
 
             return DailyQualityTimeline.HourSlot(time: hour.date, score: score, sunAltitude: sunPos.altitude, sunAzimuth: sunPos.azimuth, isSunUp: isSunUp, isGoldenHour: isGoldenHour)
         }
 
-        let solarNoon   = getSolarNoonTime(at: location, startOfDay: startOfDay)
-        let bestSunrise = slots.filter { $0.time < solarNoon && $0.isSunUp && $0.score != nil }.max { gradeValue($0.score!.overall) < gradeValue($1.score!.overall) }
-        let bestSunset  = slots.filter { $0.time >= solarNoon && $0.isSunUp && $0.score != nil }.max { gradeValue($0.score!.overall) < gradeValue($1.score!.overall) }
+        let solarNoon   : Date                           = getSolarNoonTime(at: location, startOfDay: startOfDay)
 
+        let bestSunrise : DailyQualityTimeline.HourSlot? = slots.filter { $0.time < solarNoon && $0.isGoldenHour && $0.score != nil }.max { gradeValue($0.score!.overall) < gradeValue($1.score!.overall) }
+
+        let bestSunset  : DailyQualityTimeline.HourSlot? = slots.filter { $0.time >= solarNoon && $0.isGoldenHour && $0.score != nil }.max { gradeValue($0.score!.overall) < gradeValue($1.score!.overall) }
+                
         return DailyQualityTimeline(date: date, slots: slots, bestSunrise: bestSunrise, bestSunset: bestSunset, timeZone: timeZone)
     }
-        
+    
     func getDirectionalInfo(sunAzimuth: Double, shootAzimuth: Double) -> DirectionalCloudInfo {
         var diff = (shootAzimuth - sunAzimuth).truncatingRemainder(dividingBy: 360)
         if diff >  180 { diff -= 360 }
@@ -152,7 +171,7 @@ actor SunriseSunsetPredictor {
                 case 0.3..<0.5  : cloudScore = 0.95
                 case 0.5..<0.7  : cloudScore = 0.7
                 case 0.7..<0.85 : cloudScore = 0.3
-                default:          cloudScore = 0.05
+                default         : cloudScore = 0.05
             }
         }
 
@@ -182,91 +201,69 @@ actor SunriseSunsetPredictor {
             case 0.50..<0.65 : humidityCap = 0.80   // max "Great"
             case 0.65..<0.75 : humidityCap = 0.64   // max "Good"
             case 0.75..<0.85 : humidityCap = 0.48   // max "Fair"
-            default:           humidityCap = 0.30   // max "Poor" — very humid, colours washed out
+            default          : humidityCap = 0.30   // max "Poor" — very humid, colours washed out
         }
         
         let conditionPenalty: Double
         switch primary.condition {
 
             // Clear — full potential
-            case .clear, .mostlyClear:
-                conditionPenalty = 1.0
+            case .clear, .mostlyClear                            : conditionPenalty = 1.0
 
             // Partial cloud — good potential
-            case .partlyCloudy:
-                conditionPenalty = 0.95
+            case .partlyCloudy                                   : conditionPenalty = 0.95
 
             // Mostly cloudy — reduced
-            case .mostlyCloudy:
-                conditionPenalty = 0.6
+            case .mostlyCloudy                                   : conditionPenalty = 0.6
 
             // Full overcast — flat light
-            case .cloudy:
-                conditionPenalty = 0.35
+            case .cloudy                                         : conditionPenalty = 0.35
 
             // Atmospheric — haze kills colour
-            case .haze:
-                conditionPenalty = 0.4
-            case .smoky:
-                conditionPenalty = 0.3
-            case .blowingDust:
-                conditionPenalty = 0.2
-            case .foggy:
-                conditionPenalty = 0.1
+            case .haze                                           : conditionPenalty = 0.4
+            case .smoky                                          : conditionPenalty = 0.3
+            case .blowingDust                                    : conditionPenalty = 0.2
+            case .foggy                                          : conditionPenalty = 0.1
 
             // Temperature extremes — not directly relevant to colour
             // but often associated with haze or poor visibility
-            case .hot:
-                conditionPenalty = 0.7
-            case .frigid:
-                conditionPenalty = 0.8   // cold clear air is often very crisp
+            case .hot                                            : conditionPenalty = 0.7
+            case .frigid                                         : conditionPenalty = 0.8 // cold clear air is often very crisp
 
             // Light precipitation — can still produce colour
-            case .drizzle, .freezingDrizzle, .sunShowers:
-                conditionPenalty = 0.7 // it was 0.4, moved to 0.7 - 0.8 might be better
-            case .sunFlurries:
-                conditionPenalty = 0.5   // snow flurries with sun can be beautiful
+            case .drizzle, .freezingDrizzle, .sunShowers         : conditionPenalty = 0.7 // it was 0.4, moved to 0.7 - 0.8 might be better
+            case .sunFlurries                                    : conditionPenalty = 0.5 // snow flurries with sun can be beautiful
 
             // Moderate precipitation
-            case .rain, .sleet, .flurries:
-                conditionPenalty = 0.2
-            case .wintryMix, .freezingRain:
-                conditionPenalty = 0.15
+            case .rain, .sleet, .flurries                        : conditionPenalty = 0.2
+            case .wintryMix, .freezingRain                       : conditionPenalty = 0.15
 
             // Heavy precipitation
-            case .heavyRain, .snow, .hail:
-                conditionPenalty = 0.05
-            case .heavySnow, .blowingSnow:
-                conditionPenalty = 0.05
-            case .blizzard:
-                conditionPenalty = 0.02
+            case .heavyRain, .snow, .hail                        : conditionPenalty = 0.05
+            case .heavySnow, .blowingSnow                        : conditionPenalty = 0.05
+            case .blizzard                                       : conditionPenalty = 0.02
 
             // Storms
-            case .isolatedThunderstorms, .scatteredThunderstorms:
-                conditionPenalty = 0.15
-            case .strongStorms, .thunderstorms:
-                conditionPenalty = 0.05
+            case .isolatedThunderstorms, .scatteredThunderstorms : conditionPenalty = 0.15
+            case .strongStorms, .thunderstorms                   : conditionPenalty = 0.05
 
             // Tropical hazards
-            case .tropicalStorm:
-                conditionPenalty = 0.05
-            case .hurricane:
-                conditionPenalty = 0.02
-            default :
-                conditionPenalty = 1.0
+            case .tropicalStorm                                  : conditionPenalty = 0.05
+            case .hurricane                                      : conditionPenalty = 0.02
+            default                                              : conditionPenalty = 1.0
         }
 
         // Visibility — weight bad visibility more harshly
         let visibilityKm    : Double = primary.visibility.converted(to: .kilometers).value
         let visibilityScore : Double
         switch visibilityKm {
-            case 25...:   visibilityScore = 1.0
-            case 15..<25: visibilityScore = 0.8
-            case 10..<15: visibilityScore = 0.6
-            case 5..<10:
+            case 25...   : visibilityScore = 1.0
+            case 15..<25 : visibilityScore = 0.8
+            case 10..<15 : visibilityScore = 0.6
+            case 5..<10  :
                 visibilityScore = 0.3
                 reasons.append("Reduced visibility — haze or mist present")
-            default:
+            default      :
                 visibilityScore = 0.05
                 reasons.append("Poor visibility — fog or heavy haze")
         }
@@ -278,12 +275,8 @@ actor SunriseSunsetPredictor {
         }
 
         // Rebalanced weights — humidity and visibility penalise more
-        var composite = (cloudScore      * 0.45)
-                      + (humidityScore   * 0.30)
-                      + (visibilityScore * 0.25)
-
-        let isRainy : Bool = window.contains { $0.precipitationChance > 0.4 }
-        
+        var composite : Double = (cloudScore * 0.45) + (humidityScore * 0.30) + (visibilityScore * 0.25)
+        let isRainy   : Bool   = window.contains { $0.precipitationChance > 0.4 }
         if isRainy        { composite *= 0.3 }
         if likelyLowCloud { composite *= 0.6 }
 
@@ -313,7 +306,7 @@ actor SunriseSunsetPredictor {
             case 0.30..<0.48 : grade = .fair
             case 0.48..<0.64 : grade = .good
             case 0.64..<0.80 : grade = .great
-            default:           grade = .grand
+            default          : grade = .grand
         }
         return SunriseSunsetScore(overall: grade, cloudScore: cloudScore, humidityScore: humidityScore, visibilityScore: visibilityScore, reasoning: reasons)
     }    
@@ -333,36 +326,47 @@ actor SunriseSunsetPredictor {
         return bestTime
     }
     
+    
     private func calcSunPos(at coordinate: CLLocationCoordinate2D, time: Date) -> SunPos {
-        let jd         = time.timeIntervalSince1970 / 86400.0 + 2440587.5
-        let n          = jd - 2451545.0
+        let jd         : Double = time.timeIntervalSince1970 / 86400.0 + 2440587.5
+        let n          : Double = jd - 2451545.0
 
-        let L          = (280.46 + 0.9856474 * n).truncatingRemainder(dividingBy: 360)
-        let g          = (357.528 + 0.9856003 * n).truncatingRemainder(dividingBy: 360)
-        let gRad       = g * .pi / 180
-        let lambda     = L + 1.915 * sin(gRad) + 0.020 * sin(2 * gRad)
+        let L          : Double = (280.46 + 0.9856474 * n).truncatingRemainder(dividingBy: 360)
+        let g          : Double = (357.528 + 0.9856003 * n).truncatingRemainder(dividingBy: 360)
+        let gRad       : Double = g * .pi / 180
+        let lambda     : Double = L + 1.915 * sin(gRad) + 0.020 * sin(2 * gRad)
 
-        let epsilon    = 23.439 - 0.0000004 * n
-        let epsilonRad = epsilon * .pi / 180
-        let lambdaRad  = lambda  * .pi / 180
+        let epsilon    : Double = 23.439 - 0.0000004 * n
+        let epsilonRad : Double = epsilon * .pi / 180
+        let lambdaRad  : Double = lambda  * .pi / 180
 
-        let sinDec     = sin(epsilonRad) * sin(lambdaRad)
-        let dec        = asin(sinDec)
-        let ra         = atan2(cos(epsilonRad) * sin(lambdaRad), cos(lambdaRad))
+        let sinDec     : Double = sin(epsilonRad) * sin(lambdaRad)
+        let dec        : Double = asin(sinDec)
 
-        let c          = Calendar(identifier: .gregorian).dateComponents([.hour, .minute, .second], from: time)
-        let utH        = Double(c.hour ?? 0) + Double(c.minute ?? 0) / 60 + Double(c.second ?? 0) / 3600
+        // Normalize RA to 0-360
+        var raNorm     : Double = atan2(cos(epsilonRad) * sin(lambdaRad), cos(lambdaRad)) * 180 / .pi
+        if raNorm < 0 { raNorm += 360 }
 
-        let gmst       = (6.697375 + 0.0657098242 * n + utH).truncatingRemainder(dividingBy: 24)
-        let lha        = (gmst * 15 + coordinate.longitude - ra * 180 / .pi).truncatingRemainder(dividingBy: 360)
-        let lhaRad     = lha * .pi / 180
-        let latRad     = coordinate.latitude * .pi / 180
+        // IAU 1982 GMST — same formula as moonPosition
+        let jd0        : Double = floor(jd - 0.5) + 0.5
+        let T0         : Double = (jd0 - 2451545.0) / 36525.0
+        let utH        : Double = (jd - jd0) * 24.0
 
-        let sinAlt     = sin(latRad) * sin(dec) + cos(latRad) * cos(dec) * cos(lhaRad)
-        let altitude   = asin(sinAlt) * 180 / .pi
+        let gmst0      : Double = (6.697374558 + 2400.0513369  * T0 + 0.0000258622  * T0 * T0 - 1.7222e-9     * T0 * T0 * T0) * 15.0
 
-        let cosAz      = (sin(dec) - sin(latRad) * sinAlt) / (cos(latRad) * cos(asin(sinAlt)))
-        var azimuth    = acos(max(-1, min(1, cosAz))) * 180 / .pi
+        let gmst       : Double = (gmst0 + 360.98564724 * utH / 24.0).truncatingRemainder(dividingBy: 360)
+
+        // Local Hour Angle
+        var lha        : Double = (gmst + coordinate.longitude - raNorm).truncatingRemainder(dividingBy: 360)
+        if lha < 0 { lha += 360 }
+        let lhaRad     : Double = lha * .pi / 180
+        let latRad     : Double = coordinate.latitude * .pi / 180
+
+        let sinAlt     : Double = sin(latRad) * sin(dec) + cos(latRad) * cos(dec) * cos(lhaRad)
+        let altitude   : Double = asin(sinAlt) * 180 / .pi
+
+        let cosAz      : Double = (sin(dec) - sin(latRad) * sinAlt) / (cos(latRad) * cos(asin(sinAlt)))
+        var azimuth    : Double = acos(max(-1, min(1, cosAz))) * 180 / .pi
         if sin(lhaRad) > 0 { azimuth = 360 - azimuth }
 
         return SunPos(altitude: altitude, azimuth: azimuth)
@@ -370,10 +374,10 @@ actor SunriseSunsetPredictor {
         
     private func gradeValue(_ grade: SunriseSunsetScore.Grade) -> Int {
         switch grade {
-            case .poor        : return 0
-            case .fair        : return 1
-            case .good        : return 2
-            case .great       : return 3
+            case .poor  : return 0
+            case .fair  : return 1
+            case .good  : return 2
+            case .great : return 3
             case .grand : return 4
         }
     }

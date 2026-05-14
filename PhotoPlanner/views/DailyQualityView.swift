@@ -41,33 +41,50 @@ struct DailyQualityView: View {
             GeometryReader { geometry in
                 Canvas { ctx, size in
                     let slots : [DailyQualityTimeline.HourSlot] = timeline.slots
-                    guard !slots.isEmpty else { return }
+                    guard !slots.isEmpty, size.width > 0, size.height > 0 else { return }
 
-                    let barWidth : CGFloat = size.width / CGFloat(slots.count)
-                    let padTop   : CGFloat = 4
+                    var localCalendar : Calendar = Calendar(identifier: .gregorian)
+                    localCalendar.timeZone = timeline.timeZone
 
-                    for (i, slot) in slots.enumerated() {
-                        let x : CGFloat = CGFloat(i) * barWidth
+                    // Use local hour to position bars rather than slot index
+                    // This ensures bars align correctly with the hour labels
+                    let startOfDay   : Date    = localCalendar.startOfDay(for: timeline.date)
+                    let totalSeconds : CGFloat = 86400
+                    
+                    for slot in slots {
+                        // Position based on seconds elapsed since local midnight
+                        let elapsed   : Double  = slot.time.timeIntervalSince(startOfDay)
+                        let xFraction : CGFloat = CGFloat(elapsed) / totalSeconds
+                        let x         : CGFloat = xFraction * size.width
+
+                        // Bar width based on slot interval (1 hour = 1/24 of width)
+                        let barWidth : CGFloat = size.width / 24.0
 
                         guard slot.isSunUp else {
-                            ctx.fill(Path(roundedRect: CGRect(x: x + 1, y: size.height - 3, width: max(1, barWidth - 2), height: 3), cornerRadius: 1),with: .color(.white.opacity(0.08)))
-                                continue
-                            }
-                        
-                        // Sun is up but not golden hour — subtle mid bar
+                            ctx.fill(Path(roundedRect: CGRect(x: x + 1, y: size.height - 3, width: max(1, barWidth - 2), height: 3), cornerRadius: 1), with: .color(.white.opacity(0.08)))
+                            continue
+                        }
+
                         guard slot.isGoldenHour else {
                             ctx.fill(Path(roundedRect: CGRect(x: x + 1, y: size.height - 8, width: max(1, barWidth - 2), height: 8), cornerRadius: 1), with: .color(.white.opacity(0.08)))
                             continue
                         }
 
-                        guard let score = slot.score else { continue }
-                        
-                        let fraction  : Double  = gradeFraction(score.overall)
-                        let barHeight : CGFloat = max(4, (size.height - padTop) * fraction)
-                        let y         : CGFloat = size.height - barHeight
-                        let rect      : CGRect  = CGRect(x: x + 1, y: y, width: barWidth - 2, height: barHeight)
+                        guard let score : SunriseSunsetScore = slot.score else { continue }
 
-                        ctx.fill(Path(roundedRect: rect, cornerRadius: 2), with: .linearGradient( Gradient(colors: [score.overall.color.opacity(0.9), score.overall.color.opacity(0.35)]), startPoint: CGPoint(x: x, y: y), endPoint: CGPoint(x: x, y: size.height)))
+                        let fraction  : CGFloat = gradeFraction(score.overall)
+                        let barHeight : CGFloat = max(4, (size.height - 4) * fraction)
+                        let y         : CGFloat = size.height - barHeight
+                        let rect      : CGRect  = CGRect(x: x + 1, y: y, width: max(1, barWidth - 2), height: barHeight)
+
+                        ctx.fill(
+                            Path(roundedRect: rect, cornerRadius: 2),
+                            with: .linearGradient(
+                                Gradient(colors: [score.overall.color.opacity(0.9), score.overall.color.opacity(0.35)]),
+                                                  startPoint: CGPoint(x: x, y: y),
+                                                  endPoint: CGPoint(x: x, y: size.height)
+                            )
+                        )
 
                         let isBest : Bool = slot.id == timeline.bestSunrise?.id || slot.id == timeline.bestSunset?.id
                         if isBest {
@@ -75,16 +92,22 @@ struct DailyQualityView: View {
                         }
                     }
                 }
-                    .frame(width: geometry.size.width, height: geometry.size.height)
+                .frame(width: geometry.size.width, height: geometry.size.height)
             }
             .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44)
 
             // Labels for hour of day
+            let localCalendar: Calendar = {
+                var c      = Calendar(identifier: .gregorian)
+                c.timeZone = timeline.timeZone
+                return c
+            }()
+                        
+            // Hour labels
             HStack(spacing: 0) {
                 ForEach(Array(timeline.slots.enumerated()), id: \.offset) { i, slot in
-                    let hourString : String = hourFormatter.string(from: slot.time)
-                    let show       : Bool   = (Int(hourString) ?? 0) % 3 == 0
-                    Text(show ? hourString : "")
+                    let hour = localCalendar.component(.hour, from: slot.time)
+                    Text(hour % 6 == 0 ? String(format: "%02d", hour) : "")
                         .font(.system(size: 7).monospacedDigit())
                         .foregroundStyle(.white.opacity(0.4))
                         .frame(maxWidth: .infinity)
@@ -110,11 +133,11 @@ struct DailyQualityView: View {
 
     private func gradeFraction(_ grade: SunriseSunsetScore.Grade) -> CGFloat {
         switch grade {
-        case .poor:        return 0.15
-        case .fair:        return 0.35
-        case .good:        return 0.58
-        case .great:       return 0.80
-        case .grand: return 1.00
+        case .poor  : return 0.15
+        case .fair  : return 0.35
+        case .good  : return 0.58
+        case .great : return 0.80
+        case .grand : return 1.00
         }
     }
 }

@@ -26,7 +26,7 @@ class SunQualityViewModel {
         error         = nil
 
         do {
-            dailyTimeline = try await predictor.getDailyTimeline(at: location, on: date, shootAzimuth: shootAzimuth, sunPos: sunPos)
+            dailyTimeline = try await predictor.getDailyTimeline(at: location, on: date, shootAzimuth: shootAzimuth)
             isVisible = true
         } catch {
             self.error = error
