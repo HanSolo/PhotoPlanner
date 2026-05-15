@@ -161,7 +161,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 26.0.13;
+				MARKETING_VERSION = 26.0.15;
 				PRODUCT_BUNDLE_IDENTIFIER = eu.hansolo.PhotoPlanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -200,7 +200,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 26.0.13;
+				MARKETING_VERSION = 26.0.15;
 				PRODUCT_BUNDLE_IDENTIFIER = eu.hansolo.PhotoPlanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

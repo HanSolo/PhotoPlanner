@@ -253,7 +253,7 @@ struct MilkywayOverlayView: View {
             let minute     : Int            = components.minute ?? 0
             let hour       : Int            = components.hour   ?? 0
 
-            guard minute == 0 && hour % 3 == 0 else { continue }
+            guard minute == 0 && hour % 2 == 0 else { continue }
 
             let x : CGFloat = leftPad + CGFloat(i) / CGFloat(slots.count - 1) * chartWidth
 

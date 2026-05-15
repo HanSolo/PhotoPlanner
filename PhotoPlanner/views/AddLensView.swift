@@ -103,6 +103,9 @@ struct AddLensView: View {
                         Text("\(index, specifier: "%.1f")")
                             .tag(index)
                     }
+                    .onAppear {
+                        self.minAperture = 4.0
+                    }
                 }
                 .pickerStyle(.menu)
             }
@@ -119,26 +122,36 @@ struct AddLensView: View {
                         Text("\(index, specifier: "%.1f")")
                             .tag(index)
                     }
+                    .onAppear {
+                        self.minAperture = 22.0
+                    }
                 }
                 .pickerStyle(.menu)
             }
             .background(self.colorScheme == .dark ? .black : .white)
             .listRowBackground(self.colorScheme == .dark ? Color.black : Color.white)
                                     
-            Button("Save") {
-                let lens : Lens = Lens(name: self.name, minFocalLength: self.minFocalLength, maxFocalLength: self.maxFocalLength, minAperture: self.minAperture, maxAperture: self.maxAperture, sensorFormat: self.model.camera.sensorFormat)
-                context.insert(lens)
-                do {
-                    try context.save()
-                } catch {
-                    debugPrint(error.localizedDescription)
+            HStack {
+                Button("Close") {
+                    dismiss()
                 }
-                dismiss()
+                .buttonStyle(.glass)
+                
+                Spacer()
+                
+                Button("Save") {
+                    let lens : Lens = Lens(name: self.name, minFocalLength: self.minFocalLength, maxFocalLength: self.maxFocalLength, minAperture: self.minAperture, maxAperture: self.maxAperture, sensorFormat: self.model.camera.sensorFormat)
+                    context.insert(lens)
+                    do {
+                        try context.save()
+                    } catch {
+                        debugPrint(error.localizedDescription)
+                    }
+                    dismiss()
+                }
+                .disabled(name.isEmpty || (minFocalLength > maxFocalLength || (minAperture > maxAperture)))                
+                .buttonStyle(.glass)
             }
-            .disabled(name.isEmpty || (minFocalLength > maxFocalLength || (minAperture > maxAperture)))
-            .listRowBackground(self.colorScheme == .dark ? Color.black : Color.white)
-            .foregroundStyle(self.colorScheme == .dark ? .white : .black)
-            .buttonStyle(.bordered)
         }
         .scrollContentBackground(.hidden)
         .background(self.colorScheme == .dark ? .black : .white)

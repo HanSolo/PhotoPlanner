@@ -12,7 +12,7 @@ import MapKit
 
 struct MarkerData {
     let touchArea   : CGRect = CGRect(x: 0, y: 0, width: 80, height: 80)
-    let coordinate  : CLLocationCoordinate2D
+    var coordinate  : CLLocationCoordinate2D
     let screenPoint : CGPoint
     
     var touchableRect: CGRect {

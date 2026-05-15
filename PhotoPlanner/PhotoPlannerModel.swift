@@ -119,6 +119,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var tc1                         : Teleconverter            = Teleconverter(factor: Properties.instance.tc1Factor!)
     var tc2                         : Teleconverter            = Teleconverter(factor: Properties.instance.tc2Factor!)
     var elevationProfile            : ElevationProfile?
+    var triggerCenterToCamera       : Bool                     = false
     
 
     override init() {

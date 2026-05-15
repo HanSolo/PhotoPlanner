@@ -107,7 +107,7 @@ struct DailyQualityView: View {
             HStack(spacing: 0) {
                 ForEach(Array(timeline.slots.enumerated()), id: \.offset) { i, slot in
                     let hour = localCalendar.component(.hour, from: slot.time)
-                    Text(hour % 6 == 0 ? String(format: "%02d", hour) : "")
+                    Text(hour % 2 == 0 ? String(format: "%02d", hour) : "")
                         .font(.system(size: 7).monospacedDigit())
                         .foregroundStyle(.white.opacity(0.4))
                         .frame(maxWidth: .infinity)

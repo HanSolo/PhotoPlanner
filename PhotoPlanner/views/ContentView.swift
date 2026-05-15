@@ -28,6 +28,8 @@ struct ContentView: View {
     @State private var mapStyle                 : MapStyle               = .standard
     @State private var cameraViewVisible        : Bool                   = false
     @State private var lensViewVisible          : Bool                   = false
+    @State private var addPhotoShootViewVisible : Bool                   = false
+    @State private var photoShootsViewVisible   : Bool                   = false
     @State private var teleconverterViewVisible : Bool                   = false
     @State private var datePickerVisible        : Bool                   = false
     @State private var sunsetPredictionVisible  : Bool                   = false
@@ -37,8 +39,9 @@ struct ContentView: View {
     @State private var elevationViewVisible     : Bool                   = false
     @State private var centerCameraPosition     : Bool                   = false
         
-    @Query(sort: [SortDescriptor(\Camera.name, comparator: .localizedStandard)]) private var cameras: [Camera]
-    @Query(sort: [SortDescriptor(\Lens.name, comparator: .localizedStandard)])   private var lenses : [Lens]
+    @Query(sort: [SortDescriptor(\Camera.name,     comparator: .localizedStandard)]) private var cameras     : [Camera]
+    @Query(sort: [SortDescriptor(\Lens.name,       comparator: .localizedStandard)]) private var lenses      : [Lens]
+    @Query(sort: [SortDescriptor(\PhotoShoot.name, comparator: .localizedStandard)]) private var photoShoots : [PhotoShoot]
     
     let lineWidth    : CGFloat = Constants.IS_IPAD ? 1.0 : 0.5
     let fovLineWidth : CGFloat = Constants.IS_IPAD ? 2.0 : 1.0
@@ -166,7 +169,7 @@ struct ContentView: View {
                         self.model.cameraMarkerData = mapProxy.markerData(coordinate: self.model.cameraMarkerData!.coordinate, geometryProxy: geo)
                         
                         guard self.model.subjectMarkerData != nil else { return }
-                        self.model.subjectMarkerData    = mapProxy.markerData(coordinate: self.model.subjectMarkerData!.coordinate, geometryProxy: geo)
+                        self.model.subjectMarkerData  = mapProxy.markerData(coordinate: self.model.subjectMarkerData!.coordinate, geometryProxy: geo)
                         self.model.currentMapLocation = pos.region.center
                         self.model.currentMapHeading  = pos.camera.heading
                         Properties.instance.distance  = pos.camera.distance
@@ -176,15 +179,6 @@ struct ContentView: View {
                         MapCompass()
                     }
                     .mapStyle(self.mapStyle)
-                    /*
-                    .overlay {
-                        Rectangle()
-                            .fill(.white.opacity(0.25))
-                            .blendMode(.saturation)
-                            .ignoresSafeArea()
-                            .allowsHitTesting(false)
-                    }
-                    */
                     .onAppear {
                         self.model.checkIfLocationIsEnabled()
                     }
@@ -247,6 +241,7 @@ struct ContentView: View {
                 .padding(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
                 .background(self.colorScheme == .dark ? .black.opacity(0.5) : .white.opacity(0.5))
                 
+                // Camera and CameraPin
                 HStack {
                     Button {
                         self.cameraViewVisible = true
@@ -274,6 +269,7 @@ struct ContentView: View {
                     }
                 }
                 
+                // Lens and SubjectPin
                 HStack {
                     Button {
                         self.lensViewVisible = true
@@ -301,6 +297,7 @@ struct ContentView: View {
                     }
                 }
                 
+                // DoF and Center Camera
                 HStack {
                     Toggle(isOn: self.model.dofVisibleBinding) {
                         Image(systemName: "trapezoid.and.line.vertical")
@@ -333,31 +330,69 @@ struct ContentView: View {
                             self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
                         }
                     }
+                    .onChange(of: self.model.triggerCenterToCamera) {
+                        if self.model.cameraMarkerData != nil {
+                            self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
+                        }
+                    }
                 }
                 
-                Toggle(isOn: $isPortrait) {
-                    Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90.camera")
-                        .padding(7)
-                        .rotationEffect(self.isPortrait ? .degrees(-90) : .zero)
-                }
-                .frame(width: 44, height: 44)
-                .toggleStyle(.button)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
-                .onChange(of: self.isPortrait) { oldValue, newValue in
-                    self.model.orientation = newValue ? .portrait : .landscape
-                    self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
-                    if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
+                
+                // Orientation and Save PhotoShoot
+                HStack {
+                    Toggle(isOn: $isPortrait) {
+                        Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90.camera")
+                            .padding(7)
+                            .rotationEffect(self.isPortrait ? .degrees(-90) : .zero)
+                    }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .onChange(of: self.isPortrait) { oldValue, newValue in
+                        self.model.orientation = newValue ? .portrait : .landscape
+                        self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+                        if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
+                    }
+                    
+                    Spacer()
+                    
+                    Button {
+                        self.addPhotoShootViewVisible = true
+                    } label: {
+                        Image(systemName: "photo.badge.plus.fill")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())                    
                 }
                 
-                Toggle(isOn: self.$datePickerVisible) {
-                    Image(systemName: "calendar")
-                        .padding(7)
+                
+                // Calendar and PhotoShootViews
+                HStack {
+                    Toggle(isOn: self.$datePickerVisible) {
+                        Image(systemName: "calendar")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    
+                    Spacer()
+                    
+                    Button {
+                        self.photoShootsViewVisible = true
+                    } label : {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
                 }
-                .frame(width: 44, height: 44)
-                .toggleStyle(.button)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
+                                
                 
                 Toggle(isOn: self.model.epdVisibleBinding) {
                     Image(systemName: "sun.max")
@@ -533,6 +568,15 @@ struct ContentView: View {
         .sheet(isPresented: $teleconverterViewVisible) {
             TeleconverterView()
         }
+        .sheet(isPresented: $addPhotoShootViewVisible) {
+            AddPhotoShootView()
+        }
+        .sheet(isPresented: $photoShootsViewVisible) {
+            PhotoShootsView(photoShoots: self.photoShoots)
+        }
+        .onChange(of: self.model.orientation) {
+            self.isPortrait = self.model.orientation == .portrait
+        }
         .task {
             let savedCameraId         : String     = Properties.instance.cameraId         ?? Constants.DEFAULT_CAMERA.id
             let savedLensId           : String     = Properties.instance.lensId           ?? Constants.DEFAULT_LENS.id
@@ -552,8 +596,8 @@ struct ContentView: View {
             self.model.focalLength    = savedFocalLength
             self.model.cameraDistance = savedDistance
                                     
-            self.model.cameraMarkerData = MarkerData(coordinate: cameraPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
-            self.model.subjectMarkerData  = MarkerData(coordinate: subjectPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
+            self.model.cameraMarkerData  = MarkerData(coordinate: cameraPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
+            self.model.subjectMarkerData = MarkerData(coordinate: subjectPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
             self.model.updateFoVTriangle(cameraPoint: cameraPoint, subjectPoint: subjectPoint, focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
         }
     }

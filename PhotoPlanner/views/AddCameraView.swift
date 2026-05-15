@@ -52,21 +52,28 @@ struct AddCameraView: View {
             }
             .background(self.colorScheme == .dark ? .black : .white)
             .listRowBackground(self.colorScheme == .dark ? Color.black : Color.white)
-                                                            
-            Button("Save") {
-                let camera : Camera = Camera(name: self.name, sensorFormat: self.sensorFormat)
-                context.insert(camera)
-                do {
-                    try context.save()
-                } catch {
-                    debugPrint(error.localizedDescription)
+                     
+            HStack {
+                Button("Close") {
+                    dismiss()
                 }
-                dismiss()
+                .buttonStyle(.glass)
+                
+                Spacer()
+                
+                Button("Save") {
+                    let camera : Camera = Camera(name: self.name, sensorFormat: self.sensorFormat)
+                    context.insert(camera)
+                    do {
+                        try context.save()
+                    } catch {
+                        debugPrint(error.localizedDescription)
+                    }
+                    dismiss()
+                }
+                .disabled(name.isEmpty)
+                .buttonStyle(.glass)
             }
-            .disabled(name.isEmpty)
-            .listRowBackground(self.colorScheme == .dark ? Color.black : Color.white)
-            .foregroundStyle(self.colorScheme == .dark ? .white : .black)
-            .buttonStyle(.bordered)
         }
         .scrollContentBackground(.hidden)
         .background(self.colorScheme == .dark ? .black : .white)

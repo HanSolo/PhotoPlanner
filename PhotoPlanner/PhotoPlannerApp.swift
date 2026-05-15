@@ -17,6 +17,6 @@ struct PhotoPlannerApp: App {
             ContentView()
                 .environment(self.model)
         }
-        .modelContainer(for: [Camera.self, Lens.self])
+        .modelContainer(for: [Camera.self, Lens.self, PhotoShoot.self])
     }
 }
