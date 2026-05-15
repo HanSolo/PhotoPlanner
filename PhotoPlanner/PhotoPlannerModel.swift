@@ -118,7 +118,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var moonTimes                   : (moonRise: Date?, moonSet: Date?)
     var tc1                         : Teleconverter            = Teleconverter(factor: Properties.instance.tc1Factor!)
     var tc2                         : Teleconverter            = Teleconverter(factor: Properties.instance.tc2Factor!)
-    var elevationProfile            : ElevationProfile?
+    var elevationProfile            : ElevationProfile?    
     var triggerCenterToCamera       : Bool                     = false
     
 
@@ -217,7 +217,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     
     func updateSunAndMoonTimes() async -> Void {
         if self.cameraMarkerData != nil {
-            self.sunTimes  = self.magicHours.getTimes(date: self.currentMapDate, lat: self.cameraMarkerData!.coordinate.latitude, lon: self.cameraMarkerData!.coordinate.longitude)
+            self.sunTimes = self.magicHours.getTimes(date: self.currentMapDate, lat: self.cameraMarkerData!.coordinate.latitude, lon: self.cameraMarkerData!.coordinate.longitude)
             let timeZone : TimeZone = await Helper.fetchTimeZone(for: self.cameraMarkerData!.coordinate)
             self.moonTimes = MoonCalculator.calcMoonRiseAndMoonSet(at: self.cameraMarkerData!.coordinate, on: self.currentMapDate, timeZone: timeZone)
         }

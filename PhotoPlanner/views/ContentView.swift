@@ -89,7 +89,6 @@ struct ContentView: View {
                             MapPolyline(points: [self.model.fovData!.cameraLocation, self.model.fovData!.subjectLocation])
                                 .stroke(Constants.CENTER_LINE_STROKE, lineWidth: lineWidth)
                         }
-                        
                         if self.model.lens.isPrime { // Prime lens
                             MapPolygon(coordinates: self.model.triangleCoordinates)
                                 .foregroundStyle(Color.clear)
@@ -172,6 +171,7 @@ struct ContentView: View {
                         self.model.subjectMarkerData  = mapProxy.markerData(coordinate: self.model.subjectMarkerData!.coordinate, geometryProxy: geo)
                         self.model.currentMapLocation = pos.region.center
                         self.model.currentMapHeading  = pos.camera.heading
+                        self.model.cameraDistance     = pos.camera.distance
                         Properties.instance.distance  = pos.camera.distance
                     }
                     .mapControls {
@@ -576,7 +576,7 @@ struct ContentView: View {
         }
         .onChange(of: self.model.orientation) {
             self.isPortrait = self.model.orientation == .portrait
-        }
+        }        
         .task {
             let savedCameraId         : String     = Properties.instance.cameraId         ?? Constants.DEFAULT_CAMERA.id
             let savedLensId           : String     = Properties.instance.lensId           ?? Constants.DEFAULT_LENS.id
@@ -618,5 +618,9 @@ private extension MapProxy {
     func markerData(coordinate: CLLocationCoordinate2D, geometryProxy: GeometryProxy) -> MarkerData? {
         guard let point = convert(coordinate, to: .local) else { return nil }
         return .init(coordinate: coordinate, screenPoint: point)
+    }
+    
+    func markerData(coordinate: CLLocationCoordinate2D, screenPoint: CGPoint) -> MarkerData? {
+        return .init(coordinate: coordinate, screenPoint: screenPoint)
     }
 }

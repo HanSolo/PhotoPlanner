@@ -46,18 +46,6 @@ struct PhotoShootsView: View {
                                 Image(systemName: "photo.badge.checkmark.fill")
                             }
                             .highPriorityGesture(TapGesture().onEnded {
-                                self.model.camera         = photoShoot.camera
-                                self.model.lens           = photoShoot.lens
-                                self.model.aperture       = photoShoot.aperture
-                                self.model.focalLength    = photoShoot.focalLength
-                                self.model.orientation    = photoShoot.isLandscape ? .landscape : .portrait
-                                self.model.tc1.factor     = photoShoot.tc1
-                                self.model.tc2.factor     = photoShoot.tc2
-                                self.model.cameraDistance = photoShoot.cameraDistance
-                                if self.model.cameraMarkerData  != nil { self.model.cameraMarkerData!.coordinate  = CLLocationCoordinate2D(latitude: photoShoot.cameraLat, longitude: photoShoot.cameraLon) }
-                                if self.model.subjectMarkerData != nil { self.model.subjectMarkerData!.coordinate = CLLocationCoordinate2D(latitude: photoShoot.subjectLat, longitude: photoShoot.subjectLon) }
-                                                     
-                                
                                 Properties.instance.cameraId         = photoShoot.camera.id
                                 Properties.instance.lensId           = photoShoot.lens.id
                                 Properties.instance.aperture         = photoShoot.aperture
@@ -68,8 +56,27 @@ struct PhotoShootsView: View {
                                 Properties.instance.subjectLatitude  = photoShoot.subjectLat
                                 Properties.instance.subjectLongitude = photoShoot.subjectLon
                                 
-                                self.model.updateFoVTriangle(cameraPoint: MKMapPoint(CLLocationCoordinate2D(latitude: photoShoot.cameraLat, longitude: photoShoot.cameraLon)), subjectPoint: MKMapPoint(CLLocationCoordinate2D(latitude: photoShoot.subjectLat, longitude: photoShoot.subjectLon)), focalLength: photoShoot.focalLength, aperture: photoShoot.aperture, sensorFormat: photoShoot.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+                                DispatchQueue.main.async {
+                                    self.model.camera         = photoShoot.camera
+                                    self.model.lens           = photoShoot.lens
+                                    self.model.aperture       = photoShoot.aperture
+                                    self.model.focalLength    = photoShoot.focalLength
+                                    self.model.orientation    = photoShoot.isLandscape ? .landscape : .portrait
+                                    self.model.tc1.factor     = photoShoot.tc1
+                                    self.model.tc2.factor     = photoShoot.tc2
+                                    self.model.cameraDistance = photoShoot.cameraDistance
+                                }
+                                
+                                let cameraCoordinate  : CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: photoShoot.cameraLat,  longitude: photoShoot.cameraLon)
+                                let subjectCoordinate : CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: photoShoot.subjectLat, longitude: photoShoot.subjectLon)
+                                                                                           
+                                self.model.cameraMarkerData  = MarkerData(coordinate: cameraCoordinate, screenPoint: CGPoint(x: 0, y: 0))
+                                self.model.subjectMarkerData = MarkerData(coordinate: subjectCoordinate, screenPoint: CGPoint(x: 0, y: 0))
+                                
+                                self.model.updateFoVTriangle(cameraPoint: MKMapPoint(cameraCoordinate), subjectPoint: MKMapPoint(subjectCoordinate), focalLength: photoShoot.focalLength, aperture: photoShoot.aperture, sensorFormat: photoShoot.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+                                
                                 self.model.triggerCenterToCamera.toggle() // Make sure the map will center to the new camera location
+                                                                                                                                                                
                                 dismiss()
                             })
                             VStack(alignment: .leading) {
