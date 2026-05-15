@@ -62,7 +62,7 @@ struct HelpView: View {
                     
                     Spacer()
                     
-                    Text("Center map on camera location")
+                    Text("Center on camera location")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.trailing)
@@ -78,17 +78,29 @@ struct HelpView: View {
                         .padding(EdgeInsets(top: 0, leading: 50, bottom: 0, trailing: 0))
                     
                     Spacer()
+                    
+                    Text("Save a new photo shoot")
+                        .font(font)
+                        .foregroundStyle(Color.white)
+                        .multilineTextAlignment(.trailing)
+                        .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 50))
                 }
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                 
                 HStack {
-                    Text("Pick date for sunrise/sunset calculation")
+                    Text("Date for calculations")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.leading)
                         .padding(EdgeInsets(top: 0, leading: 50, bottom: 0, trailing: 0))
                     
                     Spacer()
+                    
+                    Text("Restore a photo shoot")
+                        .font(font)
+                        .foregroundStyle(Color.white)
+                        .multilineTextAlignment(.trailing)
+                        .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 50))
                 }
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                 
