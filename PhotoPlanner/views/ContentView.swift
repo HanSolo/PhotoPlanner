@@ -72,7 +72,10 @@ struct ContentView: View {
                                 }
                             }
                         }
-                                                
+                         
+                        // Show user location
+                        UserAnnotation()
+                        
                         // Show the camera marker
                         if self.model.cameraMarkerData != nil {
                             Annotation("", coordinate: self.model.cameraMarkerData!.coordinate) {
@@ -100,8 +103,7 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                        }                        
-                        UserAnnotation()
+                        }
                                                                             
                                                 
                         if self.model.fovData != nil {
