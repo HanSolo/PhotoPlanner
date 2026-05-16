@@ -103,7 +103,7 @@ public class Constants {
     public static let DEFAULT_MAP_SIZE               : MKMapSize     = MKMapSize(width: 97313.02098080516, height: 60438.11837643385)
     public static let DEFAULT_ORIGIN                 : MKMapPoint    = MKMapPoint(x: DEFAULT_LOCATION.x - DEFAULT_MAP_SIZE.width / 2, y: DEFAULT_LOCATION.y - DEFAULT_MAP_SIZE.height / 2)
                         
-    public static let THIN_FONT_12                   : Font          = Font.system(size: 12, weight: .light,   design: .rounded)
+    public static let THIN_FONT_10                   : Font          = Font.system(size: 10, weight: .light,   design: .rounded)
     public static let REGULAR_FONT_12                : Font          = Font.system(size: 12, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_14                : Font          = Font.system(size: 14, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_16                : Font          = Font.system(size: 16, weight: .regular, design: .rounded)

@@ -60,15 +60,21 @@ struct ContentView: View {
                     Map(position: $position, interactionModes: [.pan, .rotate, .zoom]) {
                         // Show annotation for all saved photo shoots
                         ForEach(self.photoShoots) { photoShoot in
-                            Annotation("\(photoShoot.name)", coordinate: CLLocationCoordinate2D(latitude: photoShoot.cameraLat, longitude: photoShoot.cameraLon)) {
-                                ZStack(alignment: .center) {
-                                    Image(systemName: "photo.circle.fill")
+                            Annotation("", coordinate: CLLocationCoordinate2D(latitude: photoShoot.cameraLat, longitude: photoShoot.cameraLon)) {
+                                ZStack(alignment: .top) {
+                                    Image(systemName: "record.circle")
                                         .resizable()
-                                        .background(.white)
+                                        .background(Constants.PIN_COLOR)
                                         .clipShape(.circle)
-                                        .foregroundStyle(Constants.PIN_COLOR)
+                                        .foregroundStyle(colorScheme == .dark ? .black : .white)
                                         .frame(width: 12, height: 12)
                                         .shadow(color: .clear, radius: 0, x: 0, y: 0)
+                                    
+                                    Text(photoShoot.name)
+                                        .font(Constants.THIN_FONT_10)
+                                        .padding(4)
+                                        .cornerRadius(4)
+                                        .offset(y: 10)
                                 }
                             }
                         }
@@ -382,6 +388,7 @@ struct ContentView: View {
                         self.addPhotoShootViewVisible = true
                     } label: {
                         Image(systemName: "photo.badge.plus.fill")
+                            .symbolRenderingMode(.multicolor)
                             .padding(7)
                     }
                     .frame(width: 44, height: 44)
