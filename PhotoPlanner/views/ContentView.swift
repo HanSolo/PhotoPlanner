@@ -58,6 +58,22 @@ struct ContentView: View {
             GeometryReader { geo in
                 MapReader { mapProxy in
                     Map(position: $position, interactionModes: [.pan, .rotate, .zoom]) {
+                        // Show annotation for all saved photo shoots
+                        ForEach(self.photoShoots) { photoShoot in
+                            Annotation("\(photoShoot.name)", coordinate: CLLocationCoordinate2D(latitude: photoShoot.cameraLat, longitude: photoShoot.cameraLon)) {
+                                ZStack(alignment: .center) {
+                                    Image(systemName: "photo.circle.fill")
+                                        .resizable()
+                                        .background(.white)
+                                        .clipShape(.circle)
+                                        .foregroundStyle(Constants.PIN_COLOR)
+                                        .frame(width: 12, height: 12)
+                                        .shadow(color: .clear, radius: 0, x: 0, y: 0)
+                                }
+                            }
+                        }
+                                                
+                        // Show the camera marker
                         if self.model.cameraMarkerData != nil {
                             Annotation("", coordinate: self.model.cameraMarkerData!.coordinate) {
                                 ZStack(alignment: .center) {
@@ -70,6 +86,8 @@ struct ContentView: View {
                                 }
                             }
                         }
+                        
+                        // Show the subject marker
                         if self.model.subjectMarkerData != nil {
                             Annotation("", coordinate: self.model.subjectMarkerData!.coordinate) {
                                 ZStack(alignment: .center) {
@@ -84,6 +102,7 @@ struct ContentView: View {
                             }
                         }                        
                         UserAnnotation()
+                                                                            
                                                 
                         if self.model.fovData != nil {
                             MapPolyline(points: [self.model.fovData!.cameraLocation, self.model.fovData!.subjectLocation])

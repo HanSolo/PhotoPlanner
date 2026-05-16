@@ -69,6 +69,8 @@ public class Constants {
     public static let OUTER_RING_BRIGHT              : GraphicsContext.Shading = GraphicsContext.Shading.color(Color(red: 0.0, green: 0.0, blue: 0.0, opacity: 0.65))
     public static let OUTER_RING_SATELLITE           : GraphicsContext.Shading = GraphicsContext.Shading.color(Color(red: 0.0, green: 0.0, blue: 0.0, opacity: 0.8))
     
+    public static let PIN_COLOR                      : Color         = Color(red: 0.94, green: 0.58, blue: 0.21, opacity: 1.00)
+    
     public static let FOV_COLOR_DARK                 : Color         = Color(red: 0.0, green: 0.56078431, blue: 0.8627451)
     public static let FOV_FILL_DARK                  : Color         = FOV_COLOR.opacity(0.3)
     public static let FOV_STROKE_DARK                : Color         = Color.white
@@ -101,6 +103,7 @@ public class Constants {
     public static let DEFAULT_MAP_SIZE               : MKMapSize     = MKMapSize(width: 97313.02098080516, height: 60438.11837643385)
     public static let DEFAULT_ORIGIN                 : MKMapPoint    = MKMapPoint(x: DEFAULT_LOCATION.x - DEFAULT_MAP_SIZE.width / 2, y: DEFAULT_LOCATION.y - DEFAULT_MAP_SIZE.height / 2)
                         
+    public static let THIN_FONT_12                   : Font          = Font.system(size: 12, weight: .light,   design: .rounded)
     public static let REGULAR_FONT_12                : Font          = Font.system(size: 12, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_14                : Font          = Font.system(size: 14, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_16                : Font          = Font.system(size: 16, weight: .regular, design: .rounded)
