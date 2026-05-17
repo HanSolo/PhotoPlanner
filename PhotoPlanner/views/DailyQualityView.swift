@@ -120,7 +120,7 @@ struct DailyQualityView: View {
     private func gradeTag(label: String, slot: DailyQualityTimeline.HourSlot) -> some View {
         HStack(spacing: 3) {
             Text(label).foregroundStyle(.white.opacity(0.5))
-            Text(slot.score?.overall.rawValue ?? "—")
+            Text(slot.score?.overall.rawValue ?? "-")
                 .foregroundStyle(slot.score?.overall.color ?? .secondary)
                 .bold()
         }

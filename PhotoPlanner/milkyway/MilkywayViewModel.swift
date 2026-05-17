@@ -10,7 +10,6 @@ import CoreLocation
 import SwiftUI
 
 
-// In your map ViewModel — add alongside SunQualityViewModel
 @Observable
 class MilkywayViewModel {
     var timeline   : MilkywayTimeline?

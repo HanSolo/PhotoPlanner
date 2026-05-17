@@ -41,3 +41,57 @@ class SunQualityViewModel {
         isVisible     = false
     }
 }
+
+
+extension SunQualityViewModel {
+
+    func fetchBlended(at location: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, configuration: RemoteWeatherConfiguration = SunriseSunsetPredictor.inland) async {
+        isLoading     = true
+        dailyTimeline = nil
+        error         = nil
+
+        do {
+            let blendedTimeline = try await predictor.getBlendedDailyTimeline(at: location, on: date, shootAzimuth: shootAzimuth, configuration: configuration)
+
+            // Convert to the existing DailyQualityTimeline so the
+            // existing DailyQualityView works without any changes
+            dailyTimeline = DailyQualityTimeline(date: blendedTimeline.date,
+                slots: blendedTimeline.slots.map { blendedSlot in
+                    DailyQualityTimeline.HourSlot(
+                        time         : blendedSlot.time,
+                        score        : blendedSlot.blendedScore,
+                        sunAltitude  : blendedSlot.sunAltitude,
+                        sunAzimuth   : blendedSlot.sunAzimuth,
+                        isSunUp      : blendedSlot.isSunUp,
+                        isGoldenHour : blendedSlot.isGoldenHour
+                    )
+                },
+                bestSunrise: blendedTimeline.bestSunrise.map { blendedSlot in
+                    DailyQualityTimeline.HourSlot(
+                        time         : blendedSlot.time,
+                        score        : blendedSlot.blendedScore,
+                        sunAltitude  : blendedSlot.sunAltitude,
+                        sunAzimuth   : blendedSlot.sunAzimuth,
+                        isSunUp      : blendedSlot.isSunUp,
+                        isGoldenHour : blendedSlot.isGoldenHour
+                    )
+                },
+                bestSunset: blendedTimeline.bestSunset.map { blendedSlot in
+                    DailyQualityTimeline.HourSlot(
+                        time         : blendedSlot.time,
+                        score        : blendedSlot.blendedScore,
+                        sunAltitude  : blendedSlot.sunAltitude,
+                        sunAzimuth   : blendedSlot.sunAzimuth,
+                        isSunUp      : blendedSlot.isSunUp,
+                        isGoldenHour : blendedSlot.isGoldenHour
+                    )
+                },
+                timeZone: blendedTimeline.timeZone
+            )
+        } catch {
+            self.error = error
+        }
+
+        isLoading = false
+    }
+}

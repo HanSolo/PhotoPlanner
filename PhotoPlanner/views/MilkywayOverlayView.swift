@@ -83,15 +83,15 @@ struct MilkywayOverlayView: View {
             leftPad + CGFloat(index) / CGFloat(slots.count - 1) * chartWidth
         }
 
-        // Map altitude to y — 0° at bottom, 90° at top
+        // Map altitude to y - 0° at bottom, 90° at top
         // Clamp to -10° (just below horizon) to 60° max
         func y(for altitude: Double) -> CGFloat {
             let clamped    : Double = max(-10.0, min(60.0, altitude))
-            let normalized : Double = (clamped + 10) / 70   // 0–1
+            let normalized : Double = (clamped + 10) / 70   // 0 - 1
             return topPad + chartHeight - normalized * chartHeight
         }
 
-        // Fill area under the curve — only when visible
+        // Fill area under the curve (only when visible)
         var fillPath  : Path = Path()
         var inVisible : Bool = false
 
@@ -130,7 +130,7 @@ struct MilkywayOverlayView: View {
         }
         ctx.stroke(strokePath, with: .color(.white.opacity(0.4)), style: StrokeStyle(lineWidth: 1, dash: [3, 3]))
 
-        // Visible portion stroke — brighter
+        // Visible portion stroke (brighter)
         var visiblePath : Path = Path()
         var started     : Bool = false
         for (i, slot) in slots.enumerated() where slot.isVisible {

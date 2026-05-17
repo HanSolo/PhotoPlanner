@@ -52,7 +52,7 @@ struct MoonPhaseOverlayView: View {
         // Dark disc base
         ctx.fill(Path(ellipseIn: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)),with: .color(.white.opacity(0.1)))
 
-        // Illuminated portion — simplified crescent/gibbous shape
+        // Illuminated portion (simplified crescent/gibbous shape)
         let illuminatedPath = illuminationPath(center: CGPoint(x: cx, y: cy), radius: r, illumination: phase.illumination, isWaxing: phase.isWaxing)
         ctx.fill(illuminatedPath, with: .color(phase.phaseName.color.opacity(0.85)))
 
@@ -96,8 +96,8 @@ struct MoonPhaseOverlayView: View {
 
     
     private func drawRiseSet(ctx: GraphicsContext, size: CGSize) {
-        let riseText : String = phase.riseTime.map { "↑ " + timeFormatter.string(from: $0) } ?? "—"
-        let setText  : String = phase.setTime.map  { "↓ " + timeFormatter.string(from: $0) } ?? "—"
+        let riseText : String = phase.riseTime.map { "↑ " + timeFormatter.string(from: $0) } ?? "-"
+        let setText  : String = phase.setTime.map  { "↓ " + timeFormatter.string(from: $0) } ?? "-"
                 
         ctx.draw(Text("\(riseText)   \(setText)").font(.system(size: 9).monospacedDigit()).foregroundStyle(.yellow.opacity(0.7)), at: CGPoint(x: 108, y: 72), anchor: .leading)
     }
@@ -115,7 +115,7 @@ struct MoonPhaseOverlayView: View {
         // Track
         ctx.fill(Path(roundedRect: CGRect(x: x, y: y, width: barWidth, height: barHeight), cornerRadius: 3), with: .color(.white.opacity(0.1)))
 
-        // Fill — red when high impact
+        // Fill (red when high impact)
         let fillColor: Color = factor < 0.3 ? .green : factor < 0.6 ? .orange : .red
         ctx.fill(Path(roundedRect: CGRect(x: x, y: y, width: barWidth * factor, height: barHeight), cornerRadius: 3), with: .color(fillColor.opacity(0.8)))
     }

@@ -445,12 +445,13 @@ struct ContentView: View {
                             let now          : Date                   = Date()
                             let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
                             let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.subjectMarkerData!.coordinate)
-                            let sunPos       : SunPos                 = Helper.calcSunPos(at: location, time: now)
+                            //let sunPos       : SunPos                 = Helper.calcSunPos(at: location, time: now)
                             var solarEvent   : SolarEvent {
                                 SolarEvent(time: now, type: .sunset)
                             }
                             Task {
-                                await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth, sunPos: sunPos)
+                                //await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth, sunPos: sunPos)
+                                await self.sunQualityViewModel.fetchBlended(at: location, on: now, shootAzimuth: shootAzimuth)
                             }
                         }
                     }

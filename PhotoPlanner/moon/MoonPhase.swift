@@ -45,7 +45,7 @@ struct MoonPhase {
             }
         }
 
-        /// Impact on astrophotography — higher = more interference
+        /// Impact on astrophotography: higher = more interference
         var lightPollutionFactor: Double {
             switch self {
                 case .newMoon        : return 0.0
