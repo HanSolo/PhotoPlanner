@@ -132,6 +132,12 @@ public class Helper {
         return  [ p1Coordinates, p2Coordinates, p3Coordinates, p4Coordinates ]
     }
     
+    public static func calcHyperFocalDistancePoints(data: FoVData) -> [CLLocationCoordinate2D] {
+        let p1Coordinates : CLLocationCoordinate2D = calcCoord(start: data.cameraLocation, distance: data.hyperFocal, bearing: -data.fovWidthAngle * 0.5)
+        let p2Coordinates : CLLocationCoordinate2D = calcCoord(start: data.cameraLocation, distance: data.hyperFocal, bearing: data.fovWidthAngle * 0.5)
+        return  [ p1Coordinates, p2Coordinates ]
+    }
+    
     public static func calcBearing(location1: CLLocationCoordinate2D, location2: CLLocationCoordinate2D) -> Double {
         let lat1   : Double = toRadians(Double(location1.latitude))
         let lon1   : Double = Double(location1.longitude)
@@ -170,8 +176,11 @@ public class Helper {
     }
     
     public static func calcCoord(start: MKMapPoint, distance: Double, bearing: Double) -> CLLocationCoordinate2D {
-        let lat1   = toRadians(Double(start.coordinate.latitude))
-        let lon1   = toRadians(Double(start.coordinate.longitude))
+        return calcCoord(start: start.coordinate, distance: distance, bearing: bearing)
+    }
+    public static func calcCoord(start: CLLocationCoordinate2D, distance: Double, bearing: Double) -> CLLocationCoordinate2D {
+        let lat1   = toRadians(Double(start.latitude))
+        let lon1   = toRadians(Double(start.longitude))
         let radius = distance / Constants.EARTH_RADIUS
 
         let lat2 = asin(sin(lat1) * cos(radius) + cos(lat1) * sin(radius) * cos(bearing))
@@ -180,6 +189,7 @@ public class Helper {
         
         return CLLocationCoordinate2D(latitude: toDegrees(lat2), longitude: toDegrees(lon2))
     }
+    
     
     public static func rotatePointAroundCenter(point: MKMapPoint, rotationCenter: MKMapPoint, angleRad: Double) -> MKMapPoint {
         return MKMapPoint(rotatePointAroundCenter(location: point.coordinate, around: rotationCenter.coordinate, angleRad: angleRad))

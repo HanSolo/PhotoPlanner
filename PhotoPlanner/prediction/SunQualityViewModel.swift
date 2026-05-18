@@ -18,34 +18,9 @@ class SunQualityViewModel {
     var isVisible     : Bool  = false
 
     private let predictor = SunriseSunsetPredictor()
-
     
-    func fetch(at location: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, sunPos: SunPos) async {
-        isLoading     = true
-        dailyTimeline = nil
-        error         = nil
-
-        do {
-            dailyTimeline = try await predictor.getDailyTimeline(at: location, on: date, shootAzimuth: shootAzimuth)
-            isVisible = true
-        } catch {
-            self.error = error
-            isVisible  = false
-        }
-
-        isLoading = false
-    }
-
-    func dismiss() {
-        dailyTimeline = nil
-        isVisible     = false
-    }
-}
-
-
-extension SunQualityViewModel {
-
-    func fetchBlended(at location: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, configuration: RemoteWeatherConfiguration = SunriseSunsetPredictor.inland) async {
+    
+    func fetch(at location: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, configuration: RemoteWeatherConfiguration = SunriseSunsetPredictor.inland) async {
         isLoading     = true
         dailyTimeline = nil
         error         = nil
@@ -93,5 +68,10 @@ extension SunQualityViewModel {
         }
 
         isLoading = false
+    }
+    
+    func dismiss() {
+        dailyTimeline = nil
+        isVisible     = false
     }
 }

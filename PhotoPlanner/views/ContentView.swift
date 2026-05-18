@@ -111,8 +111,8 @@ struct ContentView: View {
                             }
                         }
                                                                             
-                                                
-                        if self.model.fovData != nil {
+                        let fovDataAvailable : Bool = self.model.fovData != nil
+                        if fovDataAvailable { // Center line from camera to subject
                             MapPolyline(points: [self.model.fovData!.cameraLocation, self.model.fovData!.subjectLocation])
                                 .stroke(Constants.CENTER_LINE_STROKE, lineWidth: lineWidth)
                         }
@@ -131,11 +131,17 @@ struct ContentView: View {
                                 .foregroundStyle(Color.clear)
                                 .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: lineWidth)
                         }
-                        if self.model.dofVisible {
+                        if self.model.dofVisible { // Visualize the depth of field trapezoid
                             MapPolygon(coordinates: self.model.trapezoidCoordinates)
                                 .foregroundStyle(self.colorScheme == .dark ? Constants.DOF_FILL_DARK : Constants.DOF_FILL)
                                 .stroke(self.colorScheme == .dark ? Constants.DOF_STROKE_DARK : Constants.DOF_STROKE, lineWidth: lineWidth)
                         }
+                        if fovDataAvailable && !self.model.hyperFocalDistanceCoordinates.isEmpty { // Hyperfocal distance line
+                            MapPolyline(points: [MKMapPoint(self.model.hyperFocalDistanceCoordinates[0]), MKMapPoint(self.model.hyperFocalDistanceCoordinates[1])])
+                                .strokeStyle(style: StrokeStyle(lineWidth: lineWidth * 2, dash: [2, 2]))
+                                .stroke(Constants.HYPER_FOCAL_DISTANCE_STROKE)
+                        }
+                        
                     }
                     .onTapGestureBugFix { type, location  in
                         if nil != location {
@@ -267,6 +273,7 @@ struct ContentView: View {
                 }
                 .padding(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
                 .background(self.colorScheme == .dark ? .black.opacity(0.5) : .white.opacity(0.5))
+                .clipShape(RoundedRectangle(cornerSize: CGSize(width: 5, height: 5)))
                 
                 // Camera and CameraPin
                 HStack {
@@ -445,13 +452,11 @@ struct ContentView: View {
                             let now          : Date                   = Date()
                             let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
                             let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.subjectMarkerData!.coordinate)
-                            //let sunPos       : SunPos                 = Helper.calcSunPos(at: location, time: now)
                             var solarEvent   : SolarEvent {
                                 SolarEvent(time: now, type: .sunset)
                             }
                             Task {
-                                //await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth, sunPos: sunPos)
-                                await self.sunQualityViewModel.fetchBlended(at: location, on: now, shootAzimuth: shootAzimuth)
+                                await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth)
                             }
                         }
                     }
@@ -601,8 +606,8 @@ struct ContentView: View {
             AddPhotoShootView()
         }
         .sheet(isPresented: $photoShootsViewVisible) {
-            PhotoShootsView(photoShoots: self.photoShoots)
-        }
+        PhotoShootsView(photoShoots: self.photoShoots)
+    }
         .onChange(of: self.model.orientation) {
             self.isPortrait = self.model.orientation == .portrait
         }        

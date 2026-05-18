@@ -40,7 +40,9 @@ struct OverlayView: View {
                         let fovCenterX             : Double                               = width - offsetX + 18
                         let fovCenterY             : Double                               = height - offsetY + 12
                         let hyperFocalDistance     : Double                               = fovData!.hyperFocal
+                        let hyperFocalRect         : CGRect                               = CGRect(x: 10, y: height - offsetY, width: 170, height: 40)
                         let hyperFocalText         : Text                                 = Text(verbatim: "Hyperfocal dist. \(String(format: hyperFocalDistance < 10 ? "%.1f" : "%.0f", hyperFocalDistance))m").foregroundColor(darkMode ? .white : .black).font(Font.system(size: 14))
+                        let hyperFocalStroke       : GraphicsContext.Shading              = GraphicsContext.Shading.color(Constants.HYPER_FOCAL_DISTANCE_STROKE)
                         
                         let bkgRect                : CGRect                               = CGRect(x: 10, y: height - 103, width: width - 20, height: 103)
                         //let lineWidth              : CGFloat                              = Constants.IS_IPAD ? 2.0 : 1.0
@@ -106,10 +108,26 @@ struct OverlayView: View {
                                     break
                             }
                         }
-                                                                        
-                        ctx.fill(Rectangle().path(in: bkgRect), with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
+                        
+                        let bkgRoundedRect : Path = Path(roundedRect: bkgRect, cornerSize: CGSize(width: 5, height: 5), style: .continuous)
+                        ctx.fill(bkgRoundedRect, with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
+                        
+                        // Draw hyperfocal text and stroke
+                        let hyperFocalBkg : Path = Path(roundedRect: hyperFocalRect, cornerSize: CGSize(width: 5, height: 5), style: .continuous)
+                        ctx.fill(hyperFocalBkg, with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
                         
                         ctx.draw(hyperFocalText, at: CGPoint(x: 20, y: height - offsetY + 12), anchor: .leading)
+                        
+                        let hyperFocalPath : Path = Path {
+                            let points : [CGPoint] = [
+                                .init(x: 30, y: height - offsetY + 30),
+                                .init(x: 110, y: height - offsetY + 30)
+                            ]
+                            $0.move(to: points[0])
+                            $0.addLine(to: points[1])
+                        }
+                        ctx.stroke(hyperFocalPath, with: hyperFocalStroke, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, miterLimit: 0, dash: [2, 4], dashPhase: 4))
+                        
                         
                         if cameraOrientation == .portrait {
                             ctx.drawLayer { ctx1 in

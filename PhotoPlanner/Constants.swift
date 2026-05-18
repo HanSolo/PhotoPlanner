@@ -70,6 +70,7 @@ public class Constants {
     public static let OUTER_RING_SATELLITE           : GraphicsContext.Shading = GraphicsContext.Shading.color(Color(red: 0.0, green: 0.0, blue: 0.0, opacity: 0.8))
     
     public static let PIN_COLOR                      : Color         = Color(red: 0.94, green: 0.58, blue: 0.21, opacity: 1.00)
+    public static let HYPER_FOCAL_DISTANCE_STROKE    : Color         = Color(red: 0.94, green: 0.58, blue: 0.21, opacity: 1.00)
     
     public static let FOV_COLOR_DARK                 : Color         = Color(red: 0.0, green: 0.56078431, blue: 0.8627451)
     public static let FOV_FILL_DARK                  : Color         = FOV_COLOR.opacity(0.3)

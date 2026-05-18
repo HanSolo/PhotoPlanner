@@ -13,19 +13,18 @@ import MapKit
 
 @MainActor @Observable
 public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
-    var locationManager             : CLLocationManager?
-    var mapRegion                   : MKCoordinateRegion?
-    
-    var networkMonitor              : NetworkMonitor           = NetworkMonitor()
-    var elevationService            : ElevationService         = ElevationService()
-    var camera                      : Camera                   = Constants.DEFAULT_CAMERA {
+    var locationManager               : CLLocationManager?
+    var mapRegion                     : MKCoordinateRegion?
+    var networkMonitor                : NetworkMonitor           = NetworkMonitor()
+    var elevationService              : ElevationService         = ElevationService()
+    var camera                        : Camera                   = Constants.DEFAULT_CAMERA {
         didSet {
             Properties.instance.cameraId = self.camera.id            
             self.updateFoVTriangle(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation, tc1: self.tc1, tc2: self.tc2)
             if self.dofVisible { self.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation) }
         }
     }
-    var lens                        : Lens                     = Constants.DEFAULT_LENS {
+    var lens                          : Lens                     = Constants.DEFAULT_LENS {
         didSet {
             Properties.instance.lensId = self.lens.id
             self.focalLength    = self.lens.minFocalLength
@@ -42,84 +41,85 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
             updateApertureAndFocalLength()
         }
     }
-    var minAperture                 : Double                   = Constants.DEFAULT_LENS.minAperture
-    var maxAperture                 : Double                   = Constants.DEFAULT_LENS.maxAperture
-    var minFocalLength              : Double                   = Constants.DEFAULT_LENS.minFocalLength
-    var maxFocalLength              : Double                   = Constants.DEFAULT_LENS.maxFocalLength
-    var orientation                 : CameraOrientation        = Properties.instance.landscape! ? .landscape : .portrait {
+    var minAperture                   : Double                   = Constants.DEFAULT_LENS.minAperture
+    var maxAperture                   : Double                   = Constants.DEFAULT_LENS.maxAperture
+    var minFocalLength                : Double                   = Constants.DEFAULT_LENS.minFocalLength
+    var maxFocalLength                : Double                   = Constants.DEFAULT_LENS.maxFocalLength
+    var orientation                   : CameraOrientation        = Properties.instance.landscape! ? .landscape : .portrait {
         didSet {
             Properties.instance.landscape = self.orientation == .landscape
         }
     }
-    var focalLength                 : Double                   = Constants.DEFAULT_LENS.minFocalLength {
+    var focalLength                   : Double                   = Constants.DEFAULT_LENS.minFocalLength {
         didSet {
             Properties.instance.focalLength = self.focalLength
             self.updateFoVTriangle(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation, tc1: self.tc1, tc2: self.tc2)
             if self.dofVisible { self.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation) }
         }
     }
-    var focalLengthBinding          : Binding<Double> {
+    var focalLengthBinding            : Binding<Double> {
         Binding(get: { self.focalLength }, set: { self.focalLength = $0 })
     }
-    var aperture                    : Double                   = Constants.DEFAULT_LENS.minAperture {
+    var aperture                      : Double                   = Constants.DEFAULT_LENS.minAperture {
         didSet {
             Properties.instance.aperture = self.aperture
             self.updateFoVTriangle(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation, tc1: self.tc1, tc2: self.tc2)
             if self.dofVisible { self.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.focalLength, aperture: self.aperture, sensorFormat: self.camera.sensorFormat, orientation: self.orientation) }
         }
     }
-    var apertureBinding             : Binding<Double> {
+    var apertureBinding               : Binding<Double> {
         Binding(get: { self.aperture }, set: { self.aperture = $0 })
     }
-    var cameraDistance              : Double                   = Properties.instance.distance!
-    var cameraDistanceBinding       : Binding<Double> {
+    var cameraDistance                : Double                   = Properties.instance.distance!
+    var cameraDistanceBinding         : Binding<Double> {
         .init(get: { self.cameraDistance }, set: { self.cameraDistance = $0 })
     }
-    var fovData                     : FoVData?
-    var cameraMarkerData            : MarkerData? {
+    var fovData                       : FoVData?
+    var cameraMarkerData              : MarkerData? {
         didSet {
             Task {
                 await updateSunAndMoonTimes()
             }
         }
     }
-    var subjectMarkerData           : MarkerData?
-    var currentMapLocation          : CLLocationCoordinate2D?
-    var currentMapHeading           : Double?
-    var currentMapDate              : Date                     = Date.now {
+    var subjectMarkerData             : MarkerData?
+    var currentMapLocation            : CLLocationCoordinate2D?
+    var currentMapHeading             : Double?
+    var currentMapDate                : Date                     = Date.now {
         didSet {
             Task {
                 await updateSunAndMoonTimes()
             }
         }
     }
-    var currentMapDateBinding       : Binding<Date> {
+    var currentMapDateBinding         : Binding<Date> {
         .init(get: { self.currentMapDate }, set: { self.currentMapDate = $0 })
     }
-    var currentMapStyleIndex        : Int                      = 0
-    var currentMapStyleIndexBinding : Binding<Int> {
+    var currentMapStyleIndex          : Int                      = 0
+    var currentMapStyleIndexBinding   : Binding<Int> {
         Binding(get: { self.currentMapStyleIndex}, set: { self.currentMapStyleIndex = $0 })
     }
-    var epdVisible                  : Bool                     = false
-    var epdVisibleBinding           : Binding<Bool> {
+    var epdVisible                    : Bool                     = false
+    var epdVisibleBinding             : Binding<Bool> {
         Binding(get: { self.epdVisible}, set: { self.epdVisible = $0 })
     }
-    var dofVisible                  : Bool                     = false
-    var dofVisibleBinding           : Binding<Bool> {
+    var dofVisible                    : Bool                     = false
+    var dofVisibleBinding             : Binding<Bool> {
         Binding(get: { self.dofVisible}, set: { self.dofVisible = $0 })
     }
-    var triangleCoordinates         : [CLLocationCoordinate2D] = []
-    var minTriangleCoordinates      : [CLLocationCoordinate2D] = []
-    var maxTriangleCoordinates      : [CLLocationCoordinate2D] = []
-    var trapezoidCoordinates        : [CLLocationCoordinate2D] = []
-    var metric                      : Bool                     = true
-    var magicHours                  : MagicHours               = MagicHours()
-    var sunTimes                    : Dictionary<String, Date> = [:]
-    var moonTimes                   : (moonRise: Date?, moonSet: Date?)
-    var tc1                         : Teleconverter            = Teleconverter(factor: Properties.instance.tc1Factor!)
-    var tc2                         : Teleconverter            = Teleconverter(factor: Properties.instance.tc2Factor!)
-    var elevationProfile            : ElevationProfile?    
-    var triggerCenterToCamera       : Bool                     = false
+    var triangleCoordinates           : [CLLocationCoordinate2D] = []
+    var minTriangleCoordinates        : [CLLocationCoordinate2D] = []
+    var maxTriangleCoordinates        : [CLLocationCoordinate2D] = []
+    var trapezoidCoordinates          : [CLLocationCoordinate2D] = []
+    var hyperFocalDistanceCoordinates : [CLLocationCoordinate2D] = []
+    var metric                        : Bool                     = true
+    var magicHours                    : MagicHours               = MagicHours()
+    var sunTimes                      : Dictionary<String, Date> = [:]
+    var moonTimes                     : (moonRise: Date?, moonSet: Date?)
+    var tc1                           : Teleconverter            = Teleconverter(factor: Properties.instance.tc1Factor!)
+    var tc2                           : Teleconverter            = Teleconverter(factor: Properties.instance.tc2Factor!)
+    var elevationProfile              : ElevationProfile?
+    var triggerCenterToCamera         : Bool                     = false
     
 
     override init() {
@@ -170,7 +170,14 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
         self.maxTriangleCoordinates.append(maxTriangleCoordinates[0])
         self.maxTriangleCoordinates.append(Helper.rotatePointAroundCenter(location: maxTriangleCoordinates[1], around: cameraPoint.coordinate, angleRad: angleRad))
         self.maxTriangleCoordinates.append(Helper.rotatePointAroundCenter(location: maxTriangleCoordinates[2], around: cameraPoint.coordinate, angleRad: angleRad))
-    }    
+        
+        // Update hyperfocal distance points        
+        let hyperFocalDistanceP1Coordinate : CLLocationCoordinate2D = Helper.calcCoord(start: triangleCoordinates[0], distance: self.fovData!.hyperFocal, bearing: -self.fovData!.fovWidthAngle * 0.5)
+        let hyperFocalDistanceP2Coordinate : CLLocationCoordinate2D = Helper.calcCoord(start: triangleCoordinates[0], distance: self.fovData!.hyperFocal, bearing: self.fovData!.fovWidthAngle * 0.5)
+        self.hyperFocalDistanceCoordinates.removeAll()
+        self.hyperFocalDistanceCoordinates.append(Helper.rotatePointAroundCenter(location: hyperFocalDistanceP1Coordinate, around: cameraPoint.coordinate, angleRad: angleRad))
+        self.hyperFocalDistanceCoordinates.append(Helper.rotatePointAroundCenter(location: hyperFocalDistanceP2Coordinate, around: cameraPoint.coordinate, angleRad: angleRad))
+    }
     
     func updateDoFTrapezoid(cameraPoint: MKMapPoint, subjectPoint: MKMapPoint, focalLength: Double, aperture: Double, sensorFormat: Int, orientation: CameraOrientation) -> Void {
         let distance : CLLocationDistance = cameraPoint.distance(to: subjectPoint)
