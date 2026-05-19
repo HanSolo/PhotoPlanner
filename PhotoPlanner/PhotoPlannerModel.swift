@@ -240,6 +240,10 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
         }
     }
     
+    public func getUserLocation() -> CLLocationCoordinate2D? {
+        return self.locationManager?.location?.coordinate
+    }
+    
     private func checkLocationAuthorization() {
         // Check location authorization status
         guard let location = self.locationManager else {

@@ -231,6 +231,17 @@ struct ContentView: View {
             // Controls
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
+                    Button {
+                        self.helpViewVisible = true
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .padding(7)
+                    }
+                    .frame(width: 22, height: 22)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                                        
+                    
                     Picker("", selection: self.model.currentMapStyleIndexBinding) {
                         Text("Std").tag(0)
                             .font(Constants.REGULAR_FONT_14)
@@ -251,15 +262,18 @@ struct ContentView: View {
                         }
                     }
                     
+                    
                     Button {
-                        self.helpViewVisible = true
+                        if let userLocation : CLLocationCoordinate2D = self.model.getUserLocation() {
+                            self.position = .camera(.init(centerCoordinate: userLocation, distance: self.model.cameraDistance))
+                        }
                     } label: {
-                        Image(systemName: "questionmark.circle")
+                        Image(systemName: "location.circle")
                             .padding(7)
                     }
                     .frame(width: 22, height: 22)
                     .buttonStyle(.glass)
-                    .clipShape(Circle())
+                    .clipShape(Circle())                    
                 }
                 
                 HStack {
