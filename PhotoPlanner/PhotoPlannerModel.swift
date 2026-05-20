@@ -120,6 +120,10 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var tc2                           : Teleconverter            = Teleconverter(factor: Properties.instance.tc2Factor!)
     var elevationProfile              : ElevationProfile?
     var triggerCenterToCamera         : Bool                     = false
+    var elevationViewVisible          : Bool                     = false
+    var elevationViewVisibleBinding   : Binding<Bool> {
+        Binding(get: { self.elevationViewVisible}, set: { self.elevationViewVisible = $0 })
+    }
     
 
     override init() {

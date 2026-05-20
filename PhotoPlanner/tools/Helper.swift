@@ -307,6 +307,21 @@ public class Helper {
         return ( hours, minutes, secs )
     }
     
+    public static func kphToBeaufort(_ kph: Double) -> Int {
+        switch kph {
+            case ..<1    : return 0
+            case 1..<6   : return 1
+            case 6..<12  : return 2
+            case 12..<20 : return 3
+            case 20..<29 : return 4
+            case 29..<39 : return 5
+            case 39..<50 : return 6
+            case 50..<62 : return 7
+            case 62..<75 : return 8
+            default      : return 9
+        }
+    }
+    
     public static func calcSunPos(at coordinate: CLLocationCoordinate2D, time: Date) -> SunPos {
         let jd         = time.timeIntervalSince1970 / 86400.0 + 2440587.5
         let n          = jd - 2451545.0

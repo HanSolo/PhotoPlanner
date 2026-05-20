@@ -18,6 +18,7 @@ struct ContentView: View {
     @State private var sunQualityViewModel      : SunQualityViewModel    = SunQualityViewModel()
     @State private var milkywayViewModel        : MilkywayViewModel      = MilkywayViewModel()
     @State private var moonViewModel            : MoonViewModel          = MoonViewModel()
+    @State private var longExposureViewModel    : LongExposureViewModel  = LongExposureViewModel()
     @State private var position                 : MapCameraPosition      = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!, longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
     @State private var modes                    : MapInteractionModes    = [.pan, .rotate, .zoom]
     @State private var cameraMarkerActive       : Bool                   = false
@@ -35,8 +36,8 @@ struct ContentView: View {
     @State private var sunsetPredictionVisible  : Bool                   = false
     @State private var moonPhaseVisible         : Bool                   = false
     @State private var milkywayVisible          : Bool                   = false
+    @State private var longExposureVisible      : Bool                   = false
     @State private var helpViewVisible          : Bool                   = false
-    @State private var elevationViewVisible     : Bool                   = false
     @State private var centerCameraPosition     : Bool                   = false
         
     @Query(sort: [SortDescriptor(\Camera.name,     comparator: .localizedStandard)]) private var cameras     : [Camera]
@@ -149,12 +150,12 @@ struct ContentView: View {
                                 self.model.cameraMarkerData = mapProxy.markerData(screenCoordinate: location!, geometryProxy: geo)
                                 Properties.instance.cameraLatitude  = self.model.cameraMarkerData!.coordinate.latitude
                                 Properties.instance.cameraLongitude = self.model.cameraMarkerData!.coordinate.longitude
-                                if self.elevationViewVisible { self.elevationViewVisible = false }
+                                if self.model.elevationViewVisible { self.model.elevationViewVisible = false }
                             } else if self.subjectMarkerActive {
                                 self.model.subjectMarkerData = mapProxy.markerData(screenCoordinate: location!, geometryProxy: geo)
                                 Properties.instance.subjectLatitude  = self.model.subjectMarkerData!.coordinate.latitude
                                 Properties.instance.subjectLongitude = self.model.subjectMarkerData!.coordinate.longitude
-                                if self.elevationViewVisible { self.elevationViewVisible = false }
+                                if self.model.elevationViewVisible { self.model.elevationViewVisible = false }
                             }
                             self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
                             if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
@@ -165,7 +166,7 @@ struct ContentView: View {
                             if self.cameraMarkerActive {
                                 guard self.model.cameraMarkerData != nil else { return }
                                 if isCameraMarkerDragging {
-                                    if self.elevationViewVisible { self.elevationViewVisible = false }
+                                    if self.model.elevationViewVisible { self.model.elevationViewVisible = false }
                                 } else if self.model.cameraMarkerData!.touchArea.contains(drag.startLocation) {
                                     isCameraMarkerDragging = true
                                     setMapInteraction(enabled: false)
@@ -178,7 +179,7 @@ struct ContentView: View {
                             } else if self.subjectMarkerActive {
                                 guard self.model.subjectMarkerData != nil else { return }
                                 if isSubjectMarkerDragging {
-                                    if self.elevationViewVisible { self.elevationViewVisible = false }
+                                    if self.model.elevationViewVisible { self.model.elevationViewVisible = false }
                                 } else if self.model.subjectMarkerData!.touchArea.contains(drag.startLocation) {
                                     isSubjectMarkerDragging = true
                                     setMapInteraction(enabled: false)
@@ -223,7 +224,7 @@ struct ContentView: View {
                 .allowsHitTesting(false)
             
             // ElevationView
-            if self.elevationViewVisible {
+            if self.model.elevationViewVisible {
                 ElevationProfileView(profile: self.model.elevationProfile)
                     .allowsTightening(false)
             }
@@ -495,27 +496,53 @@ struct ContentView: View {
                     }
                 }
                 
-                Toggle(isOn: self.$milkywayVisible) {
-                    Image(systemName: "star.circle")
-                        .font(Constants.REGULAR_FONT_24)
-                        .padding(7)
-                }
-                .frame(width: 44, height: 44)
-                .toggleStyle(.button)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
-                .onChange(of: self.milkywayVisible) {
-                    if self.model.cameraMarkerData != nil {
-                        let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                        let date     : Date                   = self.model.currentMapDate
-                        Task {
-                            await self.milkywayViewModel.fetch(at: location, on: date)
+                HStack {
+                    Toggle(isOn: self.$milkywayVisible) {
+                        Image("milkyway")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .onChange(of: self.milkywayVisible) {
+                        if self.model.cameraMarkerData != nil {
+                            let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                            let date     : Date                   = self.model.currentMapDate
+                            Task {
+                                await self.milkywayViewModel.fetch(at: location, on: date)
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle(isOn: self.$longExposureVisible) {
+                        Image(systemName: "clock.badge")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .onChange(of: self.longExposureVisible) {
+                        if self.model.cameraMarkerData != nil {
+                            let location      : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                            let date          : Date                   = self.model.currentMapDate
+                            let cameraHeading : Double                 = self.model.currentMapHeading ?? 0.0
+                            Task {
+                                await self.longExposureViewModel.fetch(at: location, on: date, cameraHeading: cameraHeading)                                
+                            }
                         }
                     }
                 }
 
                 HStack {
-                    Toggle(isOn: self.$elevationViewVisible) {
+                    Toggle(isOn: self.model.elevationViewVisibleBinding) {
                         Image(systemName: "chart.line.uptrend.xyaxis")
                             .padding(10)
                     }
@@ -524,8 +551,8 @@ struct ContentView: View {
                     .buttonStyle(.glass)
                     .clipShape(Circle())
                     .disabled(!self.model.networkMonitor.isConnected || self.model.fovData?.distance ?? 0 >= 4000)
-                    .onChange(of: self.elevationViewVisible) {
-                        if self.elevationViewVisible {
+                    .onChange(of: self.model.elevationViewVisible) {
+                        if self.model.elevationViewVisible {
                             Task {
                                 await self.model.getElevation()
                             }
@@ -586,15 +613,19 @@ struct ContentView: View {
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
                    
             if self.sunsetPredictionVisible {
-                SunQualityMapOverlay(vm: sunQualityViewModel)
+                SunQualityMapOverlay(viewModel: sunQualityViewModel)
             }
             
             if self.moonPhaseVisible {
-                MoonPhaseMapOverlay(vm: moonViewModel)
+                MoonPhaseMapOverlay(viewModel: moonViewModel)
             }
             
             if self.milkywayVisible {
-                MilkywayMapOverlay(vm: milkywayViewModel)
+                MilkywayMapOverlay(viewModel: milkywayViewModel)
+            }
+            
+            if self.longExposureVisible {
+                LongExposureMapOverlay(viewModel: longExposureViewModel)
             }
             
             if self.helpViewVisible {
@@ -621,7 +652,7 @@ struct ContentView: View {
         }
         .sheet(isPresented: $photoShootsViewVisible) {
         PhotoShootsView(photoShoots: self.photoShoots)
-    }
+        }
         .onChange(of: self.model.orientation) {
             self.isPortrait = self.model.orientation == .portrait
         }        

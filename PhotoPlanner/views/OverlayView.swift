@@ -113,10 +113,12 @@ struct OverlayView: View {
                         ctx.fill(bkgRoundedRect, with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
                         
                         // Draw hyperfocal text and stroke
-                        let hyperFocalBkg : Path = Path(roundedRect: hyperFocalRect, cornerSize: CGSize(width: 5, height: 5), style: .continuous)
-                        ctx.fill(hyperFocalBkg, with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
-                        
-                        ctx.draw(hyperFocalText, at: CGPoint(x: 20, y: height - offsetY + 12), anchor: .leading)
+                        if !self.model.elevationViewVisible {
+                            let hyperFocalBkg : Path = Path(roundedRect: hyperFocalRect, cornerSize: CGSize(width: 5, height: 5), style: .continuous)
+                            ctx.fill(hyperFocalBkg, with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
+                            
+                            ctx.draw(hyperFocalText, at: CGPoint(x: 20, y: height - offsetY + 12), anchor: .leading)
+                        }
                         
                         let hyperFocalPath : Path = Path {
                             let points : [CGPoint] = [
@@ -128,19 +130,21 @@ struct OverlayView: View {
                         }
                         ctx.stroke(hyperFocalPath, with: hyperFocalStroke, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, miterLimit: 0, dash: [2, 4], dashPhase: 4))
                         
-                        
-                        if cameraOrientation == .portrait {
-                            ctx.drawLayer { ctx1 in
-                                ctx1.translateBy(x: fovCenterX, y: fovCenterY)
-                                ctx1.rotate(by: Angle(degrees: -90))
-                                ctx1.translateBy(x: -fovCenterX, y: -fovCenterY)
-                                ctx1.fill(Rectangle().path(in: fov), with: fovFill)
-                                ctx1.stroke(Rectangle().path(in: fov), with: fovStroke)
+                        if !self.model.elevationViewVisible {
+                            if cameraOrientation == .portrait {
+                                ctx.drawLayer { ctx1 in
+                                    ctx1.translateBy(x: fovCenterX, y: fovCenterY)
+                                    ctx1.rotate(by: Angle(degrees: -90))
+                                    ctx1.translateBy(x: -fovCenterX, y: -fovCenterY)
+                                    ctx1.fill(Rectangle().path(in: fov), with: fovFill)
+                                    ctx1.stroke(Rectangle().path(in: fov), with: fovStroke)
+                                }
+                            } else {
+                                ctx.fill(Rectangle().path(in: fov), with: fovFill)
+                                ctx.stroke(Rectangle().path(in: fov), with: fovStroke)
                             }
-                        } else {
-                            ctx.fill(Rectangle().path(in: fov), with: fovFill)
-                            ctx.stroke(Rectangle().path(in: fov), with: fovStroke)
                         }
+                        
                         ctx.draw(fovText, at: CGPoint(x: width - 20, y: height - offsetY + 60), anchor: .trailing)
                         
                         if let cameraSymbol = ctx.resolveSymbol(id: 1) {

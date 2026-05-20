@@ -62,10 +62,6 @@ struct MilkywayOverlayView: View {
         for (x, y, r) in starPositions {
             ctx.fill(Path(ellipseIn: CGRect(x: x - r/2, y: y - r/2, width: r, height: r)), with: .color(.white.opacity(Double.random(in: 0.4...0.9))))
         }
-
-        // Top strip colour based on peak quality
-        //let stripColor = timeline.peakSlot?.quality.color ?? .gray
-        //ctx.fill(Path(roundedRect: CGRect(x: 0, y: 0, width: size.width, height: 3), cornerRadius: 0), with: .color(stripColor.opacity(0.9)))
     }
 
     private func drawArcChart(ctx: GraphicsContext, size: CGSize) {

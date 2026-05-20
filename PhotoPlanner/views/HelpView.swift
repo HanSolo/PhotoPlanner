@@ -105,7 +105,7 @@ struct HelpView: View {
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                 
                 HStack {
-                    Text("Show sunrise/sunset times")
+                    Text("Sunrise/sunset times")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.leading)
@@ -116,7 +116,7 @@ struct HelpView: View {
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                 
                 HStack {
-                    Text("Show sunrise/sunset quality for today")
+                    Text("Sunrise/sunset quality for today")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.leading)
@@ -127,7 +127,7 @@ struct HelpView: View {
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                 
                 HStack {
-                    Text("Show moon phase")
+                    Text("Moon phase")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.leading)
@@ -138,18 +138,24 @@ struct HelpView: View {
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                                                                                         
                 HStack {
-                    Text("Show Milkyway core")
+                    Text("Milkyway core")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.leading)
                         .padding(EdgeInsets(top: 0, leading: 50, bottom: 0, trailing: 0))
                     
                     Spacer()
+                    
+                    Text("B&W long exposure")
+                        .font(font)
+                        .foregroundStyle(Color.white)
+                        .multilineTextAlignment(.trailing)
+                        .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 50))
                 }
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                                                 
                 HStack {
-                    Text("Show elevation")
+                    Text("Elevation")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.leading)
