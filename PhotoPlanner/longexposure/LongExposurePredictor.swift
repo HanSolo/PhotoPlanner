@@ -53,8 +53,28 @@ actor LongExposurePredictor {
     private func scoreConditions(hour: HourWeather, cameraHeading: Double, sunAzimuth: Double, sunAltitude: Double, localWindow: [HourWeather]) -> LongExposureConditions {
         var reasoning: [String] = []
         
-        let cloudCoverage = hour.cloudCover
-        let cloudScore: Double
+        let cloudCoverage    : Double = hour.cloudCover
+        let conditionPenalty : Double
+        
+        // Use WeatherCondition as a proxy for cloud texture.
+        // Cloudy = uniform flat grey = no texture.
+        // MostlyCloudy/PartlyCloudy = more likely to have texture.
+        switch hour.condition {
+            case .cloudy:
+                // Uniform overcast — the article says this needs visible texture to work.
+                // Penalise heavily since WeatherKit reporting .cloudy means flat grey sky.
+                conditionPenalty = 0.3
+            case .mostlyCloudy:
+                conditionPenalty = 0.8   // likely some texture variation
+            case .partlyCloudy:
+                conditionPenalty = 1.0   // best — mixed bright and dark areas
+            case .mostlyClear, .clear:
+                conditionPenalty = 0.2   // too little cloud
+            default:
+                conditionPenalty = 0.5
+        }
+
+        let cloudScore : Double
         switch cloudCoverage {
             case ..<0.20:
                 cloudScore = 0.0
@@ -69,12 +89,15 @@ actor LongExposurePredictor {
                 cloudScore = 1.0
                 reasoning.append("More than 60% cloud cover — ideal for long exposure")
             case 0.80..<0.95:
-                cloudScore = 0.85
-                reasoning.append("Heavy cloud cover — good if clouds show mixed texture")
+                cloudScore = 0.6   // reduced from 0.85 — needs texture to work
+                reasoning.append("Heavy cloud cover — only good if clouds show visible texture")
             default:
-                cloudScore = 0.5
-                reasoning.append("Near 100% overcast — works if clouds show mixed light and dark")
+                cloudScore = 0.25  // reduced from 0.5 — uniform overcast is usually flat
+                reasoning.append("Near 100% overcast — likely flat grey, little photographic interest")
         }
+        
+        // Apply condition as texture proxy
+        let textureAdjustedCloudScore : Double = cloudScore * conditionPenalty
 
         
         let windSpeedKph        : Double = hour.wind.speed.converted(to: .kilometersPerHour).value
@@ -84,17 +107,21 @@ actor LongExposurePredictor {
 
         switch beaufortValue {
             case ..<2:
-                windScore           = 0.1
+                windScore           = 0.0   // was 0.1 — effectively zero, don't suggest it
                 recommendedExposure = .tooCalm
-                reasoning.append("Wind too calm — clouds barely moving, very long exposure needed")
+                reasoning.append("Wind too calm — clouds stationary, long exposure effect not possible")
             case 2..<3:
-                windScore           = 0.5
+                windScore           = 0.3   // was 0.5 — reduced, marginal conditions
                 recommendedExposure = .long
-                reasoning.append("Light wind (\(beaufortValue) Bft) — slow cloud movement, 2–4 min exposure")
-            case 3..<5:
+                reasoning.append("Light wind (\(beaufortValue) Bft) — very slow movement, marginal conditions")
+            case 3..<4:
+                windScore           = 0.65  // new intermediate step
+                recommendedExposure = .short
+                reasoning.append("Moderate wind (\(beaufortValue) Bft) — acceptable cloud movement, ~30 sec exposure")
+            case 4..<5:
                 windScore           = 0.85
                 recommendedExposure = .short
-                reasoning.append("Moderate wind (\(beaufortValue) Bft) — good cloud movement, ~30 sec exposure")
+                reasoning.append("Good wind (\(beaufortValue) Bft) — good cloud movement, ~30 sec exposure")
             case 5..<7:
                 windScore           = 1.0
                 recommendedExposure = .veryShort
@@ -168,20 +195,19 @@ actor LongExposurePredictor {
             reasoning.append("Active precipitation likely — shooting impractical")
         }
 
-        
-        var composite : Double = (cloudScore * 0.45) + (windScore * 0.35) + (sunAngleScore * 0.20)
+        var composite = (textureAdjustedCloudScore * 0.40) + (windScore * 0.40) + (sunAngleScore * 0.20)
 
         if isActivelyRaining { composite *= 0.2 }
         composite += transitionBonus
         composite  = min(1.0, max(0.0, composite))
-
+                
         let grade : LongExposureConditions.Grade
         switch composite {
-            case ..<0.25     : grade = .poor
-            case 0.25..<0.45 : grade = .fair
-            case 0.45..<0.65 : grade = .good
-            case 0.65..<0.82 : grade = .great
-            default          : grade = .poor
+            case ..<0.35     : grade = .poor
+            case 0.35..<0.52 : grade = .fair
+            case 0.52..<0.68 : grade = .good
+            case 0.68..<0.83 : grade = .great
+            default          : grade = .grand
         }
 
         return LongExposureConditions(overall: grade, cloudScore: cloudScore, windScore: windScore,
