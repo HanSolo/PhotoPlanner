@@ -48,7 +48,6 @@ struct LongExposureConditions {
     }
 
     /// Describes the relationship between wind direction and camera heading.
-    /// The article describes how this determines the type of cloud movement effect.
     enum WindCloudAlignment: String {
         case parallel      = "Parallel"       // dynamic explosion-like cloud effect
         case diagonal      = "Diagonal"       // twisted diagonal cloud streaks
@@ -66,7 +65,7 @@ struct LongExposureConditions {
     }
 
     /// Recommended exposure time based on wind speed (Beaufort scale).
-    /// From the article: 5-6 Bft = 15 sec, 3-4 Bft = 30 sec, <=>2 Bft = 1-2 min.
+    /// 5-6 Bft = 15 sec, 3-4 Bft = 30 sec, <=>2 Bft = 1-2 min.
     enum RecommendedExposure: String {
         case veryShort = "~15 sec"    // 5–6 Beaufort
         case short     = "~30 sec"    // 3–4 Beaufort

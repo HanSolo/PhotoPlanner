@@ -61,13 +61,13 @@ actor LongExposurePredictor {
         // MostlyCloudy/PartlyCloudy = more likely to have texture.
         switch hour.condition {
             case .cloudy:
-                // Uniform overcast — the article says this needs visible texture to work.
+                // Uniform overcast, needs visible texture to work.
                 // Penalise heavily since WeatherKit reporting .cloudy means flat grey sky.
                 conditionPenalty = 0.3
             case .mostlyCloudy:
                 conditionPenalty = 0.8   // likely some texture variation
             case .partlyCloudy:
-                conditionPenalty = 1.0   // best — mixed bright and dark areas
+                conditionPenalty = 1.0   // best, mixed bright and dark areas
             case .mostlyClear, .clear:
                 conditionPenalty = 0.2   // too little cloud
             default:
@@ -78,22 +78,22 @@ actor LongExposurePredictor {
         switch cloudCoverage {
             case ..<0.20:
                 cloudScore = 0.0
-                reasoning.append("Too little cloud cover — no movement effect possible")
+                reasoning.append("Too little cloud cover: no movement effect possible")
             case 0.20..<0.40:
                 cloudScore = 0.3
-                reasoning.append("Below 50% cloud cover — limited movement effect")
+                reasoning.append("Below 50% cloud cover: limited movement effect")
             case 0.40..<0.60:
                 cloudScore = 0.8
-                reasoning.append("Partly cloudy — good cloud texture and coverage")
+                reasoning.append("Partly cloudy: good cloud texture and coverage")
             case 0.60..<0.80:
                 cloudScore = 1.0
-                reasoning.append("More than 60% cloud cover — ideal for long exposure")
+                reasoning.append("More than 60% cloud cover: ideal for long exposure")
             case 0.80..<0.95:
-                cloudScore = 0.6   // reduced from 0.85 — needs texture to work
-                reasoning.append("Heavy cloud cover — only good if clouds show visible texture")
+                cloudScore = 0.6   // reduced from 0.85, needs texture to work
+                reasoning.append("Heavy cloud cover: only good if clouds show visible texture")
             default:
-                cloudScore = 0.25  // reduced from 0.5 — uniform overcast is usually flat
-                reasoning.append("Near 100% overcast — likely flat grey, little photographic interest")
+                cloudScore = 0.25  // reduced from 0.5, uniform overcast is usually flat
+                reasoning.append("Near 100% overcast: likely flat grey, little photographic interest")
         }
         
         // Apply condition as texture proxy
@@ -107,29 +107,29 @@ actor LongExposurePredictor {
 
         switch beaufortValue {
             case ..<2:
-                windScore           = 0.0   // was 0.1 — effectively zero, don't suggest it
+                windScore           = 0.0   // was 0.1, effectively zero, don't suggest it
                 recommendedExposure = .tooCalm
-                reasoning.append("Wind too calm — clouds stationary, long exposure effect not possible")
+                reasoning.append("Wind too calm: clouds stationary, long exposure effect not possible")
             case 2..<3:
-                windScore           = 0.3   // was 0.5 — reduced, marginal conditions
+                windScore           = 0.3   // was 0.5, reduced, marginal conditions
                 recommendedExposure = .long
-                reasoning.append("Light wind (\(beaufortValue) Bft) — very slow movement, marginal conditions")
+                reasoning.append("Light wind (\(beaufortValue) Bft): very slow movement, marginal conditions")
             case 3..<4:
                 windScore           = 0.65  // new intermediate step
                 recommendedExposure = .short
-                reasoning.append("Moderate wind (\(beaufortValue) Bft) — acceptable cloud movement, ~30 sec exposure")
+                reasoning.append("Moderate wind (\(beaufortValue) Bft): acceptable cloud movement, ~30 sec exposure")
             case 4..<5:
                 windScore           = 0.85
                 recommendedExposure = .short
-                reasoning.append("Good wind (\(beaufortValue) Bft) — good cloud movement, ~30 sec exposure")
+                reasoning.append("Good wind (\(beaufortValue) Bft): good cloud movement, ~30 sec exposure")
             case 5..<7:
                 windScore           = 1.0
                 recommendedExposure = .veryShort
-                reasoning.append("Strong wind (\(beaufortValue) Bft) — excellent movement, ~15 sec exposure")
+                reasoning.append("Strong wind (\(beaufortValue) Bft): excellent movement, ~15 sec exposure")
             default:
                 windScore           = 0.7
                 recommendedExposure = .veryShort
-                reasoning.append("Very strong wind (\(beaufortValue) Bft) — good movement but tripod stability risk")
+                reasoning.append("Very strong wind (\(beaufortValue) Bft): good movement but tripod stability risk")
         }
 
         
@@ -139,30 +139,30 @@ actor LongExposurePredictor {
         let sunAngleScore : Double
         switch sunAngleDifference {
             case ..<20:
-                // Shooting directly into sun — only acceptable when heavily overcast
+                // Shooting directly into sun, only acceptable when heavily overcast
                 let sunHiddenByCloud = cloudCoverage > 0.85
                 sunAngleScore = sunHiddenByCloud ? 0.5 : 0.1
                 if sunHiddenByCloud {
-                    reasoning.append("Shooting toward sun but heavy clouds cover it — acceptable")
+                    reasoning.append("Shooting toward sun but heavy clouds cover it: acceptable")
                 } else {
-                    reasoning.append("Shooting into sun — extreme contrast, flare and filter artefacts, avoid")
+                    reasoning.append("Shooting into sun: extreme contrast, flare and filter artefacts, avoid")
                 }
             case 20..<45:
                 sunAngleScore = 0.4
-                reasoning.append("Sun nearly in front — high contrast and flare risk")
+                reasoning.append("Sun nearly in front: high contrast and flare risk")
             case 45..<90:
                 sunAngleScore = 0.85
-                reasoning.append("Sun at \(Int(sunAngleDifference))° — good angle, strong sidelight texture")
+                reasoning.append("Sun at \(Int(sunAngleDifference))°: good angle, strong sidelight texture")
             case 90..<135:
                 sunAngleScore = 1.0
-                reasoning.append("Sun at \(Int(sunAngleDifference))° — excellent angle for maximum texture")
+                reasoning.append("Sun at \(Int(sunAngleDifference))°: excellent angle for maximum texture")
             case 135..<160:
                 sunAngleScore = 0.9
-                reasoning.append("Sun mostly behind — good backlit cloud effect possible")
+                reasoning.append("Sun mostly behind: good backlit cloud effect possible")
             default:
-                // Sun directly behind — article says cloud effect compensates for flat lighting
+                // Sun directly behind, article says cloud effect compensates for flat lighting
                 sunAngleScore = 0.8
-                reasoning.append("Sun in back — cloud movement effect compensates for flat lighting")
+                reasoning.append("Sun in back: cloud movement effect compensates for flat lighting")
         }
 
 
@@ -186,13 +186,13 @@ actor LongExposurePredictor {
         var transitionBonus       : Double = 0.0
         if isPostFrontalClearing {
             transitionBonus = 0.15
-            reasoning.append("Post-frontal clearing — prime long exposure opportunity")
+            reasoning.append("Post-frontal clearing: prime long exposure opportunity")
         }
 
         
         let isActivelyRaining : Bool = hour.precipitationChance > 0.6
         if isActivelyRaining {
-            reasoning.append("Active precipitation likely — shooting impractical")
+            reasoning.append("Active precipitation likely: shooting impractical")
         }
 
         var composite = (textureAdjustedCloudScore * 0.40) + (windScore * 0.40) + (sunAngleScore * 0.20)
