@@ -65,7 +65,6 @@ actor ElevationService {
         request.timeoutInterval = 30
 
         let (data, response) = try await session.data(for: request)
-        //if let responseString = String(data: data, encoding: .utf8) { debugPrint(responseString) }
 
         guard (response as? HTTPURLResponse)?.statusCode == 200 else {
             throw ElevationError.invalidResponse

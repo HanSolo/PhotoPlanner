@@ -21,10 +21,14 @@ class ARViewModel {
     var isCalibrating     : Bool          = false
     var calibrationStatus : String        = "Initialising…"
     var currentLocation   : CLLocation?
-
-    private      var coordinator    : ARCoordinator?
-    private(set) var arSceneView    : ARSCNView?
-    private      var cachedTimeZone : TimeZone?
+    
+    private      var coordinator             : ARCoordinator?
+    private(set) var arSceneView             : ARSCNView?
+    private      var cachedTimeZone          : TimeZone?
+        
+    private      var sceneNorthOffset        : Float = 0 // The north offset used when the current scene was last built
+    private      var hasReceivedFirstHeading : Bool  = false
+    private      var previousSceneHeading    : CLLocationDirection?
 
     
     // Scene node names for easy removal and replacement
@@ -59,8 +63,8 @@ class ARViewModel {
             DispatchQueue.main.async {
                 self?.handleHeadingUpdate(heading, accuracyDescription: accuracyDescription)
             }
-        }
-
+        }        
+        
         coordinator.onARYawUpdate = { [weak self] yaw in
             DispatchQueue.main.async {
                 self?.handleARYawUpdate(yaw)
@@ -84,11 +88,30 @@ class ARViewModel {
         }
     }
 
+    
     private func handleHeadingUpdate(_ heading: CLLocationDirection, accuracyDescription: String) {
         if case .compassAutomatic = headingSource {
-            headingSource      = .compassAutomatic(heading: heading)
-            calibrationStatus  = accuracyDescription
-            rebuildScene()
+            headingSource     = .compassAutomatic(heading: heading)
+            calibrationStatus = accuracyDescription
+
+            if !hasReceivedFirstHeading {
+                hasReceivedFirstHeading = true
+                rebuildScene() // First valid heading (build the scene for the first time)
+            } else {
+                // Subsequent heading updates (only rebuild if heading)
+                // has changed significantly (more than 5 degrees)
+                // to avoid constant rebuilds from compass noise
+                if let previousOffset = previousSceneHeading {
+                    let delta        : Double = abs(heading - previousOffset)
+                    let wrappedDelta : Double = min(delta, 360 - delta)
+                    if wrappedDelta > 5 {
+                        previousSceneHeading = heading
+                        rebuildScene()
+                    }
+                } else {
+                    previousSceneHeading = heading
+                }
+            }
         }
     }
     
@@ -167,12 +190,14 @@ class ARViewModel {
     }
 
     func rebuildScene() {
-        guard let location = currentLocation else { return }
+        guard let location : CLLocation = currentLocation else { return }
 
-        let northOffset = currentNorthOffset()
-        let coordinate  = location.coordinate
-        let date        = selectedTime
-                
+        let northOffset    : Float = currentNorthOffset()
+        sceneNorthOffset = northOffset
+
+        let coordinate     : CLLocationCoordinate2D = location.coordinate
+        let date           : Date                   = selectedTime
+
         Task {
             let timeZone: TimeZone
             if let cached = self.cachedTimeZone {
@@ -246,9 +271,10 @@ class ARViewModel {
         guard let sceneView = arSceneView, let location  = currentLocation
         else { return }
 
-        let northOffset : Float                  = currentNorthOffset()
+        // Use the offset from when the arc was built, not the current live value
+        let northOffset : Float                  = sceneNorthOffset
         let coordinate  : CLLocationCoordinate2D = location.coordinate
-
+        
         // Sun indicator
         let sunPos = Helper.calcSunPos(at: coordinate, time: selectedTime)
 
@@ -302,7 +328,7 @@ class ARViewModel {
     
     private func currentNorthOffset() -> Float {
         guard let coordinator = coordinator else { return 0 }
-        return headingSource.northOffsetRadians( currentArKitYaw: coordinator.currentARKitYaw)
+        return headingSource.northOffsetRadians(currentArKitYaw: coordinator.currentARKitYaw)
     }
     
     private func fetchTimeZone(for location: CLLocation) async throws -> TimeZone? {

@@ -90,6 +90,7 @@ struct ARSceneBuilder {
         var points        : [HourLabelPoint] = [HourLabelPoint]()
         var calendar      : Calendar         = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
+        
         let startOfDay    : Date             = calendar.startOfDay(for: date)
 
         for hour in 0..<24 {
@@ -104,6 +105,7 @@ struct ARSceneBuilder {
 
             points.append(HourLabelPoint(position: position, color:sunLabelColor(altitude: sunPos.altitude), hour: hour, fontSize: 0.25))
         }
+        
         return points
     }
 
@@ -233,7 +235,7 @@ struct ARSceneBuilder {
 
         for (index, point) in points.enumerated().dropFirst() {
             let previous = points[index - 1]
-            let segment  = buildLineSegment(from: previous.position, to: point.position, color: point.color, radius: 0.012)
+            let segment  = buildLineSegment(from: previous.position, to: point.position, color: point.color, radius: 0.04)
             containerNode.addChildNode(segment)
         }
         return containerNode
@@ -281,7 +283,7 @@ struct ARSceneBuilder {
     
     @MainActor
     private static func buildHourLabelNode(hour: Int, position: SCNVector3, color: UIColor, fontSize: CGFloat) -> SCNNode {
-        let text : SCNText = SCNText(string: String(format: "%02d", hour), extrusionDepth: 0.005)
+        let text : SCNText = SCNText(string: String(format: "%02d:00", hour), extrusionDepth: 0.005)
         text.font                             = UIFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
         text.firstMaterial?.diffuse.contents  = color
         text.firstMaterial?.emission.contents = color.withAlphaComponent(0.6)
