@@ -23,7 +23,7 @@ class ARCoordinator: NSObject, ARSCNViewDelegate, ARSessionDelegate, CLLocationM
     private(set) var currentARKitYaw         : Float                 = 0
     
     private      var headingBuffer           : [CLLocationDirection] = []
-    private      let headingBufferSize       : Int                   = 5   // average over last 5 readings (~1 - 2 seconds), maybe 8-10 readings will even be better
+    private      let headingBufferSize       : Int                   = 10   // average over last 10 readings (2-4 seconds)
 
 
     

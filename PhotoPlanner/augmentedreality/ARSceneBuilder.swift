@@ -242,14 +242,14 @@ struct ARSceneBuilder {
     
     @MainActor
     static func buildSunIndicatorNode() -> SCNNode {
-        let sphere  : SCNSphere = SCNSphere(radius: 0.9)
+        let sphere  : SCNSphere = SCNSphere(radius: 0.75)
         sphere.firstMaterial?.diffuse.contents  = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
         sphere.firstMaterial?.emission.contents = UIColor(red: 1.0, green: 0.7,  blue: 0.0, alpha: 0.8)
         sphere.firstMaterial?.lightingModel     = .constant
 
         let node : SCNNode   = SCNNode(geometry: sphere)
 
-        let halo : SCNSphere = SCNSphere(radius: 0.9)
+        let halo : SCNSphere = SCNSphere(radius: 0.75)
         halo.firstMaterial?.diffuse.contents = UIColor(red: 1.0, green: 0.9, blue: 0.3, alpha: 0.15)
         halo.firstMaterial?.lightingModel    = .constant
         halo.firstMaterial?.isDoubleSided    = true
@@ -261,7 +261,7 @@ struct ARSceneBuilder {
 
     @MainActor
     static func buildMoonIndicatorNode(illumination: Double) -> SCNNode {
-        let sphere      : SCNSphere = SCNSphere(radius: 0.65)
+        let sphere      : SCNSphere = SCNSphere(radius: 0.55)
         let brightness  : Float     = Float(0.4 + illumination * 0.5)
         sphere.firstMaterial?.diffuse.contents  = UIColor(white: CGFloat(brightness), alpha: 1.0)
         sphere.firstMaterial?.emission.contents = UIColor(white: CGFloat(brightness * 0.3), alpha: 1.0)
@@ -269,7 +269,7 @@ struct ARSceneBuilder {
 
         let node : SCNNode   = SCNNode(geometry: sphere)
 
-        let halo : SCNSphere = SCNSphere(radius: 0.65)
+        let halo : SCNSphere = SCNSphere(radius: 0.55)
         halo.firstMaterial?.diffuse.contents = UIColor(white: CGFloat(brightness * 0.4), alpha: 0.15)
         halo.firstMaterial?.lightingModel    = .constant
         halo.firstMaterial?.isDoubleSided    = true
@@ -282,9 +282,9 @@ struct ARSceneBuilder {
     @MainActor
     private static func buildHourLabelNode(hour: Int, position: SCNVector3, color: UIColor, fontSize: CGFloat) -> SCNNode {
         let text : SCNText = SCNText(string: String(format: "%02d", hour), extrusionDepth: 0.005)
-        text.font                             = UIFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .semibold)
+        text.font                             = UIFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
         text.firstMaterial?.diffuse.contents  = color
-        text.firstMaterial?.emission.contents = color.withAlphaComponent(0.4)
+        text.firstMaterial?.emission.contents = color.withAlphaComponent(0.6)
         text.firstMaterial?.lightingModel     = .constant
         text.isWrapped                        = false
 

@@ -10,6 +10,7 @@ import SwiftUI
 import ARKit
 import SceneKit
 import CoreLocation
+import MapKit
 internal import Combine
 
 
@@ -21,8 +22,9 @@ class ARViewModel {
     var calibrationStatus : String        = "Initialising…"
     var currentLocation   : CLLocation?
 
-    private      var coordinator : ARCoordinator?
-    private(set) var arSceneView : ARSCNView?
+    private      var coordinator    : ARCoordinator?
+    private(set) var arSceneView    : ARSCNView?
+    private      var cachedTimeZone : TimeZone?
 
     
     // Scene node names for easy removal and replacement
@@ -164,76 +166,33 @@ class ARViewModel {
         UserDefaults.standard.set(location.coordinate.longitude, forKey: "ar_last_longitude")
     }
 
-    /*
     func rebuildScene() {
-        guard let sceneView = arSceneView, let location  = currentLocation
-        else { return }
+        guard let location = currentLocation else { return }
 
-        let northOffset : Float                  = currentNorthOffset()
-        let coordinate  : CLLocationCoordinate2D = location.coordinate
-
-        SCNTransaction.begin()
-        SCNTransaction.animationDuration = 0   // immediate, no animation
-        SCNTransaction.disableActions    = true
-        
-        // Remove existing overlay nodes
-        [sunArcNodeName, moonArcNodeName, cardinalsNodeName, horizonNodeName, sunHourLabelsNodeName, moonHourLabelsNodeName].forEach {
-            sceneView.scene.rootNode.childNode(withName: $0, recursively: false)?.removeFromParentNode()
+        let northOffset = currentNorthOffset()
+        let coordinate  = location.coordinate
+        let date        = selectedTime
+                
+        Task {
+            let timeZone: TimeZone
+            if let cached = self.cachedTimeZone {
+                timeZone = cached
+            } else {
+                timeZone = (try? await fetchTimeZone(for: location)) ?? .current
+                await MainActor.run { self.cachedTimeZone = timeZone }
+            }
         }
-
-        // Sun arc
-        let sunArcNode    : SCNNode = ARSceneBuilder.buildSunArcNode(coordinate: coordinate, date: selectedTime, northOffsetRadians: northOffset)
-        sunArcNode.name = sunArcNodeName
-        sceneView.scene.rootNode.addChildNode(sunArcNode)
-
-        // Moon arc
-        let moonArcNode   : SCNNode = ARSceneBuilder.buildMoonArcNode(coordinate: coordinate, date: selectedTime, northOffsetRadians: northOffset)
-        moonArcNode.name = moonArcNodeName
-        sceneView.scene.rootNode.addChildNode(moonArcNode)
-
-        // Cardinals
-        let cardinalsNode : SCNNode = ARSceneBuilder.buildCardinalMarkersNode(northOffsetRadians: northOffset)
-        cardinalsNode.name = cardinalsNodeName
-        sceneView.scene.rootNode.addChildNode(cardinalsNode)
-
-        // Horizon ring
-        let horizonNode   : SCNNode = ARSceneBuilder.buildHorizonRingNode(northOffsetRadians: northOffset)
-        horizonNode.name = horizonNodeName
-        sceneView.scene.rootNode.addChildNode(horizonNode)
-        
-        // Sun hour labels
-        let sunLabelsNode  = ARSceneBuilder.buildHourLabelsNode(coordinate: coordinate, date: selectedTime, northOffsetRadians: northOffset, forSun: true,timeZone: TimeZone.current)
-        sunLabelsNode.name = "sunHourLabels"
-        sceneView.scene.rootNode.addChildNode(sunLabelsNode)
-
-        // Moon hour labels
-        let moonLabelsNode  = ARSceneBuilder.buildHourLabelsNode(coordinate: coordinate, date: selectedTime, northOffsetRadians: northOffset, forSun: false,timeZone: TimeZone.current)
-        moonLabelsNode.name = "moonHourLabels"
-        sceneView.scene.rootNode.addChildNode(moonLabelsNode)
-        
-        // Update indicators
-        updateIndicatorPositions()
-        
-        SCNTransaction.commit()
-    }
-    */
-    
-    func rebuildScene() {
-        guard let location  = currentLocation
-        else { return }
-
-        let northOffset : Float                  = currentNorthOffset()
-        let coordinate  : CLLocationCoordinate2D = location.coordinate
-        let date        : Date                   = selectedTime
-        let timeZone    : TimeZone               = TimeZone.current
 
         Task.detached(priority: .userInitiated) { [weak self] in
             guard let self else { return }
 
+            // Fetch timezone for the camera location
+            let timeZone = (try? await self.fetchTimeZone(for: location)) ?? .current
+
             // Step 1 — pure math, background thread safe
             let sunArcPoints    : [ArcPoint]       = ARSceneBuilder.computeSunArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
             let moonArcPoints   : [ArcPoint]       = ARSceneBuilder.computeMoonArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
-            let sunLabelPoints  : [HourLabelPoint] = ARSceneBuilder.computeSunHourLabelPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset, timeZone: timeZone)
+            let sunLabelPoints  : [HourLabelPoint] = ARSceneBuilder.computeSunHourLabelPoints(coordinate: coordinate, date: date,northOffsetRadians: northOffset, timeZone: timeZone)
             let moonLabelPoints : [HourLabelPoint] = ARSceneBuilder.computeMoonHourLabelPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset, timeZone: timeZone)
             let cardinalPoints  : [(position: SCNVector3, label: String)] = ARSceneBuilder.computeCardinalPoints(northOffsetRadians: northOffset)
             let horizonPoints   : [ArcPoint] = ARSceneBuilder.computeHorizonRingPoints(northOffsetRadians: northOffset)
@@ -321,14 +280,14 @@ class ARViewModel {
             sceneView.scene.rootNode.addChildNode(moonIndicator)
         }
     }
-
-    private func currentNorthOffset() -> Float {
-        guard let coordinator = coordinator else { return 0 }
-        return headingSource.northOffsetRadians( currentArKitYaw: coordinator.currentARKitYaw)
-    }
-
+    
     func updateLocation(_ location: CLLocation) {
-        currentLocation = location
+        // Invalidate timezone cache if moved more than 50km
+        if let current = currentLocation,
+           location.distance(from: current) > 50000 {
+            cachedTimeZone = nil
+        }
+        currentLocation = location                
     }
 
     func updateSelectedTime(_ time: Date) {
@@ -339,5 +298,15 @@ class ARViewModel {
     func updateSelectedTimeAndRebuild(_ time: Date) {
         selectedTime = time
         rebuildScene()
+    }
+    
+    private func currentNorthOffset() -> Float {
+        guard let coordinator = coordinator else { return 0 }
+        return headingSource.northOffsetRadians( currentArKitYaw: coordinator.currentARKitYaw)
+    }
+    
+    private func fetchTimeZone(for location: CLLocation) async throws -> TimeZone? {
+        let request = MKReverseGeocodingRequest(location: CLLocation(latitude:  location.coordinate.latitude, longitude: location.coordinate.longitude))
+        return try await request?.mapItems.first?.timeZone
     }
 }
