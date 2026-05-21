@@ -36,6 +36,7 @@ struct ContentView: View {
     @State private var sunsetPredictionVisible  : Bool                   = false
     @State private var moonPhaseVisible         : Bool                   = false
     @State private var milkywayVisible          : Bool                   = false
+    @State private var arVisible                : Bool                   = false
     @State private var longExposureVisible      : Bool                   = false
     @State private var helpViewVisible          : Bool                   = false
     @State private var centerCameraPosition     : Bool                   = false
@@ -476,23 +477,40 @@ struct ContentView: View {
                         }
                     }
                 }
-                                
-                Toggle(isOn: self.$moonPhaseVisible) {
-                    Image(systemName: "moon")
-                        .padding(7)
-                }
-                .frame(width: 44, height: 44)
-                .toggleStyle(.button)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
-                .onChange(of: self.moonPhaseVisible) {
-                    if self.model.cameraMarkerData != nil {
-                        Task {
-                            let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                            let date     : Date                   = self.model.currentMapDate
-                            let timeZone : TimeZone               = await Helper.fetchTimeZone(for: location)
-                            self.moonViewModel.fetch(at: location, time: date, timeZone: timeZone)
+                               
+                HStack {
+                    Toggle(isOn: self.$moonPhaseVisible) {
+                        Image(systemName: "moon")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .onChange(of: self.moonPhaseVisible) {
+                        if self.model.cameraMarkerData != nil {
+                            Task {
+                                let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                                let date     : Date                   = self.model.currentMapDate
+                                let timeZone : TimeZone               = await Helper.fetchTimeZone(for: location)
+                                self.moonViewModel.fetch(at: location, time: date, timeZone: timeZone)
+                            }
                         }
+                    }
+                    
+                    Spacer()
+                    
+                    Button {
+                        self.arVisible = true
+                    } label: {
+                        Image(systemName: "arkit")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .fullScreenCover(isPresented: $arVisible) {
+                        ARView(coordinate: self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate, onClose: { self.arVisible = false })
                     }
                 }
                 

@@ -11,7 +11,7 @@ import CoreLocation
 
 struct MoonCalculator {
 
-    private static func calcMoonPosition(at coordinate: CLLocationCoordinate2D, time: Date) -> (altitude: Double, azimuth: Double) {
+    static func calcMoonPosition(at coordinate: CLLocationCoordinate2D, time: Date) -> (altitude: Double, azimuth: Double) {
         let jd  : Double = time.timeIntervalSince1970 / 86400.0 + 2440587.5
         let T   : Double = (jd - 2451545.0) / 36525.0
 
