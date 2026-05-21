@@ -30,9 +30,10 @@ struct ARSceneBuilder {
 
     nonisolated static let celestialSphereRadius: Float = 10.0
     
-    nonisolated static func computeSunArcPoints(coordinate: CLLocationCoordinate2D, date: Date, northOffsetRadians: Float, stepMinutes: Int = 8) -> [ArcPoint] {
+    nonisolated static func computeSunArcPoints(coordinate: CLLocationCoordinate2D, date: Date, northOffsetRadians: Float, timeZone: TimeZone = .current, stepMinutes: Int = 8) -> [ArcPoint] {
         var points            : [ArcPoint] = []
-        let calendar          : Calendar   = Calendar.current
+        var calendar          : Calendar   = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
         let startOfDay        : Date       = calendar.startOfDay(for: date)
         var previousPosition  : SCNVector3?
 
@@ -58,9 +59,10 @@ struct ARSceneBuilder {
     }
 
     
-    nonisolated static func computeMoonArcPoints(coordinate: CLLocationCoordinate2D, date: Date, northOffsetRadians: Float, stepMinutes: Int = 15) -> [ArcPoint] {
+    nonisolated static func computeMoonArcPoints(coordinate: CLLocationCoordinate2D, date: Date, northOffsetRadians: Float, timeZone: TimeZone = .current, stepMinutes: Int = 15) -> [ArcPoint] {
         var points            : [ArcPoint] = []
-        let calendar          : Calendar   = Calendar.current
+        var calendar          : Calendar   = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
         let startOfDay        : Date       = calendar.startOfDay(for: date)
         var previousPosition  : SCNVector3?
 
@@ -92,7 +94,7 @@ struct ARSceneBuilder {
         calendar.timeZone = timeZone
         
         let startOfDay    : Date             = calendar.startOfDay(for: date)
-
+                
         for hour in 0..<24 {
             let sampleTime : Date   = startOfDay.addingTimeInterval(Double(hour) * 3600)
             let sunPos     : SunPos = Helper.calcSunPos(at: coordinate, time: sampleTime)

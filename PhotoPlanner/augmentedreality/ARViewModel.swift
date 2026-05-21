@@ -28,6 +28,7 @@ class ARViewModel {
         
     private      var sceneNorthOffset        : Float = 0 // The north offset used when the current scene was last built
     private      var hasReceivedFirstHeading : Bool  = false
+    private      var isRebuildingScene       : Bool  = false
     private      var previousSceneHeading    : CLLocationDirection?
 
     
@@ -190,33 +191,31 @@ class ARViewModel {
     }
 
     func rebuildScene() {
-        guard let location : CLLocation = currentLocation else { return }
+        guard let location : CLLocation = self.currentLocation else { return }
+        guard !self.isRebuildingScene else { return } //print("[ARCelestial] rebuildScene skipped — already rebuilding")
 
+        self.isRebuildingScene = true
+        
         let northOffset    : Float = currentNorthOffset()
         sceneNorthOffset = northOffset
 
         let coordinate     : CLLocationCoordinate2D = location.coordinate
         let date           : Date                   = selectedTime
+        
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
 
-        Task {
             let timeZone: TimeZone
-            if let cached = self.cachedTimeZone {
+            if let cached = await self.cachedTimeZone {
                 timeZone = cached
             } else {
                 timeZone = (try? await fetchTimeZone(for: location)) ?? .current
                 await MainActor.run { self.cachedTimeZone = timeZone }
             }
-        }
-
-        Task.detached(priority: .userInitiated) { [weak self] in
-            guard let self else { return }
-
-            // Fetch timezone for the camera location
-            let timeZone = (try? await self.fetchTimeZone(for: location)) ?? .current
-
+            
             // Step 1 — pure math, background thread safe
-            let sunArcPoints    : [ArcPoint]       = ARSceneBuilder.computeSunArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
-            let moonArcPoints   : [ArcPoint]       = ARSceneBuilder.computeMoonArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
+            let sunArcPoints    : [ArcPoint]       = ARSceneBuilder.computeSunArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset, timeZone: timeZone)
+            let moonArcPoints   : [ArcPoint]       = ARSceneBuilder.computeMoonArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset, timeZone: timeZone)
             let sunLabelPoints  : [HourLabelPoint] = ARSceneBuilder.computeSunHourLabelPoints(coordinate: coordinate, date: date,northOffsetRadians: northOffset, timeZone: timeZone)
             let moonLabelPoints : [HourLabelPoint] = ARSceneBuilder.computeMoonHourLabelPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset, timeZone: timeZone)
             let cardinalPoints  : [(position: SCNVector3, label: String)] = ARSceneBuilder.computeCardinalPoints(northOffsetRadians: northOffset)
@@ -263,6 +262,8 @@ class ARViewModel {
                 SCNTransaction.commit()
 
                 self.updateIndicatorPositions()
+                
+                self.isRebuildingScene = false
             }
         }
     }
