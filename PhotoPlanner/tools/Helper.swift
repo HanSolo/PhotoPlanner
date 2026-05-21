@@ -322,7 +322,7 @@ public class Helper {
         }
     }
     
-    public static func calcSunPos(at coordinate: CLLocationCoordinate2D, time: Date) -> SunPos {
+    nonisolated public static func calcSunPos(at coordinate: CLLocationCoordinate2D, time: Date) -> SunPos {
         let jd         = time.timeIntervalSince1970 / 86400.0 + 2440587.5
         let n          = jd - 2451545.0
 

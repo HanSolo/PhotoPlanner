@@ -26,12 +26,14 @@ class ARViewModel {
 
     
     // Scene node names for easy removal and replacement
-    private let sunArcNodeName        : String = "sunArc"
-    private let moonArcNodeName       : String = "moonArc"
-    private let sunIndicatorNodeName  : String = "sunIndicator"
-    private let moonIndicatorNodeName : String = "moonIndicator"
-    private let cardinalsNodeName     : String = "cardinals"
-    private let horizonNodeName       : String = "horizon"
+    private let sunArcNodeName         : String = "sunArc"
+    private let moonArcNodeName        : String = "moonArc"
+    private let sunIndicatorNodeName   : String = "sunIndicator"
+    private let moonIndicatorNodeName  : String = "moonIndicator"
+    private let cardinalsNodeName      : String = "cardinals"
+    private let horizonNodeName        : String = "horizon"
+    private let sunHourLabelsNodeName  : String = "sunHours"
+    private let moonHourLabelsNodeName : String = "moonHours"
     
 
     func setup(sceneView: ARSCNView) {
@@ -163,7 +165,7 @@ class ARViewModel {
         UserDefaults.standard.set(location.coordinate.longitude, forKey: "ar_last_longitude")
     }
 
-    
+    /*
     func rebuildScene() {
         guard let sceneView = arSceneView, let location  = currentLocation
         else { return }
@@ -171,8 +173,12 @@ class ARViewModel {
         let northOffset : Float                  = currentNorthOffset()
         let coordinate  : CLLocationCoordinate2D = location.coordinate
 
+        SCNTransaction.begin()
+        SCNTransaction.animationDuration = 0   // immediate, no animation
+        SCNTransaction.disableActions    = true
+        
         // Remove existing overlay nodes
-        [sunArcNodeName, moonArcNodeName, cardinalsNodeName, horizonNodeName].forEach {
+        [sunArcNodeName, moonArcNodeName, cardinalsNodeName, horizonNodeName, sunHourLabelsNodeName, moonHourLabelsNodeName].forEach {
             sceneView.scene.rootNode.childNode(withName: $0, recursively: false)?.removeFromParentNode()
         }
 
@@ -195,9 +201,87 @@ class ARViewModel {
         let horizonNode   : SCNNode = ARSceneBuilder.buildHorizonRingNode(northOffsetRadians: northOffset)
         horizonNode.name = horizonNodeName
         sceneView.scene.rootNode.addChildNode(horizonNode)
+        
+        // Sun hour labels
+        let sunLabelsNode  = ARSceneBuilder.buildHourLabelsNode(coordinate: coordinate, date: selectedTime, northOffsetRadians: northOffset, forSun: true,timeZone: TimeZone.current)
+        sunLabelsNode.name = "sunHourLabels"
+        sceneView.scene.rootNode.addChildNode(sunLabelsNode)
 
+        // Moon hour labels
+        let moonLabelsNode  = ARSceneBuilder.buildHourLabelsNode(coordinate: coordinate, date: selectedTime, northOffsetRadians: northOffset, forSun: false,timeZone: TimeZone.current)
+        moonLabelsNode.name = "moonHourLabels"
+        sceneView.scene.rootNode.addChildNode(moonLabelsNode)
+        
         // Update indicators
         updateIndicatorPositions()
+        
+        SCNTransaction.commit()
+    }
+    */
+    
+    func rebuildScene() {
+        guard let location  = currentLocation
+        else { return }
+
+        let northOffset : Float                  = currentNorthOffset()
+        let coordinate  : CLLocationCoordinate2D = location.coordinate
+        let date        : Date                   = selectedTime
+        let timeZone    : TimeZone               = TimeZone.current
+
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
+
+            // Step 1 — pure math, background thread safe
+            let sunArcPoints    : [ArcPoint] = ARSceneBuilder.computeSunArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
+            let moonArcPoints   : [ArcPoint]   = ARSceneBuilder.computeMoonArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
+            let sunLabelPoints  : [HourLabelPoint] = ARSceneBuilder.computeSunHourLabelPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset, timeZone: timeZone)
+            let moonLabelPoints : [HourLabelPoint] = ARSceneBuilder.computeMoonHourLabelPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset, timeZone: timeZone)
+            let cardinalPoints  : [(position: SCNVector3, label: String)] = ARSceneBuilder.computeCardinalPoints(northOffsetRadians: northOffset)
+            let horizonPoints   : [ArcPoint] = ARSceneBuilder.computeHorizonRingPoints(northOffsetRadians: northOffset)
+
+            // Step 2 — SceneKit node creation, main thread
+            await MainActor.run { [weak self] in
+                guard let self, let sceneView = self.arSceneView else { return }
+
+                let sunArcNode     : SCNNode = ARSceneBuilder.buildArcNode(from: sunArcPoints,  lineRadius: 0.03)
+                sunArcNode.name = self.sunArcNodeName
+
+                let moonArcNode    : SCNNode = ARSceneBuilder.buildArcNode(from: moonArcPoints, lineRadius: 0.025)
+                moonArcNode.name = self.moonArcNodeName
+
+                let sunLabelsNode  : SCNNode = ARSceneBuilder.buildHourLabelsNode(from: sunLabelPoints)
+                sunLabelsNode.name = self.sunHourLabelsNodeName
+
+                let moonLabelsNode : SCNNode = ARSceneBuilder.buildHourLabelsNode(from: moonLabelPoints)
+                moonLabelsNode.name = self.moonHourLabelsNodeName
+
+                let cardinalsNode  : SCNNode = ARSceneBuilder.buildCardinalMarkersNode(from: cardinalPoints)
+                cardinalsNode.name = self.cardinalsNodeName
+
+                let horizonNode    : SCNNode = ARSceneBuilder.buildHorizonRingNode(from: horizonPoints)
+                horizonNode.name = self.horizonNodeName
+
+                SCNTransaction.begin()
+                SCNTransaction.animationDuration = 0
+                SCNTransaction.disableActions    = true
+
+                [self.sunArcNodeName, self.moonArcNodeName, self.cardinalsNodeName, self.horizonNodeName, self.sunHourLabelsNodeName, self.moonHourLabelsNodeName].forEach {
+                    sceneView.scene.rootNode.childNode(withName: $0, recursively: false)?
+                        .removeFromParentNode()
+                }
+
+                sceneView.scene.rootNode.addChildNode(sunArcNode)
+                sceneView.scene.rootNode.addChildNode(moonArcNode)
+                sceneView.scene.rootNode.addChildNode(sunLabelsNode)
+                sceneView.scene.rootNode.addChildNode(moonLabelsNode)
+                sceneView.scene.rootNode.addChildNode(cardinalsNode)
+                sceneView.scene.rootNode.addChildNode(horizonNode)
+
+                SCNTransaction.commit()
+
+                self.updateIndicatorPositions()
+            }
+        }
     }
 
     func updateIndicatorPositions() {

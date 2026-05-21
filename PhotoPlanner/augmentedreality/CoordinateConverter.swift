@@ -18,7 +18,7 @@ struct CoordinateConverter {
     /// Converts azimuth and altitude to a unit direction vector
     /// in ARKit's right-handed coordinate system where: +X = right, +Y = up, -Z = forward (into screen)
     /// The azimuth is measured clockwise from north (before north offset is applied).
-    static func directionVector(azimuthDegrees:  Double, altitudeDegrees: Double) -> SCNVector3 {
+    nonisolated static func directionVector(azimuthDegrees:  Double, altitudeDegrees: Double) -> SCNVector3 {
         let azimuthRad  : Double = azimuthDegrees  * .pi / 180
         let altitudeRad : Double = altitudeDegrees * .pi / 180
 
@@ -31,14 +31,14 @@ struct CoordinateConverter {
 
     /// Rotates a direction vector around the Y axis by the given offset.
     /// Used to align ARKit's coordinate frame with true north.
-    static func applyNorthOffset(to vector: SCNVector3, offsetRadians: Float) -> SCNVector3 {
+    nonisolated static func applyNorthOffset(to vector: SCNVector3, offsetRadians: Float) -> SCNVector3 {
         let cosOffset : Float = cos(offsetRadians)
         let sinOffset : Float = sin(offsetRadians)
         return SCNVector3(x: vector.x * cosOffset + vector.z * sinOffset, y: vector.y, z: -vector.x * sinOffset + vector.z * cosOffset)
     }
 
     /// Projects a world-space direction vector to a position on a sphere of the given radius, centred at the origin.
-    static func spherePosition(direction: SCNVector3, radius: Float = 10.0) -> SCNVector3 {
+    nonisolated static func spherePosition(direction: SCNVector3, radius: Float = 10.0) -> SCNVector3 {
         let length : Float = sqrt(direction.x * direction.x + direction.y * direction.y + direction.z * direction.z)
         guard length > 0 else { return SCNVector3(0, 0, -radius) }
         return SCNVector3(direction.x / length * radius, direction.y / length * radius, direction.z / length * radius)

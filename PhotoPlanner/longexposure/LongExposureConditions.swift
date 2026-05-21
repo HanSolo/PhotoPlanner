@@ -54,7 +54,7 @@ struct LongExposureConditions {
         case perpendicular = "Perpendicular"  // soft cotton-ball clouds
         case unknown       = "Unknown"
 
-        var effectDescription: String {
+        nonisolated var effectDescription: String {
             switch self {
                 case .parallel      : return "Expect dynamic, explosion-like cloud streaks"
                 case .diagonal      : return "Expect twisted diagonal cloud streaks"

@@ -20,7 +20,7 @@ struct ARSceneViewContainer: UIViewRepresentable {
         let sceneView : ARSCNView = ARSCNView()
         sceneView.antialiasingMode             = .multisampling4X
         sceneView.automaticallyUpdatesLighting = false
-        sceneView.rendersContinuously          = true
+        sceneView.rendersContinuously          = false // true might lead to flicker
 
         viewModel.setup(sceneView: sceneView)
         return sceneView

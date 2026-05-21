@@ -11,7 +11,7 @@ import CoreLocation
 
 struct MoonCalculator {
 
-    static func calcMoonPosition(at coordinate: CLLocationCoordinate2D, time: Date) -> (altitude: Double, azimuth: Double) {
+    nonisolated static func calcMoonPosition(at coordinate: CLLocationCoordinate2D, time: Date) -> (altitude: Double, azimuth: Double) {
         let jd  : Double = time.timeIntervalSince1970 / 86400.0 + 2440587.5
         let T   : Double = (jd - 2451545.0) / 36525.0
 
@@ -220,7 +220,7 @@ struct MoonCalculator {
         return (altitude, azimuth)
     }
     
-    static func calcMoonPhase(at coordinate: CLLocationCoordinate2D, time: Date, timeZone: TimeZone) -> MoonPhase {
+    nonisolated static func calcMoonPhase(at coordinate: CLLocationCoordinate2D, time: Date, timeZone: TimeZone) -> MoonPhase {
         let jd          : Double  = time.timeIntervalSince1970 / 86400.0 + 2440587.5
         let T           : Double  = (jd - 2451545.0) / 36525.0
 
@@ -271,7 +271,7 @@ struct MoonCalculator {
                          riseTime: riseTime, setTime: setTime, altitude: altitude, azimuth: azimuth, timeZone: timeZone)
     }
 
-    static func calcMoonRiseAndMoonSet(at coordinate: CLLocationCoordinate2D, on date: Date, timeZone: TimeZone) -> (moonRise: Date?, moonSet: Date?) {
+    nonisolated static func calcMoonRiseAndMoonSet(at coordinate: CLLocationCoordinate2D, on date: Date, timeZone: TimeZone) -> (moonRise: Date?, moonSet: Date?) {
         var calendar      = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let startOfDay    = calendar.startOfDay(for: date)
@@ -309,7 +309,7 @@ struct MoonCalculator {
         return (riseTime, setTime)
     }
 
-    private static func interpolateCrossing(t0: Date, a0: Double, t1: Date, a1: Double) -> Date {
+    nonisolated private static func interpolateCrossing(t0: Date, a0: Double, t1: Date, a1: Double) -> Date {
         let fraction : Double = -a0 / (a1 - a0)
         return t0.addingTimeInterval(fraction * t1.timeIntervalSince(t0))
     }
