@@ -134,6 +134,12 @@ struct HelpView: View {
                         .padding(EdgeInsets(top: 0, leading: 50, bottom: 0, trailing: 0))
                     
                     Spacer()
+                    
+                    Text("AR view")
+                        .font(font)
+                        .foregroundStyle(Color.white)
+                        .multilineTextAlignment(.trailing)
+                        .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 50))
                 }
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
                                                                                         

@@ -42,7 +42,7 @@ class ARSceneBuilder {
 
             if let previous : SCNVector3 = previousPosition {
                 let segmentColor : UIColor = sunArcColor(altitude: sunPos.altitude)
-                let segment      : SCNNode = buildLineSegment(from: previous, to: position, color: segmentColor, radius: 0.015)
+                let segment      : SCNNode = buildLineSegment(from: previous, to: position, color: segmentColor, radius: 0.030)
                 containerNode.addChildNode(segment)
             }
             previousPosition = position
@@ -59,6 +59,7 @@ class ARSceneBuilder {
         }
     }
 
+    
     static func buildMoonArcNode(coordinate: CLLocationCoordinate2D, date: Date, northOffsetRadians: Float, stepMinutes: Int = 10) -> SCNNode {
         let containerNode    : SCNNode  = SCNNode()
         let calendar         : Calendar = Calendar.current
@@ -76,16 +77,12 @@ class ARSceneBuilder {
             }
 
             var direction : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: azimuth, altitudeDegrees: altitude)
-            direction = CoordinateConverter.applyNorthOffset(
-                to: direction, offsetRadians: northOffsetRadians
-            )
+            direction = CoordinateConverter.applyNorthOffset(to: direction, offsetRadians: northOffsetRadians)
             
-            let position : SCNVector3  = CoordinateConverter.spherePosition(
-                direction: direction, radius: celestialSphereRadius
-            )
+            let position : SCNVector3  = CoordinateConverter.spherePosition(direction: direction, radius: celestialSphereRadius)
 
             if let previous : SCNVector3 = previousPosition {
-                let segment : SCNNode = buildLineSegment(from: previous, to: position, color: UIColor(white: 0.85, alpha: 0.6), radius: 0.010)
+                let segment : SCNNode = buildLineSegment(from: previous, to: position, color: UIColor(white: 0.85, alpha: 0.6), radius: 0.025)
                 containerNode.addChildNode(segment)
             }
             previousPosition = position
@@ -95,7 +92,7 @@ class ARSceneBuilder {
 
     
     static func buildSunIndicatorNode() -> SCNNode {
-        let sphere : SCNSphere = SCNSphere(radius: 0.12)
+        let sphere : SCNSphere = SCNSphere(radius: 0.32) // 0.12
         sphere.firstMaterial?.diffuse.contents  = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
         sphere.firstMaterial?.emission.contents = UIColor(red: 1.0, green: 0.7,  blue: 0.0, alpha: 0.8)
         sphere.firstMaterial?.lightingModel     = .constant
@@ -114,7 +111,7 @@ class ARSceneBuilder {
 
     
     static func buildMoonIndicatorNode(illumination: Double) -> SCNNode {
-        let sphere     : SCNSphere = SCNSphere(radius: 0.08)
+        let sphere     : SCNSphere = SCNSphere(radius: 0.24) // 0.08
         let brightness : Float     = Float(0.4 + illumination * 0.5)
         sphere.firstMaterial?.diffuse.contents  = UIColor(white: CGFloat(brightness), alpha: 1.0)
         sphere.firstMaterial?.emission.contents = UIColor(white: CGFloat(brightness * 0.3), alpha: 1.0)
@@ -165,13 +162,11 @@ class ARSceneBuilder {
 
         for step in 0...segmentCount {
             let azimuth   : Double     = Double(step) / Double(segmentCount) * 360.0
+            
             var direction : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: azimuth, altitudeDegrees: 0)
-            direction = CoordinateConverter.applyNorthOffset(
-                to: direction, offsetRadians: northOffsetRadians
-            )
-            let position  : SCNVector3 = CoordinateConverter.spherePosition(
-                direction: direction, radius: celestialSphereRadius
-            )
+            direction = CoordinateConverter.applyNorthOffset(to: direction, offsetRadians: northOffsetRadians)
+            
+            let position  : SCNVector3 = CoordinateConverter.spherePosition(direction: direction, radius: celestialSphereRadius)
 
             if let previous : SCNVector3 = previousPosition {
                 let segment = buildLineSegment(from: previous, to: position, color: UIColor.white.withAlphaComponent(0.15), radius: 0.005)
@@ -194,7 +189,7 @@ class ARSceneBuilder {
         cylinder.firstMaterial?.lightingModel    = .constant
 
         let node     : SCNNode     = SCNNode(geometry: cylinder)
-        node.position = SCNVector3((start.x + end.x) / 2, (start.y + end.y) / 2, (start.z + end.z) / 2)
+        node.position = SCNVector3((start.x + end.x) / 2, (start.y + end.y) / 2, (start.z + end.z) / 2)        
 
         // Orient cylinder to point from start to end
         let up      : SCNVector3 = SCNVector3(0, 1, 0)
