@@ -198,7 +198,7 @@ class ARViewModel {
         
         let northOffset    : Float = currentNorthOffset()
         sceneNorthOffset = northOffset
-
+    
         let coordinate     : CLLocationCoordinate2D = location.coordinate
         let date           : Date                   = selectedTime
         
@@ -271,13 +271,13 @@ class ARViewModel {
     func updateIndicatorPositions() {
         guard let sceneView = arSceneView, let location  = currentLocation
         else { return }
-
+                
         // Use the offset from when the arc was built, not the current live value
         let northOffset : Float                  = sceneNorthOffset
         let coordinate  : CLLocationCoordinate2D = location.coordinate
         
         // Sun indicator
-        let sunPos = Helper.calcSunPos(at: coordinate, time: selectedTime)
+        let sunPos : SunPosition = SolarCalculator.calcSunPosition(at: coordinate, time: selectedTime)
 
         sceneView.scene.rootNode.childNode(withName: sunIndicatorNodeName, recursively: false)?.removeFromParentNode()
 
@@ -328,8 +328,10 @@ class ARViewModel {
     }
     
     private func currentNorthOffset() -> Float {
-        guard let coordinator = coordinator else { return 0 }
-        return headingSource.northOffsetRadians(currentArKitYaw: coordinator.currentARKitYaw)
+        switch headingSource {
+            case .compassAutomatic(let heading)      : return Float(heading * .pi / 180)
+            case .manualCalibration(let calibration) : return calibration.northOffsetRadians
+        }
     }
     
     private func fetchTimeZone(for location: CLLocation) async throws -> TimeZone? {

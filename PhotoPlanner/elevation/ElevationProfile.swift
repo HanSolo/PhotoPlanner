@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreLocation
 
 
 struct ElevationProfile {
@@ -30,5 +31,12 @@ struct ElevationProfile {
             let losAltitude : Double = cameraEyeAltitude + fraction * (subjectAltitude - cameraEyeAltitude)
             return point.elevation <= losAltitude
         }
+    }
+    
+    var totalDistance: CLLocationDistance {
+        guard let first = points.first, let last = points.last else { return 0 }
+        let startLocation : CLLocation = CLLocation(latitude: first.coordinate.latitude, longitude: first.coordinate.longitude)
+        let endLocation   : CLLocation = CLLocation(latitude: last.coordinate.latitude, longitude: last.coordinate.longitude)
+        return startLocation.distance(from: endLocation)
     }
 }

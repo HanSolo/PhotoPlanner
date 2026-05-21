@@ -98,8 +98,8 @@ class ARCoordinator: NSObject, ARSCNViewDelegate, ARSessionDelegate, CLLocationM
     
     func session(_ session: ARSession, didUpdate frame: ARFrame) {
         // Extract yaw from ARKit transform matrix
-        let transform : simd_float4x4 = frame.camera.transform
-        let yaw       : Float         = atan2(transform.columns.2.x, transform.columns.0.x)
+        let transform : simd_float4x4 = frame.camera.transform        
+        let yaw       : Float         = atan2(-transform.columns.2.x, transform.columns.2.z)
         currentARKitYaw = yaw
         onARYawUpdate?(yaw)
     }

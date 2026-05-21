@@ -29,12 +29,10 @@ enum HeadingSource {
         }
     }
 
-    /// Returns the north offset in radians for a given ARKit yaw.
-    /// For compass mode: offset = compass heading converted to radians (arKit yaw)
-    /// For calibration mode: stored offset from calibration time
+    
     func northOffsetRadians(currentArKitYaw: Float) -> Float {
         switch self {
-            case .compassAutomatic(let heading)      : return Float(heading * .pi / 180) - currentArKitYaw
+            case .compassAutomatic(let heading)      : return Float(heading * .pi / 180)   // compass only, no ARKit yaw
             case .manualCalibration(let calibration) : return calibration.northOffsetRadians
         }
     }

@@ -20,8 +20,8 @@ struct ARHUDView: View {
     let onConfirmCalibrate : () -> Void
     let onCancelCalibrate  : () -> Void
 
-    private var sunPosition : SunPos {
-        Helper.calcSunPos(at: coordinate, time: viewModel.selectedTime)
+    private var sunPosition : SunPosition {
+        SolarCalculator.calcSunPosition(at: coordinate, time: viewModel.selectedTime)
     }
     private var moonInfo    : (altitude: Double, azimuth: Double) {
         MoonCalculator.calcMoonPosition(at: coordinate, time: viewModel.selectedTime)

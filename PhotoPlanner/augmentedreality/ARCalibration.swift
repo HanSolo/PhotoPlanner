@@ -19,7 +19,7 @@ struct ARCalibration: Codable {
     let calibrationLatitude           : Double  // GPS coordinate where calibration was performed
     let calibrationLongitude          : Double
     let calibrationTimestamp          : Date    // When calibration was performed
-    var northOffsetRadians            : Float { // Rotation offset in radians to apply to all celestial direction vectors, positive = rotate clockwise when viewed from above.
+    var northOffsetRadians            : Float {
         Float(trueNorthHeadingAtCalibration * .pi / 180) - arKitYawAtCalibration
     }
 

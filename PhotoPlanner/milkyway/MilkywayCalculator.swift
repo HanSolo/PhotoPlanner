@@ -38,7 +38,7 @@ struct MilkywayCalculator {
         let step       : TimeInterval       = TimeInterval(stepMinutes * 60)
 
         while current < startOfDay + 86400 {
-            let sunPos : SunPos           = Helper.calcSunPos(at: coordinate, time: current)
+            let sunPos : SunPosition      = SolarCalculator.calcSunPosition(at: coordinate, time: current)
             let mwPos  : MilkywayPosition = getMilkywayPosition(at: coordinate, time: current, sunAltitude: sunPos.altitude)
             slots.append(mwPos)
             current += step

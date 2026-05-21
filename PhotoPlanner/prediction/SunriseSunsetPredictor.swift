@@ -68,8 +68,8 @@ actor SunriseSunsetPredictor {
         let approximateSunsetTime  : Date? = calcApproximateHorizonCrossingTime(at: cameraLocation, startOfDay: startOfDay, lookingForRising: false )
 
         // Calculate sun azimuths at sunrise and sunset
-        let sunriseAzimuth : Double = approximateSunriseTime.map { calcSunPos(at: cameraLocation, time: $0).azimuth } ?? 90.0   // default to east if no sunrise found
-        let sunsetAzimuth  : Double = approximateSunsetTime.map { calcSunPos(at: cameraLocation, time: $0).azimuth } ?? 270.0  // default to west if no sunset found
+        let sunriseAzimuth : Double = approximateSunriseTime.map { SolarCalculator.calcSunPosition(at: cameraLocation, time: $0).azimuth } ?? 90.0   // default to east if no sunrise found
+        let sunsetAzimuth  : Double = approximateSunsetTime.map { SolarCalculator.calcSunPosition(at: cameraLocation, time: $0).azimuth } ?? 270.0  // default to west if no sunset found
 
         // Calculate remote coordinates in the sun's direction
         let sunriseRemoteCoordinate : CLLocationCoordinate2D = await cameraLocation.coordinateByOffsetting(distanceKilometres: configuration.samplingDistanceKilometres, bearingDegrees: sunriseAzimuth)
@@ -95,8 +95,8 @@ actor SunriseSunsetPredictor {
         // Find indices of slots that bracket horizon crossings
         var horizonBracketIndices: Set<Int> = []
         for index in 1..<cameraHours.count {
-            let previousAltitude  : Double = calcSunPos(at: cameraLocation, time: cameraHours[index - 1].date).altitude
-            let currentAltitude   : Double = calcSunPos(at: cameraLocation, time: cameraHours[index].date).altitude
+            let previousAltitude  : Double = SolarCalculator.calcSunPosition(at: cameraLocation, time: cameraHours[index - 1].date).altitude
+            let currentAltitude   : Double = SolarCalculator.calcSunPosition(at: cameraLocation, time: cameraHours[index].date).altitude
             let isRisingCrossing  : Bool   = previousAltitude < 0 && currentAltitude >= 0
             let isSettingCrossing : Bool   = previousAltitude >= 0 && currentAltitude < 0
             if isRisingCrossing || isSettingCrossing {
@@ -111,7 +111,7 @@ actor SunriseSunsetPredictor {
         // Build blended slots
         let slots: [BlendedDailyQualityTimeline.BlendedHourSlot] = cameraHours.enumerated().map { index, cameraHour in
 
-            let currentSunPosition  : SunPos               = calcSunPos(at: cameraLocation, time: cameraHour.date)
+            let currentSunPosition  : SunPosition          = SolarCalculator.calcSunPosition(at: cameraLocation, time: cameraHour.date)
             let directionalContext  : DirectionalCloudInfo = getDirectionalInfo(sunAzimuth: currentSunPosition.azimuth, shootAzimuth: shootAzimuth)
 
             let isBracketingHorizon : Bool                 = horizonBracketIndices.contains(index)
@@ -473,8 +473,8 @@ actor SunriseSunsetPredictor {
         var bestAltitude = -90.0
         
         for minutes in stride(from: 0.0, through: 86400, by: 600) {
-            let time     = startOfDay.addingTimeInterval(minutes)
-            let altitude = calcSunPos(at: coordinate, time: time).altitude
+            let time     : Date   = startOfDay.addingTimeInterval(minutes)
+            let altitude : Double = SolarCalculator.calcSunPosition(at: coordinate, time: time).altitude
             if altitude > bestAltitude {
                 bestAltitude = altitude
                 bestTime     = time
@@ -482,52 +482,7 @@ actor SunriseSunsetPredictor {
         }
         return bestTime
     }
-    
-    private func calcSunPos(at coordinate: CLLocationCoordinate2D, time: Date) -> SunPos {
-        let jd         : Double = time.timeIntervalSince1970 / 86400.0 + 2440587.5
-        let n          : Double = jd - 2451545.0
         
-        let L          : Double = (280.46 + 0.9856474 * n).truncatingRemainder(dividingBy: 360)
-        let g          : Double = (357.528 + 0.9856003 * n).truncatingRemainder(dividingBy: 360)
-        let gRad       : Double = g * .pi / 180
-        let lambda     : Double = L + 1.915 * sin(gRad) + 0.020 * sin(2 * gRad)
-        
-        let epsilon    : Double = 23.439 - 0.0000004 * n
-        let epsilonRad : Double = epsilon * .pi / 180
-        let lambdaRad  : Double = lambda  * .pi / 180
-        
-        let sinDec     : Double = sin(epsilonRad) * sin(lambdaRad)
-        let dec        : Double = asin(sinDec)
-        
-        // Normalize RA to 0 - 360
-        var raNorm     : Double = atan2(cos(epsilonRad) * sin(lambdaRad), cos(lambdaRad)) * 180 / .pi
-        if raNorm < 0 { raNorm += 360 }
-        
-        // IAU 1982 GMST, same formula as moonPosition
-        let jd0        : Double = floor(jd - 0.5) + 0.5
-        let T0         : Double = (jd0 - 2451545.0) / 36525.0
-        let utH        : Double = (jd - jd0) * 24.0
-        
-        let gmst0      : Double = (6.697374558 + 2400.0513369  * T0 + 0.0000258622  * T0 * T0 - 1.7222e-9     * T0 * T0 * T0) * 15.0
-        
-        let gmst       : Double = (gmst0 + 360.98564724 * utH / 24.0).truncatingRemainder(dividingBy: 360)
-        
-        // Local Hour Angle
-        var lha        : Double = (gmst + coordinate.longitude - raNorm).truncatingRemainder(dividingBy: 360)
-        if lha < 0 { lha += 360 }
-        let lhaRad     : Double = lha * .pi / 180
-        let latRad     : Double = coordinate.latitude * .pi / 180
-        
-        let sinAlt     : Double = sin(latRad) * sin(dec) + cos(latRad) * cos(dec) * cos(lhaRad)
-        let altitude   : Double = asin(sinAlt) * 180 / .pi
-        
-        let cosAz      : Double = (sin(dec) - sin(latRad) * sinAlt) / (cos(latRad) * cos(asin(sinAlt)))
-        var azimuth    : Double = acos(max(-1, min(1, cosAz))) * 180 / .pi
-        if sin(lhaRad) > 0 { azimuth = 360 - azimuth }
-        
-        return SunPos(altitude: altitude, azimuth: azimuth)
-    }
-    
     private func gradeValue(_ grade: SunriseSunsetScore.Grade) -> Int {
         switch grade {
         case .poor  : return 0
@@ -544,7 +499,7 @@ actor SunriseSunsetPredictor {
 
         var   sampleTime : Date = startOfDay
         while sampleTime < startOfDay.addingTimeInterval(86400) {
-            let currentAltitude : Double = calcSunPos(at: coordinate, time: sampleTime).altitude
+            let currentAltitude : Double = SolarCalculator.calcSunPosition(at: coordinate, time: sampleTime).altitude
 
             if let previous = previousAltitude {
                 let isRisingCrossing  : Bool = previous < 0 && currentAltitude >= 0

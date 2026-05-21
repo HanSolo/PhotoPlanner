@@ -38,8 +38,8 @@ struct ARSceneBuilder {
         var previousPosition  : SCNVector3?
 
         for minutes in stride(from: 0.0, through: 1440, by: Double(stepMinutes)) {
-            let sampleTime : Date   = startOfDay.addingTimeInterval(minutes * 60)
-            let sunPos     : SunPos = Helper.calcSunPos(at: coordinate, time: sampleTime)
+            let sampleTime : Date        = startOfDay.addingTimeInterval(minutes * 60)
+            let sunPos     : SunPosition = SolarCalculator.calcSunPosition(at: coordinate, time: sampleTime)
 
             guard sunPos.altitude > -6 else {
                 previousPosition = nil
@@ -96,8 +96,8 @@ struct ARSceneBuilder {
         let startOfDay    : Date             = calendar.startOfDay(for: date)
                 
         for hour in 0..<24 {
-            let sampleTime : Date   = startOfDay.addingTimeInterval(Double(hour) * 3600)
-            let sunPos     : SunPos = Helper.calcSunPos(at: coordinate, time: sampleTime)
+            let sampleTime : Date        = startOfDay.addingTimeInterval(Double(hour) * 3600)
+            let sunPos     : SunPosition = SolarCalculator.calcSunPosition(at: coordinate, time: sampleTime)
 
             guard sunPos.altitude > -6 else { continue }
             
@@ -166,7 +166,7 @@ struct ARSceneBuilder {
 
     
     nonisolated static func computeSunIndicatorPosition(coordinate: CLLocationCoordinate2D, time: Date, northOffsetRadians: Float) -> (position: SCNVector3, altitude: Double)? {
-        let sunPos : SunPos = Helper.calcSunPos(at: coordinate, time: time)
+        let sunPos : SunPosition = SolarCalculator.calcSunPosition(at: coordinate, time: time)
         guard sunPos.altitude > -6 else { return nil }
 
         var direction : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: sunPos.azimuth, altitudeDegrees: sunPos.altitude)
@@ -211,29 +211,59 @@ struct ARSceneBuilder {
         return containerNode
     }
 
-    
+        
     @MainActor
     static func buildCardinalMarkersNode(from points: [(position: SCNVector3, label: String)]) -> SCNNode {
         let containerNode : SCNNode = SCNNode()
 
         for (position, label) in points {
-            let textGeometry : SCNText = SCNText(string: label, extrusionDepth: 0.01)
-            textGeometry.font                             = UIFont.systemFont(ofSize: 0.3, weight: .bold)
-            textGeometry.firstMaterial?.diffuse.contents  = UIColor.white.withAlphaComponent(0.6)
-            textGeometry.firstMaterial?.lightingModel     = .constant
+            let liftedPosition : SCNVector3 = SCNVector3(position.x, position.y + 1.2, position.z)
 
-            let textNode  : SCNNode = SCNNode(geometry: textGeometry)
-            textNode.position = position
+            let markerNode : SCNNode = SCNNode()
+            markerNode.position = liftedPosition
 
             let billboard : SCNBillboardConstraint = SCNBillboardConstraint()
-            billboard.freeAxes   = .all
-            textNode.constraints = [billboard]
+            billboard.freeAxes     = .all
+            markerNode.constraints = [billboard]
 
-            let (minBound, maxBound)  : (SCNVector3, SCNVector3) = textGeometry.boundingBox
-            textNode.pivot = SCNMatrix4MakeTranslation((maxBound.x - minBound.x) / 2, (maxBound.y - minBound.y) / 2, 0)
-            containerNode.addChildNode(textNode)
+            let image       : UIImage  = renderCardinalImage(label: label)
+            let aspectRatio : Float    = Float(image.size.width / image.size.height)
+            let planeHeight : Float    = 1.0
+            let plane       : SCNPlane = SCNPlane(width: CGFloat(planeHeight * aspectRatio), height: CGFloat(planeHeight))
+            plane.firstMaterial?.diffuse.contents    = image
+            plane.firstMaterial?.lightingModel       = .constant
+            plane.firstMaterial?.isDoubleSided       = true
+            plane.firstMaterial?.transparencyMode    = .aOne
+            plane.firstMaterial?.writesToDepthBuffer = false
+
+            let planeNode : SCNNode = SCNNode(geometry: plane)
+            markerNode.addChildNode(planeNode)
+            containerNode.addChildNode(markerNode)
         }
+
         return containerNode
+    }
+
+    private static func renderCardinalImage(label: String) -> UIImage {
+        let size     : CGSize                  = CGSize(width: 256, height: 256)
+        let renderer : UIGraphicsImageRenderer = UIGraphicsImageRenderer(size: size)
+
+        return renderer.image { ctx in
+            let cgContext : CGContext = ctx.cgContext
+
+            cgContext.setFillColor(UIColor.black.withAlphaComponent(0.65).cgColor)
+            cgContext.fillEllipse(in: CGRect(origin: .zero, size: size))
+
+            cgContext.setStrokeColor(UIColor.white.withAlphaComponent(0.4).cgColor)
+            cgContext.setLineWidth(4)
+            cgContext.strokeEllipse(in: CGRect(x: 3, y: 3, width: size.width  - 6, height: size.height - 6))
+
+            let font       : UIFont                        = UIFont.systemFont(ofSize: 110, weight: .heavy)  // was 52
+            let attributes : [NSAttributedString.Key: Any] = [ .font: font, .foregroundColor: UIColor.white]
+            let textSize   : CGSize                        = (label as NSString).size(withAttributes: attributes)
+            let textOrigin : CGPoint                       = CGPoint(x: (size.width - textSize.width) / 2, y: (size.height - textSize.height) / 2)
+            (label as NSString).draw(at: textOrigin, withAttributes: attributes)
+        }
     }
 
 

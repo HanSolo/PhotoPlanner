@@ -30,10 +30,11 @@ struct CoordinateConverter {
     }
 
     /// Rotates a direction vector around the Y axis by the given offset.
-    /// Used to align ARKit's coordinate frame with true north.
+    /// Used to align ARKit's coordinate frame with true north.        
     nonisolated static func applyNorthOffset(to vector: SCNVector3, offsetRadians: Float) -> SCNVector3 {
         let cosOffset : Float = cos(offsetRadians)
         let sinOffset : Float = sin(offsetRadians)
+
         return SCNVector3(x: vector.x * cosOffset + vector.z * sinOffset, y: vector.y, z: -vector.x * sinOffset + vector.z * cosOffset)
     }
 

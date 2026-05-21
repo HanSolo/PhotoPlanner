@@ -28,8 +28,8 @@ actor LongExposurePredictor {
         guard !dayHours.isEmpty else { throw PredictionError.noForecastData }
 
         let slots: [LongExposureDailyTimeline.HourSlot] = dayHours.map { hour in
-            let sunPosition : SunPos = calcSunPos(at: location, time: hour.date)
-            let isSunUp     : Bool   = sunPosition.altitude > 0
+            let sunPosition : SunPosition = SolarCalculator.calcSunPosition(at: location, time: hour.date)
+            let isSunUp     : Bool        = sunPosition.altitude > 0
 
             let conditions: LongExposureConditions? = isSunUp
                 ? scoreConditions(
@@ -226,42 +226,7 @@ actor LongExposurePredictor {
             case .grand : return 4
         }
     }
-    
-    private func calcSunPos(at coordinate: CLLocationCoordinate2D, time: Date) -> SunPos {
-        let jd         = time.timeIntervalSince1970 / 86400.0 + 2440587.5
-        let n          = jd - 2451545.0
-
-        let L          = (280.46 + 0.9856474 * n).truncatingRemainder(dividingBy: 360)
-        let g          = (357.528 + 0.9856003 * n).truncatingRemainder(dividingBy: 360)
-        let gRad       = g * .pi / 180
-        let lambda     = L + 1.915 * sin(gRad) + 0.020 * sin(2 * gRad)
-
-        let epsilon    = 23.439 - 0.0000004 * n
-        let epsilonRad = epsilon * .pi / 180
-        let lambdaRad  = lambda  * .pi / 180
-
-        let sinDec     = sin(epsilonRad) * sin(lambdaRad)
-        let dec        = asin(sinDec)
-        let ra         = atan2(cos(epsilonRad) * sin(lambdaRad), cos(lambdaRad))
-
-        let c          = Calendar(identifier: .gregorian).dateComponents([.hour, .minute, .second], from: time)
-        let utH        = Double(c.hour ?? 0) + Double(c.minute ?? 0) / 60 + Double(c.second ?? 0) / 3600
-
-        let gmst       = (6.697375 + 0.0657098242 * n + utH).truncatingRemainder(dividingBy: 24)
-        let lha        = (gmst * 15 + coordinate.longitude - ra * 180 / .pi).truncatingRemainder(dividingBy: 360)
-        let lhaRad     = lha * .pi / 180
-        let latRad     = coordinate.latitude * .pi / 180
-
-        let sinAlt     = sin(latRad) * sin(dec) + cos(latRad) * cos(dec) * cos(lhaRad)
-        let altitude   = asin(sinAlt) * 180 / .pi
-
-        let cosAz      = (sin(dec) - sin(latRad) * sinAlt) / (cos(latRad) * cos(asin(sinAlt)))
-        var azimuth    = acos(max(-1, min(1, cosAz))) * 180 / .pi
-        if sin(lhaRad) > 0 { azimuth = 360 - azimuth }
-
-        return SunPos(altitude: altitude, azimuth: azimuth)
-    }
-    
+        
     private func kphToBeaufort(_ kph: Double) -> Int {
         switch kph {
             case ..<1    : return 0
