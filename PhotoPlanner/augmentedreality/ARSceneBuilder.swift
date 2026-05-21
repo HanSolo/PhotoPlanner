@@ -100,9 +100,9 @@ struct ARSceneBuilder {
 
             var direction : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: sunPos.azimuth, altitudeDegrees: sunPos.altitude)
             direction = CoordinateConverter.applyNorthOffset(to: direction, offsetRadians: northOffsetRadians)
-            let position  : SCNVector3 = CoordinateConverter.spherePosition(direction: direction, radius: celestialSphereRadius + 0.25)
+            let position  : SCNVector3 = CoordinateConverter.spherePosition(direction: direction, radius: celestialSphereRadius + 0.35)
 
-            points.append(HourLabelPoint(position: position, color:sunLabelColor(altitude: sunPos.altitude), hour: hour, fontSize: 0.18))
+            points.append(HourLabelPoint(position: position, color:sunLabelColor(altitude: sunPos.altitude), hour: hour, fontSize: 0.25))
         }
         return points
     }
@@ -122,9 +122,9 @@ struct ARSceneBuilder {
 
             var direction : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: azimuth, altitudeDegrees: altitude)
             direction = CoordinateConverter.applyNorthOffset(to: direction, offsetRadians: northOffsetRadians)
-            let position  : SCNVector3 = CoordinateConverter.spherePosition(direction: direction, radius: celestialSphereRadius + 0.25)
+            let position  : SCNVector3 = CoordinateConverter.spherePosition(direction: direction, radius: celestialSphereRadius + 0.35)
 
-            points.append(HourLabelPoint(position: position, color: UIColor(white: 0.9, alpha: 0.75), hour: hour, fontSize: 0.15))
+            points.append(HourLabelPoint(position: position, color: UIColor(white: 0.9, alpha: 0.75), hour: hour, fontSize: 0.25))
         }
         return points
     }
@@ -242,14 +242,14 @@ struct ARSceneBuilder {
     
     @MainActor
     static func buildSunIndicatorNode() -> SCNNode {
-        let sphere  : SCNSphere = SCNSphere(radius: 0.32)
+        let sphere  : SCNSphere = SCNSphere(radius: 0.9)
         sphere.firstMaterial?.diffuse.contents  = UIColor(red: 1.0, green: 0.85, blue: 0.2, alpha: 1.0)
         sphere.firstMaterial?.emission.contents = UIColor(red: 1.0, green: 0.7,  blue: 0.0, alpha: 0.8)
         sphere.firstMaterial?.lightingModel     = .constant
 
         let node : SCNNode   = SCNNode(geometry: sphere)
 
-        let halo : SCNSphere = SCNSphere(radius: 0.38)
+        let halo : SCNSphere = SCNSphere(radius: 0.9)
         halo.firstMaterial?.diffuse.contents = UIColor(red: 1.0, green: 0.9, blue: 0.3, alpha: 0.15)
         halo.firstMaterial?.lightingModel    = .constant
         halo.firstMaterial?.isDoubleSided    = true
@@ -261,7 +261,7 @@ struct ARSceneBuilder {
 
     @MainActor
     static func buildMoonIndicatorNode(illumination: Double) -> SCNNode {
-        let sphere      : SCNSphere = SCNSphere(radius: 0.24)
+        let sphere      : SCNSphere = SCNSphere(radius: 0.65)
         let brightness  : Float     = Float(0.4 + illumination * 0.5)
         sphere.firstMaterial?.diffuse.contents  = UIColor(white: CGFloat(brightness), alpha: 1.0)
         sphere.firstMaterial?.emission.contents = UIColor(white: CGFloat(brightness * 0.3), alpha: 1.0)
@@ -269,7 +269,7 @@ struct ARSceneBuilder {
 
         let node : SCNNode   = SCNNode(geometry: sphere)
 
-        let halo : SCNSphere = SCNSphere(radius: 0.24)
+        let halo : SCNSphere = SCNSphere(radius: 0.65)
         halo.firstMaterial?.diffuse.contents = UIColor(white: CGFloat(brightness * 0.4), alpha: 0.15)
         halo.firstMaterial?.lightingModel    = .constant
         halo.firstMaterial?.isDoubleSided    = true

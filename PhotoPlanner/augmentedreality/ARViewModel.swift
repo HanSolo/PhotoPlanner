@@ -232,8 +232,8 @@ class ARViewModel {
             guard let self else { return }
 
             // Step 1 — pure math, background thread safe
-            let sunArcPoints    : [ArcPoint] = ARSceneBuilder.computeSunArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
-            let moonArcPoints   : [ArcPoint]   = ARSceneBuilder.computeMoonArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
+            let sunArcPoints    : [ArcPoint]       = ARSceneBuilder.computeSunArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
+            let moonArcPoints   : [ArcPoint]       = ARSceneBuilder.computeMoonArcPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset)
             let sunLabelPoints  : [HourLabelPoint] = ARSceneBuilder.computeSunHourLabelPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset, timeZone: timeZone)
             let moonLabelPoints : [HourLabelPoint] = ARSceneBuilder.computeMoonHourLabelPoints(coordinate: coordinate, date: date, northOffsetRadians: northOffset, timeZone: timeZone)
             let cardinalPoints  : [(position: SCNVector3, label: String)] = ARSceneBuilder.computeCardinalPoints(northOffsetRadians: northOffset)
@@ -243,10 +243,10 @@ class ARViewModel {
             await MainActor.run { [weak self] in
                 guard let self, let sceneView = self.arSceneView else { return }
 
-                let sunArcNode     : SCNNode = ARSceneBuilder.buildArcNode(from: sunArcPoints,  lineRadius: 0.03)
+                let sunArcNode     : SCNNode = ARSceneBuilder.buildArcNode(from: sunArcPoints,  lineRadius: 0.075)
                 sunArcNode.name = self.sunArcNodeName
 
-                let moonArcNode    : SCNNode = ARSceneBuilder.buildArcNode(from: moonArcPoints, lineRadius: 0.025)
+                let moonArcNode    : SCNNode = ARSceneBuilder.buildArcNode(from: moonArcPoints, lineRadius: 0.05)
                 moonArcNode.name = self.moonArcNodeName
 
                 let sunLabelsNode  : SCNNode = ARSceneBuilder.buildHourLabelsNode(from: sunLabelPoints)
