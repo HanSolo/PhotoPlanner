@@ -53,9 +53,9 @@ class ARViewModel {
         sceneView.session.run(configuration)
 
         // Wire up callbacks
-        coordinator.onHeadingUpdate = { [weak self] heading in
+        coordinator.onHeadingUpdate = { [weak self] heading, accuracyDescription in
             DispatchQueue.main.async {
-                self?.handleHeadingUpdate(heading)
+                self?.handleHeadingUpdate(heading, accuracyDescription: accuracyDescription)
             }
         }
 
@@ -82,15 +82,14 @@ class ARViewModel {
         }
     }
 
-    
-    private func handleHeadingUpdate(_ heading: CLLocationDirection) {
-        // Only update if we're in compass mode
+    private func handleHeadingUpdate(_ heading: CLLocationDirection, accuracyDescription: String) {
         if case .compassAutomatic = headingSource {
             headingSource      = .compassAutomatic(heading: heading)
-            calibrationStatus  = "Compass · \(Int(heading))° — tap ⊕ to calibrate"
+            calibrationStatus  = accuracyDescription
             rebuildScene()
         }
     }
+    
 
     private func handleARYawUpdate(_ yaw: Float) {
         // Update sun/moon indicator positions continuously
