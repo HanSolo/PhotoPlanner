@@ -54,7 +54,7 @@ struct ARTimeSliderView: View {
 
                     // Progress fill
                     Capsule()
-                        .fill(.white.opacity(0.6))
+                        .fill(.clear)
                         .frame(width: geo.size.width * fractionOfDay, height: 4)
 
                     // Thumb
@@ -83,9 +83,9 @@ struct ARTimeSliderView: View {
 
             // Hour labels
             HStack(spacing: 0) {
-                ForEach([0, 6, 12, 18, 24], id: \.self) { hour in
+                ForEach([0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24], id: \.self) { hour in
                     Text(hour == 24 ? "24" : String(format: "%02d", hour))
-                        .font(.system(size: 8).monospacedDigit())
+                        .font(.system(size: 12).monospacedDigit())
                         .foregroundStyle(.white.opacity(0.5))
                         .frame(maxWidth: .infinity, alignment: hour == 0 ? .leading : hour == 24 ? .trailing : .center)
                 }
@@ -108,12 +108,12 @@ struct ARTimeSliderView: View {
         let sunsetEnd    : CGFloat = width * 0.83
 
         Rectangle()
-            .fill(Color.orange.opacity(0.4))
+            .fill(Color.orange.opacity(0.6))
             .frame(width: sunriseEnd - sunriseStart, height: 4)
             .offset(x: sunriseStart)
 
         Rectangle()
-            .fill(Color.orange.opacity(0.4))
+            .fill(Color.orange.opacity(0.6))
             .frame(width: sunsetEnd - sunsetStart, height: 4)
             .offset(x: sunsetStart)
     }

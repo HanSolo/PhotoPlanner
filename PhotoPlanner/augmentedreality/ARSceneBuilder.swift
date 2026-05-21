@@ -98,12 +98,15 @@ struct ARSceneBuilder {
             let sunPos     : SunPos = Helper.calcSunPos(at: coordinate, time: sampleTime)
 
             guard sunPos.altitude > -6 else { continue }
+            
+            let localHour : Int        = calendar.component(.hour, from: sampleTime)
 
             var direction : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: sunPos.azimuth, altitudeDegrees: sunPos.altitude)
             direction = CoordinateConverter.applyNorthOffset(to: direction, offsetRadians: northOffsetRadians)
+            
             let position  : SCNVector3 = CoordinateConverter.spherePosition(direction: direction, radius: celestialSphereRadius + 0.35)
 
-            points.append(HourLabelPoint(position: position, color:sunLabelColor(altitude: sunPos.altitude), hour: hour, fontSize: 0.36))
+            points.append(HourLabelPoint(position: position, color:sunLabelColor(altitude: sunPos.altitude), hour: localHour, fontSize: 0.36))
         }
         
         return points
@@ -122,11 +125,14 @@ struct ARSceneBuilder {
 
             guard altitude > 0 else { continue }
 
+            let localHour : Int        = calendar.component(.hour, from: sampleTime)
+            
             var direction : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: azimuth, altitudeDegrees: altitude)
             direction = CoordinateConverter.applyNorthOffset(to: direction, offsetRadians: northOffsetRadians)
+            
             let position  : SCNVector3 = CoordinateConverter.spherePosition(direction: direction, radius: celestialSphereRadius + 0.35)
 
-            points.append(HourLabelPoint(position: position, color: UIColor(white: 0.9, alpha: 0.75), hour: hour, fontSize: 0.36))
+            points.append(HourLabelPoint(position: position, color: UIColor(white: 0.9, alpha: 0.75), hour: localHour, fontSize: 0.36))
         }
         return points
     }
@@ -281,76 +287,28 @@ struct ARSceneBuilder {
     }
 
     
-    /*
     @MainActor
     private static func buildHourLabelNode(hour: Int, position: SCNVector3, color: UIColor, fontSize: CGFloat) -> SCNNode {
         let text : SCNText = SCNText(string: String(format: "%02d:00", hour), extrusionDepth: 0.005)
         text.font                             = UIFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
         text.firstMaterial?.diffuse.contents  = color
-        text.firstMaterial?.emission.contents = color.withAlphaComponent(0.6)
+        text.firstMaterial?.emission.contents = color.withAlphaComponent(0.8)
         text.firstMaterial?.lightingModel     = .constant
         text.isWrapped                        = false
 
-        let node : SCNNode = SCNNode(geometry: text)
-        node.position = position
-
+        let (minBound, maxBound) : (SCNVector3, SCNVector3) = text.boundingBox
+        
         let billboard : SCNBillboardConstraint = SCNBillboardConstraint()
         billboard.freeAxes = .all
-        node.constraints   = [billboard]
 
-        let (minBound, maxBound) : (SCNVector3, SCNVector3) = text.boundingBox
-        node.pivot = SCNMatrix4MakeTranslation((maxBound.x - minBound.x) / 2, (maxBound.y - minBound.y) / 2, 0)
-        
+        let node : SCNNode = SCNNode(geometry: text)
+        node.position    = position
+        node.constraints = [billboard]
+        node.pivot       = SCNMatrix4MakeTranslation((maxBound.x - minBound.x) / 2, (maxBound.y - minBound.y) / 2, 0)
+         
         return node
     }
-    */
-    @MainActor
-    private static func buildHourLabelNode(hour: Int, position: SCNVector3, color: UIColor, fontSize: CGFloat) -> SCNNode {
-        let containerNode : SCNNode = SCNNode()
-        containerNode.position = position
 
-        let billboard : SCNBillboardConstraint = SCNBillboardConstraint()
-        billboard.freeAxes        = .all
-        containerNode.constraints = [billboard]
-
-        let labelString : String = String(format: "%02d:00", hour)
-
-        let text : SCNText = SCNText(string: labelString, extrusionDepth: 0.005)
-        text.font = UIFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .bold)
-        text.firstMaterial?.diffuse.contents  = color
-        text.firstMaterial?.emission.contents = color.withAlphaComponent(0.5)
-        text.firstMaterial?.lightingModel     = .constant
-        text.isWrapped                        = false
-
-        let textNode             : SCNNode                  = SCNNode(geometry: text)
-        let (minBound, maxBound) : (SCNVector3, SCNVector3) = text.boundingBox
-        let textWidth            : Float                    = maxBound.x - minBound.x
-        let textHeight           : Float                    = maxBound.y - minBound.y
-
-        textNode.pivot    = SCNMatrix4MakeTranslation(textWidth / 2, textHeight / 2, 0) // Centre text on container origin
-        textNode.position = SCNVector3(0, 0, 0.03)                                      // Place text clearly in front of pill
-                
-        let padding    : Float   = 0.05
-        let pillWidth  : CGFloat = CGFloat(textWidth  + padding * 2)
-        let pillHeight : CGFloat = CGFloat(textHeight + padding * 2)
-
-        let pill : SCNPlane = SCNPlane(width: pillWidth, height: pillHeight)
-        pill.cornerRadius                          = pillHeight / 2
-        pill.firstMaterial?.diffuse.contents       = UIColor.black.withAlphaComponent(0.55)
-        pill.firstMaterial?.lightingModel          = .constant
-        pill.firstMaterial?.isDoubleSided          = true
-        pill.firstMaterial?.writesToDepthBuffer    = false
-        pill.firstMaterial?.readsFromDepthBuffer   = true
-
-        let pillNode : SCNNode = SCNNode(geometry: pill)
-        pillNode.position      = SCNVector3(0, 0, 0) // Place pill at zero        
-
-        containerNode.addChildNode(pillNode)
-        containerNode.addChildNode(textNode)
-
-        return containerNode
-    }
-    
 
     @MainActor
     private static func buildLineSegment(from start: SCNVector3, to end: SCNVector3, color: UIColor, radius: CGFloat) -> SCNNode {

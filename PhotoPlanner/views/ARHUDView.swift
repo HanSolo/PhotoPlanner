@@ -96,7 +96,6 @@ struct ARHUDView: View {
                         .foregroundStyle(.white.opacity(0.7))
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
-                        .background(.ultraThinMaterial.opacity(0.6))
                         .clipShape(Capsule())
                         .buttonStyle(.glass)
 
@@ -106,7 +105,6 @@ struct ARHUDView: View {
                         .foregroundStyle(.black)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
-                        .background(.white)
                         .clipShape(Capsule())
                         .buttonStyle(.glass)
                     }
