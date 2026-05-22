@@ -14,35 +14,36 @@ struct ContentView: View {
     @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
         
-    let home                                    : CLLocationCoordinate2D  = Constants.DEFAULT_LOCATION.coordinate
-    @State private var sunQualityViewModel      : SunQualityViewModel     = SunQualityViewModel()
-    @State private var milkywayViewModel        : MilkywayViewModel       = MilkywayViewModel()
-    @State private var moonViewModel            : MoonViewModel           = MoonViewModel()
-    @State private var longExposureViewModel    : LongExposureViewModel   = LongExposureViewModel()
-    @State private var weatherViewModel         : WeatherOverlayViewModel = WeatherOverlayViewModel()
-    @State private var position                 : MapCameraPosition       = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,
+    let home                                     : CLLocationCoordinate2D  = Constants.DEFAULT_LOCATION.coordinate
+    @State private var sunQualityViewModel       : SunQualityViewModel     = SunQualityViewModel()
+    @State private var milkywayViewModel         : MilkywayViewModel       = MilkywayViewModel()
+    @State private var moonViewModel             : MoonViewModel           = MoonViewModel()
+    @State private var longExposureViewModel     : LongExposureViewModel   = LongExposureViewModel()
+    @State private var weatherViewModel          : WeatherOverlayViewModel = WeatherOverlayViewModel()
+    @State private var position                  : MapCameraPosition       = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,
                                                                                                                                    longitude: Properties.instance.cameraLongitude!),
                                                                                           distance: Properties.instance.distance!))
-    @State private var modes                    : MapInteractionModes     = [.pan, .rotate, .zoom]
-    @State private var cameraMarkerActive       : Bool                    = false
-    @State private var subjectMarkerActive      : Bool                    = false
-    @State private var isPortrait               : Bool                    = !Properties.instance.landscape!
-    @State private var isCameraMarkerDragging   : Bool                    = false
-    @State private var isSubjectMarkerDragging  : Bool                    = false
-    @State private var mapStyle                 : MapStyle                = .standard
-    @State private var cameraViewVisible        : Bool                    = false
-    @State private var lensViewVisible          : Bool                    = false
-    @State private var addPhotoShootViewVisible : Bool                    = false
-    @State private var photoShootsViewVisible   : Bool                    = false
-    @State private var teleconverterViewVisible : Bool                    = false
-    @State private var datePickerVisible        : Bool                    = false
-    @State private var sunsetPredictionVisible  : Bool                    = false
-    @State private var moonPhaseVisible         : Bool                    = false
-    @State private var milkywayVisible          : Bool                    = false
-    @State private var arVisible                : Bool                    = false
-    @State private var longExposureVisible      : Bool                    = false
-    @State private var helpViewVisible          : Bool                    = false
-    @State private var centerCameraPosition     : Bool                    = false
+    @State private var modes                     : MapInteractionModes     = [.pan, .rotate, .zoom]
+    @State private var cameraMarkerActive        : Bool                    = false
+    @State private var subjectMarkerActive       : Bool                    = false
+    @State private var isPortrait                : Bool                    = !Properties.instance.landscape!
+    @State private var isCameraMarkerDragging    : Bool                    = false
+    @State private var isSubjectMarkerDragging   : Bool                    = false
+    @State private var mapStyle                  : MapStyle                = .standard
+    @State private var cameraViewVisible         : Bool                    = false
+    @State private var lensViewVisible           : Bool                    = false
+    @State private var addPhotoShootViewVisible  : Bool                    = false
+    @State private var photoShootsViewVisible    : Bool                    = false
+    @State private var teleconverterViewVisible  : Bool                    = false
+    @State private var datePickerVisible         : Bool                    = false
+    @State private var sunsetPredictionVisible   : Bool                    = false
+    @State private var moonPhaseVisible          : Bool                    = false
+    @State private var milkywayVisible           : Bool                    = false
+    @State private var arVisible                 : Bool                    = false
+    @State private var longExposureVisible       : Bool                    = false
+    @State private var exposureCalculatorVisible : Bool                    = false
+    @State private var helpViewVisible           : Bool                    = false
+    @State private var centerCameraPosition      : Bool                    = false
         
     @Query(sort: [SortDescriptor(\Camera.name,     comparator: .localizedStandard)]) private var cameras     : [Camera]
     @Query(sort: [SortDescriptor(\Lens.name,       comparator: .localizedStandard)]) private var lenses      : [Lens]
@@ -458,16 +459,33 @@ struct ContentView: View {
                     .buttonStyle(.glass)
                     .clipShape(Circle())
                 }
-                                
-                
-                Toggle(isOn: self.model.epdVisibleBinding) {
-                    Image(systemName: "sun.max")
-                        .padding(7)
+                       
+                // Blue/Golden Hour Overlay and AR View
+                HStack {
+                    Toggle(isOn: self.model.epdVisibleBinding) {
+                        Image(systemName: "sun.max")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    
+                    Spacer()
+                    
+                    Button {
+                        self.arVisible = true
+                    } label: {
+                        Image(systemName: "arkit")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .fullScreenCover(isPresented: $arVisible) {
+                        ARView(coordinate: self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate, onClose: { self.arVisible = false })
+                    }
                 }
-                .frame(width: 44, height: 44)
-                .toggleStyle(.button)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
                 
                 // Sunrise/Sunset Prediction and Weather forecast
                 HStack {
@@ -514,7 +532,7 @@ struct ContentView: View {
                     }
                 }
                      
-                // Moon phase and AR view
+                // Moon phase and Exposure Calculator
                 HStack {
                     Toggle(isOn: self.$moonPhaseVisible) {
                         Image(systemName: "moon")
@@ -538,17 +556,14 @@ struct ContentView: View {
                     Spacer()
                     
                     Button {
-                        self.arVisible = true
-                    } label: {
-                        Image(systemName: "arkit")
+                        self.exposureCalculatorVisible = true
+                    } label : {
+                        Image(systemName: "camera.aperture")
                             .padding(7)
                     }
                     .frame(width: 44, height: 44)
                     .buttonStyle(.glass)
                     .clipShape(Circle())
-                    .fullScreenCover(isPresented: $arVisible) {
-                        ARView(coordinate: self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate, onClose: { self.arVisible = false })
-                    }
                 }
                 
                 // Milky Way and Long time exposure
@@ -708,7 +723,10 @@ struct ContentView: View {
             AddPhotoShootView()
         }
         .sheet(isPresented: $photoShootsViewVisible) {
-        PhotoShootsView(photoShoots: self.photoShoots)
+            PhotoShootsView(photoShoots: self.photoShoots)
+        }
+        .sheet(isPresented: $exposureCalculatorVisible) {            
+            ExposureCalculatorView(baseAperture: self.model.aperture)
         }
         .onChange(of: self.model.orientation) {
             self.isPortrait = self.model.orientation == .portrait
