@@ -94,17 +94,15 @@ struct ARHUDView: View {
                             onCancelCalibrate()
                         }
                         .foregroundStyle(.white.opacity(0.7))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
                         .clipShape(Capsule())
                         .buttonStyle(.glass)
 
+                        Spacer()
+                        
                         Button("Confirm") {
                             onConfirmCalibrate()
                         }
-                        .foregroundStyle(.black)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
+                        .foregroundStyle(.white.opacity(0.7))
                         .clipShape(Capsule())
                         .buttonStyle(.glass)
                     }

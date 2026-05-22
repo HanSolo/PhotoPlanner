@@ -18,7 +18,7 @@ struct ARTimeSliderView: View {
     @Binding         var selectedTime : Date
         
     let onTimeChanged    : (Date) -> Void
-    let onTimeScrubEnded : (Date) -> Void   // rebuild arcs when scrub ends
+    let onTimeScrubEnded : (Date) -> Void
 
     private var calendar      : Calendar { Calendar.current }
     private var startOfDay    : Date {
@@ -100,7 +100,7 @@ struct ARTimeSliderView: View {
     @ViewBuilder
     private func goldenHourHighlights(width: CGFloat) -> some View {
         // Approximate golden hour windows as visual hints on the track
-        // Sunrise golden hour: ~5 - 7% of day, Sunset: ~78 - 83% of day
+        // Sunrise golden hour: ~5...7% of day, Sunset: ~78...83% of day
         // These are visual hints only, not precise
         let sunriseStart : CGFloat = width * 0.20
         let sunriseEnd   : CGFloat = width * 0.28
