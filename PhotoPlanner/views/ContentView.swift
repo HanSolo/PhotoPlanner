@@ -14,32 +14,35 @@ struct ContentView: View {
     @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
         
-    let home                                    : CLLocationCoordinate2D = Constants.DEFAULT_LOCATION.coordinate
-    @State private var sunQualityViewModel      : SunQualityViewModel    = SunQualityViewModel()
-    @State private var milkywayViewModel        : MilkywayViewModel      = MilkywayViewModel()
-    @State private var moonViewModel            : MoonViewModel          = MoonViewModel()
-    @State private var longExposureViewModel    : LongExposureViewModel  = LongExposureViewModel()
-    @State private var position                 : MapCameraPosition      = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!, longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
-    @State private var modes                    : MapInteractionModes    = [.pan, .rotate, .zoom]
-    @State private var cameraMarkerActive       : Bool                   = false
-    @State private var subjectMarkerActive      : Bool                   = false
-    @State private var isPortrait               : Bool                   = !Properties.instance.landscape!
-    @State private var isCameraMarkerDragging   : Bool                   = false
-    @State private var isSubjectMarkerDragging  : Bool                   = false
-    @State private var mapStyle                 : MapStyle               = .standard
-    @State private var cameraViewVisible        : Bool                   = false
-    @State private var lensViewVisible          : Bool                   = false
-    @State private var addPhotoShootViewVisible : Bool                   = false
-    @State private var photoShootsViewVisible   : Bool                   = false
-    @State private var teleconverterViewVisible : Bool                   = false
-    @State private var datePickerVisible        : Bool                   = false
-    @State private var sunsetPredictionVisible  : Bool                   = false
-    @State private var moonPhaseVisible         : Bool                   = false
-    @State private var milkywayVisible          : Bool                   = false
-    @State private var arVisible                : Bool                   = false
-    @State private var longExposureVisible      : Bool                   = false
-    @State private var helpViewVisible          : Bool                   = false
-    @State private var centerCameraPosition     : Bool                   = false
+    let home                                    : CLLocationCoordinate2D  = Constants.DEFAULT_LOCATION.coordinate
+    @State private var sunQualityViewModel      : SunQualityViewModel     = SunQualityViewModel()
+    @State private var milkywayViewModel        : MilkywayViewModel       = MilkywayViewModel()
+    @State private var moonViewModel            : MoonViewModel           = MoonViewModel()
+    @State private var longExposureViewModel    : LongExposureViewModel   = LongExposureViewModel()
+    @State private var weatherViewModel         : WeatherOverlayViewModel = WeatherOverlayViewModel()
+    @State private var position                 : MapCameraPosition       = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,
+                                                                                                                                   longitude: Properties.instance.cameraLongitude!),
+                                                                                          distance: Properties.instance.distance!))
+    @State private var modes                    : MapInteractionModes     = [.pan, .rotate, .zoom]
+    @State private var cameraMarkerActive       : Bool                    = false
+    @State private var subjectMarkerActive      : Bool                    = false
+    @State private var isPortrait               : Bool                    = !Properties.instance.landscape!
+    @State private var isCameraMarkerDragging   : Bool                    = false
+    @State private var isSubjectMarkerDragging  : Bool                    = false
+    @State private var mapStyle                 : MapStyle                = .standard
+    @State private var cameraViewVisible        : Bool                    = false
+    @State private var lensViewVisible          : Bool                    = false
+    @State private var addPhotoShootViewVisible : Bool                    = false
+    @State private var photoShootsViewVisible   : Bool                    = false
+    @State private var teleconverterViewVisible : Bool                    = false
+    @State private var datePickerVisible        : Bool                    = false
+    @State private var sunsetPredictionVisible  : Bool                    = false
+    @State private var moonPhaseVisible         : Bool                    = false
+    @State private var milkywayVisible          : Bool                    = false
+    @State private var arVisible                : Bool                    = false
+    @State private var longExposureVisible      : Bool                    = false
+    @State private var helpViewVisible          : Bool                    = false
+    @State private var centerCameraPosition     : Bool                    = false
         
     @Query(sort: [SortDescriptor(\Camera.name,     comparator: .localizedStandard)]) private var cameras     : [Camera]
     @Query(sort: [SortDescriptor(\Lens.name,       comparator: .localizedStandard)]) private var lenses      : [Lens]
@@ -224,6 +227,19 @@ struct ContentView: View {
             OverlayView()
                 .allowsHitTesting(false)
             
+            // Weather overlay
+            GeometryReader { geometry in
+                WeatherMapOverlay(viewModel: self.weatherViewModel) {
+                    if self.model.cameraMarkerData != nil {
+                        Task {
+                            await weatherViewModel.fetch(at: self.model.cameraMarkerData!.coordinate, on: self.model.currentMapDate, forceRefresh: true)
+                        }
+                    }
+                }
+                .frame(width: geometry.size.width - 100)
+                .offset(x: 50, y: 100)
+            }
+            
             // ElevationView
             if self.model.elevationViewVisible {
                 ElevationProfileView(profile: self.model.elevationProfile)
@@ -278,6 +294,7 @@ struct ContentView: View {
                     .clipShape(Circle())                    
                 }
                 
+                // Selected camera and lens
                 HStack {
                     Spacer()
                     
@@ -387,8 +404,7 @@ struct ContentView: View {
                     }
                 }
                 
-                
-                // Orientation and Save PhotoShoot
+                // Camera Orientation and Save PhotoShoot
                 HStack {
                     Toggle(isOn: $isPortrait) {
                         Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90.camera")
@@ -418,7 +434,6 @@ struct ContentView: View {
                     .buttonStyle(.glass)
                     .clipShape(Circle())                    
                 }
-                
                 
                 // Calendar and PhotoShootViews
                 HStack {
@@ -454,30 +469,52 @@ struct ContentView: View {
                 .buttonStyle(.glass)
                 .clipShape(Circle())
                 
-                Toggle(isOn: self.$sunsetPredictionVisible) {
-                    Image(systemName: "sunset")
-                        .padding(7)
-                }
-                .frame(width: 44, height: 44)
-                .toggleStyle(.button)
-                .buttonStyle(.glass)
-                .clipShape(Circle())
-                .onChange(of: self.sunsetPredictionVisible) {
-                    if self.sunsetPredictionVisible {
-                        if self.model.cameraMarkerData != nil {
-                            let now          : Date                   = Date()
-                            let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                            let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.subjectMarkerData!.coordinate)
-                            var solarEvent   : SolarEvent {
-                                SolarEvent(time: now, type: .sunset)
+                // Sunrise/Sunset Prediction and Weather forecast
+                HStack {
+                    Toggle(isOn: self.$sunsetPredictionVisible) {
+                        Image(systemName: "sunset")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .onChange(of: self.sunsetPredictionVisible) {
+                        if self.sunsetPredictionVisible {
+                            if self.model.cameraMarkerData != nil {
+                                let now          : Date                   = Date()
+                                let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                                let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.subjectMarkerData!.coordinate)
+                                var solarEvent   : SolarEvent {
+                                    SolarEvent(time: now, type: .sunset)
+                                }
+                                Task {
+                                    await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth)
+                                }
                             }
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle(isOn: self.weatherViewModel.isVisibleBinding) {
+                        Image(systemName: "cloud.sun")
+                            .padding(7)
+                    }
+                    .frame(width: 44, height: 44)
+                    .toggleStyle(.button)
+                    .buttonStyle(.glass)
+                    .clipShape(Circle())
+                    .onChange(of: self.weatherViewModel.isVisible) {
+                        if self.weatherViewModel.isVisible && self.model.cameraMarkerData != nil {
                             Task {
-                                await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth)
+                                await self.weatherViewModel.fetch(at: self.model.cameraMarkerData!.coordinate, on: self.model.currentMapDate)
                             }
                         }
                     }
                 }
-                               
+                     
+                // Moon phase and AR view
                 HStack {
                     Toggle(isOn: self.$moonPhaseVisible) {
                         Image(systemName: "moon")
@@ -514,6 +551,7 @@ struct ContentView: View {
                     }
                 }
                 
+                // Milky Way and Long time exposure
                 HStack {
                     Toggle(isOn: self.$milkywayVisible) {
                         Image("milkyway")
@@ -559,6 +597,7 @@ struct ContentView: View {
                     }
                 }
 
+                // Elevation and Teleconverter
                 HStack {
                     Toggle(isOn: self.model.elevationViewVisibleBinding) {
                         Image(systemName: "chart.line.uptrend.xyaxis")
@@ -673,7 +712,14 @@ struct ContentView: View {
         }
         .onChange(of: self.model.orientation) {
             self.isPortrait = self.model.orientation == .portrait
-        }        
+        }
+        .onChange(of: self.model.cameraMarkerData) {
+            if self.model.cameraMarkerData == nil { return }
+            weatherViewModel.checkIfOutdated(
+                for: CLLocation(latitude: self.model.cameraMarkerData!.coordinate.latitude, longitude: self.model.cameraMarkerData!.coordinate.longitude),
+                on:  self.model.currentMapDate
+            )
+        }
         .task {
             let savedCameraId         : String     = Properties.instance.cameraId         ?? Constants.DEFAULT_CAMERA.id
             let savedLensId           : String     = Properties.instance.lensId           ?? Constants.DEFAULT_LENS.id
