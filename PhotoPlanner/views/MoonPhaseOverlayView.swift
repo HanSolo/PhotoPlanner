@@ -14,22 +14,22 @@ struct MoonPhaseOverlayView: View {
     private let timeFormatter : DateFormatter
     
     init(phase: MoonPhase) {
-        self.phase         = phase
-        let f              = DateFormatter()
-        f.timeStyle        = .short
-        f.timeZone         = phase.timeZone
-        self.timeFormatter = f
+        self.phase                    = phase
+        let formatter : DateFormatter = DateFormatter()
+        formatter.timeStyle           = .short
+        formatter.timeZone            = phase.timeZone
+        self.timeFormatter            = formatter
     }
     
 
     var body: some View {
         GeometryReader { geometry in
-            Canvas { context, size in
+            Canvas { ctx, size in
                 //drawBackground(ctx: context, size: size)
-                drawMoonDisc(ctx: context, size: size)
-                drawPhaseInfo(ctx: context, size: size)
-                drawRiseSet(ctx: context, size: size)
-                drawMilkyWayImpact(ctx: context, size: size)
+                drawMoonDisc(ctx: ctx, size: size)
+                drawPhaseInfo(ctx: ctx, size: size)
+                drawRiseSet(ctx: ctx, size: size)
+                drawMilkyWayImpact(ctx: ctx, size: size)
             }
             .background(.black.opacity(0.72))
             .frame(width: geometry.size.width - 100, height: 110)
@@ -76,7 +76,7 @@ struct MoonPhaseOverlayView: View {
         let terminatorX : CGFloat = CGFloat(cos(phase.phaseAngle * .pi / 180))
         let flip        : CGFloat = isWaxing ? 1 : -1
 
-        path.addArc(center: center, radius: radius, startAngle: .degrees(-90), endAngle:   .degrees(90), clockwise:  false)
+        path.addArc(center: center, radius: radius, startAngle: .degrees(-90), endAngle: .degrees(90), clockwise:  false)
 
         // Terminator as vertical ellipse
         let cp1 = CGPoint(x: center.x + flip * terminatorX * radius * 1.33, y: center.y - radius)
