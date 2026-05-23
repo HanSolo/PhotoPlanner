@@ -30,7 +30,8 @@ struct ExposureCalculator {
 
     // Formats a calculated shutter speed (may exceed standard values).
     // Sub-second : fractional e.g. 1/125s
-    // 1...30s    : whole or decimal seconds e.g. 2s, 2.5s
+    // 1...10s    : whole or decimal seconds e.g. 2s, 2.5s
+    // 10..30s    : whole seconds e.g. 2s
     // Over 30s   : BULB mode with human-readable duration
     static func formatCalculatedShutter(_ seconds: Double) -> String {
 
@@ -40,13 +41,18 @@ struct ExposureCalculator {
             return "1/\(Int(denominator))s"
         }
 
-        // 1s to 30s -> show as whole or decimal seconds
-        if seconds <= 30.0 {
+        // 1s to 10s -> show as whole or decimal seconds
+        if seconds < 10.0 {
             if seconds == seconds.rounded() {
                 return "\(Int(seconds))s"
             } else {
                 return String(format: "%.1fs", seconds)
             }
+        }
+        
+        // 10s to 30s -> show as whole seconds
+        if seconds <= 30.0 {
+            return "\(Int(seconds.rounded()))s"            
         }
 
         // Over 30s -> BULB mode
@@ -57,9 +63,9 @@ struct ExposureCalculator {
             return "BULB \(totalSeconds)s"
         }
 
-        let hours         = totalSeconds / 3600
-        let minutes       = (totalSeconds % 3600) / 60
-        let remainingSecs = totalSeconds % 60
+        let hours         : Int = totalSeconds / 3600
+        let minutes       : Int = (totalSeconds % 3600) / 60
+        let remainingSecs : Int = totalSeconds % 60
 
         if hours > 0 {
             // Over an hour e.g. "BULB 1h 2m 30s" or "BULB 1h 2m"
