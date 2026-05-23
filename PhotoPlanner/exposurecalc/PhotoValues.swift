@@ -43,7 +43,10 @@ struct PhotoValues {
     ]
 
     // ND filter stops
-    static let ndStops: [Int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    static let ndStops : [Int] = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 ]
+    
+    // ND filter names
+    static let ndFilterNames : [String] = [ "", "ND 2", "ND 4", "ND 8", "ND 16", "ND 32", "ND 64", "ND 128", "ND 256", "ND 512", "ND 1000", "ND 2000", "ND 4000", "ND 8000", "ND 16000", "ND 32000"]
 
     
     static func formatAperture(_ value: Double) -> String {

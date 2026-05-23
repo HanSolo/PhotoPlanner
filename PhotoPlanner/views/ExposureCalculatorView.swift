@@ -11,7 +11,8 @@ import SwiftUI
 
 struct ExposureCalculatorView: View {
     @Environment(\.dismiss) private var dismiss
-    @State                  private var viewModel : ExposureCalculatorViewModel
+    @State                  private var viewModel    : ExposureCalculatorViewModel
+    @State                  private var ndFilterName : String = ""
 
     let baseAperture : Double
     
@@ -25,7 +26,7 @@ struct ExposureCalculatorView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 10) {
                     
                     // Setup 1
                     setupCard(
@@ -149,42 +150,60 @@ struct ExposureCalculatorView: View {
     // Setup 2
     @ViewBuilder
     private var setup2Content: some View {
-        HStack(spacing: 0) {
-            pickerColumn(label: "Aperture", icon: "camera.aperture", color: .purple) {
-                Picker("", selection: $viewModel.setup2ApertureIndex) {
-                    ForEach(PhotoValues.apertures.indices, id: \.self) { index in
-                        Text(PhotoValues.formatAperture(PhotoValues.apertures[index]))
-                            .tag(index)
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                pickerColumn(label: "Aperture", icon: "camera.aperture", color: .purple) {
+                    Picker("", selection: $viewModel.setup2ApertureIndex) {
+                        ForEach(PhotoValues.apertures.indices, id: \.self) { index in
+                            Text(PhotoValues.formatAperture(PhotoValues.apertures[index]))
+                                .tag(index)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(height: 120)
+                }
+                
+                divider
+                
+                pickerColumn(label: "ND Filter", icon: "circle.lefthalf.filled", color: .purple) {
+                    Picker("", selection: $viewModel.setup2NDStops) {
+                        ForEach(PhotoValues.ndStops, id: \.self) { stops in
+                            Text(stops == 0 ? "None" : "\(stops) stop\(stops == 1 ? "" : "s")")
+                                .tag(stops)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(height: 120)
+                    .onChange(of: viewModel.setup2NDStops) {
+                        self.ndFilterName = PhotoValues.ndFilterNames[viewModel.setup2NDStops]
                     }
                 }
-                .pickerStyle(.wheel)
-                .frame(height: 120)
+                
+                divider
+                
+                pickerColumn(label: "ISO", icon: "square.stack", color: .purple) {
+                    Picker("", selection: $viewModel.setup2ISOIndex) {
+                        ForEach(PhotoValues.isos.indices, id: \.self) { index in
+                            Text(PhotoValues.formatISO(PhotoValues.isos[index]))
+                                .tag(index)
+                        }
+                    }
+                    .pickerStyle(.wheel)
+                    .frame(height: 120)
+                }
             }
-
-            divider
-
-            pickerColumn(label: "ND Filter", icon: "circle.lefthalf.filled", color: .purple) {
-                Picker("", selection: $viewModel.setup2NDStops) {
-                    ForEach(PhotoValues.ndStops, id: \.self) { stops in
-                        Text(stops == 0 ? "None" : "\(stops) stop\(stops == 1 ? "" : "s")")
-                            .tag(stops)
-                    }
-                }
-                .pickerStyle(.wheel)
-                .frame(height: 120)
-            }
-
-            divider
-
-            pickerColumn(label: "ISO", icon: "square.stack", color: .purple) {
-                Picker("", selection: $viewModel.setup2ISOIndex) {
-                    ForEach(PhotoValues.isos.indices, id: \.self) { index in
-                        Text(PhotoValues.formatISO(PhotoValues.isos[index]))
-                            .tag(index)
-                    }
-                }
-                .pickerStyle(.wheel)
-                .frame(height: 120)
+            
+            HStack {
+                Spacer()
+                Text(self.ndFilterName.isEmpty ? "No filter" : self.ndFilterName)
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(.blue.opacity(0.08))
+                    .clipShape(Capsule())
+                
+                Spacer()
             }
         }
     }

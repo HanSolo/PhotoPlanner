@@ -280,6 +280,7 @@ struct ContentView: View {
                         default: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
                         }
                     }
+                    .disabled(!self.model.networkMonitor.isConnected)
                     
                     
                     Button {
@@ -292,7 +293,8 @@ struct ContentView: View {
                     }
                     .frame(width: 22, height: 22)
                     .buttonStyle(.glass)
-                    .clipShape(Circle())                    
+                    .clipShape(Circle())
+                    .disabled(!self.model.networkMonitor.isConnected)
                 }
                 
                 // Selected camera and lens
@@ -497,6 +499,7 @@ struct ContentView: View {
                     .toggleStyle(.button)
                     .buttonStyle(.glass)
                     .clipShape(Circle())
+                    .disabled(!self.model.networkMonitor.isConnected)
                     .onChange(of: self.sunsetPredictionVisible) {
                         if self.sunsetPredictionVisible {
                             if self.model.cameraMarkerData != nil {
@@ -523,6 +526,7 @@ struct ContentView: View {
                     .toggleStyle(.button)
                     .buttonStyle(.glass)
                     .clipShape(Circle())
+                    .disabled(!self.model.networkMonitor.isConnected)
                     .onChange(of: self.weatherViewModel.isVisible) {
                         if self.weatherViewModel.isVisible && self.model.cameraMarkerData != nil {
                             Task {
@@ -600,6 +604,7 @@ struct ContentView: View {
                     .toggleStyle(.button)
                     .buttonStyle(.glass)
                     .clipShape(Circle())
+                    .disabled(!self.model.networkMonitor.isConnected)
                     .onChange(of: self.longExposureVisible) {
                         if self.model.cameraMarkerData != nil {
                             let location      : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
