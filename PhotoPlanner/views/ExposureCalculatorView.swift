@@ -132,6 +132,7 @@ struct ExposureCalculatorView: View {
                 }
                 .pickerStyle(.wheel)
                 .frame(height: 120)
+                .minimumScaleFactor(0.4)
             }
         }
         
@@ -190,6 +191,7 @@ struct ExposureCalculatorView: View {
                     }
                     .pickerStyle(.wheel)
                     .frame(height: 120)
+                    .minimumScaleFactor(0.4)
                 }
             }
             

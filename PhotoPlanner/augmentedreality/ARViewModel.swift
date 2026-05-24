@@ -30,6 +30,8 @@ class ARViewModel {
     private      var hasReceivedFirstHeading : Bool  = false
     private      var isRebuildingScene       : Bool  = false
     private      var previousSceneHeading    : CLLocationDirection?
+    private      let positionCache           : SunMoonPositionCache = SunMoonPositionCache()
+    private      var isCacheBuilding         : Bool     = false
 
     
     // Scene node names for easy removal and replacement
@@ -71,10 +73,7 @@ class ARViewModel {
                 self?.handleARYawUpdate(yaw)
             }
         }
-
-        // Load persisted calibration if valid
-        loadPersistedCalibrationIfValid()
-
+        
         // Set selected time to now
         selectedTime = Date()
     }
@@ -97,7 +96,8 @@ class ARViewModel {
 
             if !hasReceivedFirstHeading {
                 hasReceivedFirstHeading = true
-                rebuildScene() // First valid heading (build the scene for the first time)
+                previousSceneHeading    = heading
+                rebuildScene()
             } else {
                 // Subsequent heading updates (only rebuild if heading)
                 // has changed significantly (more than 5 degrees)
@@ -166,6 +166,31 @@ class ARViewModel {
         rebuildScene()
     }
 
+    
+    func buildPositionCache() {
+        guard let location : CLLocation = currentLocation else { return }
+        guard !isCacheBuilding else { return }
+
+        isCacheBuilding = true
+
+        // Capture values on background thread
+        let coordinate : CLLocationCoordinate2D = location.coordinate
+        let date       : Date                   = selectedTime
+
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
+
+            // Build entirely on background thread, no MainActor involvement
+            await self.positionCache.build(at: coordinate, on: date)
+
+            // Only touch UI on main thread once complete
+            await MainActor.run { [weak self] in
+                guard let self else { return }
+                self.isCacheBuilding = false
+                self.rebuildScene()
+            }
+        }
+    }
     
     private func loadPersistedCalibrationIfValid() {
         guard let saved = ARCalibrationStore.load() else { return }
@@ -269,42 +294,52 @@ class ARViewModel {
     }
 
     func updateIndicatorPositions() {
-        guard let sceneView = arSceneView, let location  = currentLocation
+        guard let sceneView : ARSCNView = arSceneView, let location : CLLocation = currentLocation
         else { return }
-                
-        // Use the offset from when the arc was built, not the current live value
+
         let northOffset : Float                  = sceneNorthOffset
         let coordinate  : CLLocationCoordinate2D = location.coordinate
-        
-        // Sun indicator
-        let sunPos : SunPosition = SolarCalculator.calcSunPosition(at: coordinate, time: selectedTime)
+        let time        : Date                   = selectedTime
 
-        sceneView.scene.rootNode.childNode(withName: sunIndicatorNodeName, recursively: false)?.removeFromParentNode()
+        Task { @MainActor in
+            let sunPos  : (altitude: Double, azimuth: Double)?
+            let moonPos : (altitude: Double, azimuth: Double)?
 
-        if sunPos.altitude > -6 {
-            var sunDirection : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: sunPos.azimuth, altitudeDegrees: sunPos.altitude)
-            sunDirection = CoordinateConverter.applyNorthOffset(to: sunDirection, offsetRadians: northOffset)
-            
-            let sunIndicator : SCNNode    = ARSceneBuilder.buildSunIndicatorNode()
-            sunIndicator.position = CoordinateConverter.spherePosition(direction: sunDirection, radius: ARSceneBuilder.celestialSphereRadius)
-            sunIndicator.name     = sunIndicatorNodeName
-            sceneView.scene.rootNode.addChildNode(sunIndicator)
-        }
+            if await positionCache.isReady {
+                sunPos  = await positionCache.sunPosition(at: time)
+                moonPos = await positionCache.moonPosition(at: time)
+            } else {
+                let liveSun : SunPosition = SolarCalculator.calcSunPosition(at: coordinate, time: time)
+                sunPos  = (liveSun.altitude, liveSun.azimuth)
+                moonPos = MoonCalculator.calcMoonPosition(at: coordinate, time: time)
+            }
 
-        // Moon indicator
-        sceneView.scene.rootNode.childNode(withName: moonIndicatorNodeName, recursively: false)?.removeFromParentNode()
+            // Sun indicator
+            sceneView.scene.rootNode.childNode(withName: sunIndicatorNodeName, recursively: false)?.removeFromParentNode()
 
-        let (moonAltitude, moonAzimuth) = MoonCalculator.calcMoonPosition(at: coordinate, time: selectedTime)
+            if let sun = sunPos, sun.altitude > -6 {
+                var sunDirection : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: sun.azimuth, altitudeDegrees: sun.altitude)
+                sunDirection = CoordinateConverter.applyNorthOffset(to: sunDirection, offsetRadians: northOffset)
+                
+                let sunIndicator : SCNNode = ARSceneBuilder.buildSunIndicatorNode()
+                sunIndicator.position = CoordinateConverter.spherePosition(direction: sunDirection, radius: ARSceneBuilder.celestialSphereRadius)
+                sunIndicator.name     = sunIndicatorNodeName
+                sceneView.scene.rootNode.addChildNode(sunIndicator)
+            }
 
-        if moonAltitude > 0 {
-            let moonPhase     : MoonPhase  = MoonCalculator.calcMoonPhase(at: coordinate, time: selectedTime, timeZone: TimeZone.current)
-            var moonDirection : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: moonAzimuth, altitudeDegrees: moonAltitude)
-            moonDirection = CoordinateConverter.applyNorthOffset(to: moonDirection, offsetRadians: northOffset)
-            
-            let moonIndicator : SCNNode    = ARSceneBuilder.buildMoonIndicatorNode(illumination: moonPhase.illumination)
-            moonIndicator.position = CoordinateConverter.spherePosition(direction: moonDirection, radius: ARSceneBuilder.celestialSphereRadius)
-            moonIndicator.name     = moonIndicatorNodeName
-            sceneView.scene.rootNode.addChildNode(moonIndicator)
+            // Moon indicator
+            sceneView.scene.rootNode.childNode(withName: moonIndicatorNodeName, recursively: false)?.removeFromParentNode()
+
+            if let moon = moonPos, moon.altitude > 0 {
+                let moonPhase     : MoonPhase  = MoonCalculator.calcMoonPhase(at: coordinate, time: time, timeZone: TimeZone.current)
+                var moonDirection : SCNVector3 = CoordinateConverter.directionVector(azimuthDegrees: moon.azimuth, altitudeDegrees: moon.altitude)
+                moonDirection = CoordinateConverter.applyNorthOffset(to: moonDirection, offsetRadians: northOffset)
+                
+                let moonIndicator : SCNNode = ARSceneBuilder.buildMoonIndicatorNode(illumination: moonPhase.illumination)
+                moonIndicator.position = CoordinateConverter.spherePosition(direction: moonDirection, radius: ARSceneBuilder.celestialSphereRadius)
+                moonIndicator.name     = moonIndicatorNodeName
+                sceneView.scene.rootNode.addChildNode(moonIndicator)
+            }
         }
     }
     
@@ -314,8 +349,16 @@ class ARViewModel {
            location.distance(from: current) > 50000 {
             cachedTimeZone = nil
         }
-        currentLocation = location                
+        currentLocation = location
+
+        Task {
+            let needsRebuild = await !positionCache.isValid(for: location.coordinate, on: selectedTime)
+            if needsRebuild {
+                await MainActor.run { self.buildPositionCache() }
+            }
+        }
     }
+    
 
     func updateSelectedTime(_ time: Date) {
         selectedTime = time

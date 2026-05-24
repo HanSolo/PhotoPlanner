@@ -299,7 +299,30 @@ struct ContentView: View {
                 
                 // Selected camera and lens
                 HStack {
-                    Spacer()
+                    if self.model.networkMonitor.isConnected {
+                        Spacer()
+                    } else {
+                        Text("OFFLINE")
+                            .font(.system(size: 8))
+                            .padding(EdgeInsets(top: 2, leading: 5, bottom: 2, trailing: 5))
+                            .foregroundStyle(.white)
+                            .background(
+                                ZStack {
+                                    RoundedRectangle(
+                                        cornerRadius: 5,
+                                        style       : .continuous
+                                    )
+                                    .fill(.red)
+                                    RoundedRectangle(
+                                        cornerRadius: 5,
+                                        style       : .continuous
+                                    )
+                                    .stroke(.red, lineWidth: 1)
+                                }
+                            )
+                        
+                        Spacer()
+                    }
                     
                     Text("\(self.model.camera.name) / \(self.model.lens.name)")
                         .font(Constants.REGULAR_FONT_14)
@@ -307,7 +330,7 @@ struct ContentView: View {
                     
                     Spacer()
                 }
-                .padding(EdgeInsets(top: 5, leading: 0, bottom: 5, trailing: 0))
+                .padding(EdgeInsets(top: 5, leading: self.model.networkMonitor.isConnected ? 0 : 5, bottom: 5, trailing: 0))
                 .background(self.colorScheme == .dark ? .black.opacity(0.5) : .white.opacity(0.5))
                 .clipShape(RoundedRectangle(cornerSize: CGSize(width: 5, height: 5)))
                 
