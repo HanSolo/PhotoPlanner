@@ -28,6 +28,40 @@ struct ExposureCalculator {
         return baseShutter * pow(2.0, Double(ndStops))
     }
 
+    
+    // Calculates the exact ISO required given base EV,
+    // new aperture, shutter speed and ND stops.
+    // ISO = 100 * N² / (t * 2^EV) * 2^ndStops
+    static func requiredISO(baseEV: Double, aperture: Double, shutterSpeed: Double, ndStops: Int) -> Double {
+        let numerator   : Double = aperture * aperture * pow(2.0, Double(ndStops))
+        let denominator : Double = shutterSpeed * pow(2.0, baseEV)
+        return 100.0 * numerator / denominator
+    }
+
+    // Returns the nearest standard ISO to the calculated value.
+    static func nearestStandardISO(baseEV: Double, aperture: Double, shutterSpeed: Double, ndStops: Int) -> Int {
+        let exact : Double = requiredISO(baseEV: baseEV, aperture: aperture, shutterSpeed: shutterSpeed, ndStops: ndStops)
+        return PhotoValues.closestISO(to: exact)
+    }
+
+        // ISO range warning, flags if result is outside practical range
+    enum ISOWarning {
+        case belowBase    // below ISO 64
+        case highNoise    // above ISO 6400
+        case extremeNoise // above ISO 25600
+        case none
+    }
+
+    static func isoWarning(for iso: Int) -> ISOWarning {
+        switch iso {
+            case ..<64        : return .belowBase
+            case 6401..<25600 : return .highNoise
+            case 25600...     : return .extremeNoise
+            default           : return .none
+        }
+    }
+    
+    
     // Formats a calculated shutter speed (may exceed standard values).
     // Sub-second : fractional e.g. 1/125s
     // 1...10s    : whole or decimal seconds e.g. 2s, 2.5s
@@ -89,6 +123,16 @@ struct ExposureCalculator {
             case 0.001..<1 : return .green     // standard range
             case 1..<30    : return .orange    // long exposure
             default        : return .purple    // bulb territory
+        }
+    }
+    
+    // Returns a color indicating the iso range
+    static func isoColor(_ warning: ISOWarning) -> Color {
+        switch warning {
+            case .none         : return .orange
+            case .highNoise    : return .yellow
+            case .extremeNoise : return .red
+            case .belowBase    : return .red
         }
     }
 }

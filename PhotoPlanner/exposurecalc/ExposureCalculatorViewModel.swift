@@ -18,8 +18,10 @@ class ExposureCalculatorViewModel {
     var setup1ISOIndex      : Int
 
     // Setup 2: filtered shot
+    var setup2Mode          : Setup2Mode = .shutter
     var setup2ApertureIndex : Int
-    var setup2ISOIndex      : Int
+    var setup2ISOIndex      : Int // used when mode == .shutter
+    var setup2ShutterIndex  : Int // used when mode == .iso
     var setup2NDStops       : Int
 
     
@@ -35,6 +37,7 @@ class ExposureCalculatorViewModel {
         // Setup 2 starts with same values as setup 1
         setup2ApertureIndex = apertureIndex
         setup2ISOIndex      = defaultISO
+        setup2ShutterIndex  = defaultShutter
         setup2NDStops       = 0
     }
 
@@ -45,6 +48,8 @@ class ExposureCalculatorViewModel {
 
     var setup2Aperture             : Double { PhotoValues.apertures[setup2ApertureIndex] }
     var setup2ISO                  : Int    { PhotoValues.isos[setup2ISOIndex] }
+    var setup2Shutter              : Double { PhotoValues.shutterSpeeds[setup2ShutterIndex] }
+
 
     var baseEV                     : Double {
         ExposureCalculator.exposureValue(aperture: setup1Aperture, shutterSpeed: setup1Shutter, iso: setup1ISO)
@@ -62,7 +67,22 @@ class ExposureCalculatorViewModel {
         ExposureCalculator.shutterColor(calculatedShutter)
     }
 
+    var calculatedISO              : Int {
+        ExposureCalculator.nearestStandardISO(baseEV: baseEV, aperture: setup2Aperture, shutterSpeed: setup2Shutter, ndStops: setup2NDStops)
+    }
+
+    var calculatedISOWarning       : ExposureCalculator.ISOWarning {
+        ExposureCalculator.isoWarning(for: calculatedISO)
+    }
+
+    var calculatedISOColor         : Color {
+        ExposureCalculator.isoColor(calculatedISOWarning)
+    }
+    
     var stopsDifference            : Double {
-        log2(calculatedShutter / setup1Shutter)
+        switch setup2Mode {
+            case .shutter : return log2(calculatedShutter / setup1Shutter)
+            case .iso     : return log2(Double(calculatedISO) / Double(setup1ISO))
+        }
     }
 }

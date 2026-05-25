@@ -84,6 +84,10 @@ struct PhotoValues {
     static func closestShutter(to value: Double) -> Double {
         return shutterSpeeds.min { abs($0 - value) < abs($1 - value) } ?? 1.0/125
     }
+    
+    static func closestISO(to value: Double) -> Int {
+        isos.min { abs(Double($0) - value) < abs(Double($1) - value) } ?? 64
+    }
 
     static func indexOfAperture(_ value: Double) -> Int {
         return apertures.firstIndex(of: closestAperture(to: value)) ?? 6
