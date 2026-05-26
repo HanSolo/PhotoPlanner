@@ -526,14 +526,14 @@ struct ContentView: View {
                     .onChange(of: self.sunsetPredictionVisible) {
                         if self.sunsetPredictionVisible {
                             if self.model.cameraMarkerData != nil {
-                                let now          : Date                   = Date()
+                                let date         : Date                   = self.model.currentMapDate
                                 let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
                                 let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.subjectMarkerData!.coordinate)
                                 var solarEvent   : SolarEvent {
-                                    SolarEvent(time: now, type: .sunset)
+                                    SolarEvent(time: date, type: .sunset)
                                 }
                                 Task {
-                                    await self.sunQualityViewModel.fetch(at: location, on: now, shootAzimuth: shootAzimuth)
+                                    await self.sunQualityViewModel.fetch(at: location, on: date, shootAzimuth: shootAzimuth)
                                 }
                             }
                         }
