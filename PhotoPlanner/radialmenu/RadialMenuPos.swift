@@ -1,9 +1,8 @@
 //
-//  CircularMenuAnchor.swift
-//  CDCircularMenu
+//  RadialMenuPos.swift
+//  PhotoPlanner
 //
 //  Created by Gerrit Grunwald on 27.05.26.
-//  Copyright © 2026 Christophe Dellac. All rights reserved.
 //
 
 import Foundation

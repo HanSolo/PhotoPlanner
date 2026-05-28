@@ -2,7 +2,7 @@
 //  AnimationModifier.swift
 //  PhotoPlanner
 //
-//  Created by Gerrit Grunwald on 28.05.26.
+//  Created by Gerrit Grunwald on 27.05.26.
 //
 
 import SwiftUI

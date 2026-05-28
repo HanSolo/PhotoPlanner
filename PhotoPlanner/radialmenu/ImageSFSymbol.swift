@@ -1,9 +1,8 @@
 //
 //  ImageSFSymbol.swift
-//  CDCircularMenu
+//  PhotoPlanner
 //
-//  Created by Christophe Dellac on 4/8/20.
-//  Copyright © 2020 Christophe Dellac. All rights reserved.
+//  Created by Gerrit Grunwald on 27.05.26.
 //
 
 import SwiftUI
@@ -27,7 +26,7 @@ struct ImageSFSymbol: View {
             .symbolRenderingMode(.hierarchical)
             //.resizable()
             //.scaledToFit()
-            //.foregroundStyle(.white)            
+            //.foregroundStyle(.white)
     }
 }
 

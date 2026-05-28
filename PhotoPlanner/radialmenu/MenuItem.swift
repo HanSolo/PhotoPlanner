@@ -1,9 +1,8 @@
 //
 //  MenuItem.swift
-//  CDCircularMenu
+//  PhotoPlanner
 //
-//  Created by Christophe Dellac on 4/8/20.
-//  Copyright © 2020 Christophe Dellac. All rights reserved.
+//  Created by Gerrit Grunwald on 27.05.26.
 //
 
 import Foundation
@@ -12,7 +11,6 @@ import SwiftUI
 
 public struct MenuItem: Identifiable {
     public let id : Int
-    
     let imageSFSymbol           : String?
     let foregroundSFSymbolColor : Color?
     let imageAsset              : String?

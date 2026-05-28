@@ -1,14 +1,13 @@
 //
-//  CircularMenu.swift
-//  CDCircularMenu
+//  RadialMenu.swift
+//  PhotoPlanner
 //
-//  Created by Christophe Dellac on 4/8/20.
-//  Copyright © 2020 Christophe Dellac. All rights reserved.
+//  Created by Gerrit Grunwald on 27.05.26.
 //
 
 import SwiftUI
 
-public struct RadialMenu: View {    
+public struct RadialMenu: View {
     @State                      private var isOpen : Bool = false
         
     private let scaleEffectValue : CGFloat = 0.6
@@ -47,11 +46,9 @@ public struct RadialMenu: View {
                                 if self.canDisplaySFSymbol(self.menuItems[index]) {
                                     ImageSFSymbol(menuItem: self.menuItems[index], menuItemSize: self.menuItemSize)
                                         .rotationEffect(isOpen ? .zero : .degrees(900))
-                                        //.animation(.easeOut(duration: 0.5).delay(0.0), value: 1)
                                 } else if self.canDisplayImageAsset(self.menuItems[index]) {
                                     ImageAsset(menuItem: self.menuItems[index], menuItemSize: self.menuItemSize)
                                         .rotationEffect(isOpen ? .zero : .degrees(900))
-                                        //.animation(.easeOut(duration: 0.5).delay(0.0), value: 1)
                                 }
                             })
                             .buttonStyle(.plain)
@@ -59,10 +56,10 @@ public struct RadialMenu: View {
                         }
                     }
                 }
-                .modifier(AnimationModifier(isOpen: self.isOpen, scaleEffectValue: self.scaleEffectValue))
+                //.modifier(AnimationModifier(isOpen: self.isOpen, scaleEffectValue: self.scaleEffectValue))
 
                 Button(action: {
-                    withAnimation {
+                    withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
                         self.isOpen.toggle()
                     }
                 }, label: {
@@ -100,7 +97,7 @@ public struct RadialMenu: View {
 
 
 #if DEBUG
-struct CircularMenu_Previews: PreviewProvider {
+struct RadialMenu_Previews: PreviewProvider {
     
     static func buttonClickHandler(index: Int) {
         
@@ -113,7 +110,7 @@ struct CircularMenu_Previews: PreviewProvider {
             MenuItem(id: 2, imageSFSymbol: nil,        foregroundSFSymbolColor: nil,         imageAsset: "forest", backgroundColor: .orange),
             MenuItem(id: 3, imageSFSymbol: "hare",     foregroundSFSymbolColor: Color.white, imageAsset: nil,      backgroundColor: .green),
             MenuItem(id: 4, imageSFSymbol: "flame",    foregroundSFSymbolColor: Color.white, imageAsset: nil,      backgroundColor: .red),
-        ], menuRadius: 90, menuButtonSize: 44, menuItemSize: 44, buttonClickCompletion: CircularMenu_Previews.buttonClickHandler)
+        ], menuRadius: 90, menuButtonSize: 44, menuItemSize: 44, buttonClickCompletion: RadialMenu_Previews.buttonClickHandler)
     }
 }
 #endif
