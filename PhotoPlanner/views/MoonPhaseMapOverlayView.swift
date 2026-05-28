@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 
-struct MoonPhaseMapOverlay: View {
+struct MoonPhaseMapOverlayView: View {
     @Bindable var viewModel: MoonViewModel
 
     var body: some View {

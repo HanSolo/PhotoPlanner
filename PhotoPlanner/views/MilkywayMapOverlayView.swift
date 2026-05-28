@@ -10,7 +10,7 @@ import SwiftUI
 
 
 // Overlay wrapper
-struct MilkywayMapOverlay: View {
+struct MilkywayMapOverlayView: View {
     @Bindable var viewModel: MilkywayViewModel
 
     var body: some View {

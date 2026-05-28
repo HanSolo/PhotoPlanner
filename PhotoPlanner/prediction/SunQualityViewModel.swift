@@ -13,7 +13,6 @@ import SwiftUI
 @Observable
 class SunQualityViewModel {
     var dailyTimeline : DailyQualityTimeline?
-    var isLoading     : Bool  = false
     var error         : Error?
     var isVisible     : Bool  = false
 
@@ -21,7 +20,6 @@ class SunQualityViewModel {
     
     
     func fetch(at location: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, configuration: RemoteWeatherConfiguration = SunriseSunsetPredictor.inland) async {
-        isLoading     = true
         dailyTimeline = nil
         error         = nil
 
@@ -66,8 +64,6 @@ class SunQualityViewModel {
         } catch {
             self.error = error
         }
-
-        isLoading = false
     }
     
     func dismiss() {

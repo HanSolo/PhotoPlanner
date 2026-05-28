@@ -31,10 +31,18 @@ struct MoonPhaseOverlayView: View {
                 drawRiseSet(ctx: ctx, size: size)
                 drawMilkyWayImpact(ctx: ctx, size: size)
             }
-            .background(.black.opacity(0.72))
             .frame(width: geometry.size.width - 100, height: 110)
             .clipShape(RoundedRectangle(cornerRadius: 14))
-            .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(.black.opacity(0.72))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(.black.opacity(0.72))
+                    )
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 4)
             .offset(x: 50, y: 100)
         }
     }

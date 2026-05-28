@@ -17,7 +17,6 @@ import MapKit
 class WeatherOverlayViewModel {
 
     var weather          : CachedDailyWeather?
-    var isLoading        : Bool = false
     var isOutdated       : Bool = false
     var isVisible        : Bool = false
     var isVisibleBinding : Binding<Bool> {
@@ -40,8 +39,7 @@ class WeatherOverlayViewModel {
                return
            }
 
-        // No valid cache — fetch from WeatherKit
-        isLoading = true
+        // No valid cache, fetch from WeatherKit
         error     = nil
 
         do {
@@ -60,8 +58,6 @@ class WeatherOverlayViewModel {
                 isVisible  = true
             }
         }
-
-        isLoading = false
     }
 
     func checkIfOutdated(for location: CLLocation, on date: Date) {

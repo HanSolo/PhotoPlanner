@@ -12,13 +12,10 @@ import SwiftUI
 
 @Observable
 class MilkywayViewModel {
-    var timeline   : MilkywayTimeline?
-    var isLoading  : Bool = false
+    var timeline : MilkywayTimeline?
 
     func fetch(at coordinate: CLLocationCoordinate2D, on date: Date) async {
-        isLoading = true
         timeline  = await MilkywayCalculator.getNightTimeline(at: coordinate, on: date)
-        isLoading = false
     }
 
     func dismiss() { timeline = nil }

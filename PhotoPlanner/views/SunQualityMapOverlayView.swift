@@ -9,12 +9,11 @@ import Foundation
 import SwiftUI
 
 
-struct SunQualityMapOverlay: View {
+struct SunQualityMapOverlayView: View {
     @Bindable var viewModel: SunQualityViewModel
 
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
-
             if let daily = viewModel.dailyTimeline {
                 DailyQualityOverlayView(timeline: daily)
                     .padding(.horizontal, 10)  // side margins only
@@ -23,18 +22,7 @@ struct SunQualityMapOverlay: View {
                     //.onTapGesture { withAnimation { viewModel.dismiss() } }
                     //.onAppear { scheduleAutoDismiss() }
             }
-
-            if viewModel.isLoading {
-                ProgressView()
-                    .padding(10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-                    .padding(12)
-                    //.transition(.opacity)
-            }
-        }
-        //.animation(.easeInOut(duration: 0.25), value: vm.dailyTimeline != nil)
-        //.animation(.easeInOut(duration: 0.2),  value: vm.isLoading)
+        }        
     }
 
     private func scheduleAutoDismiss() {

@@ -94,7 +94,7 @@ struct ARTimeSliderView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(.ultraThinMaterial.opacity(0.8))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     @ViewBuilder

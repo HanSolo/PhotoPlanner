@@ -10,7 +10,7 @@ import Foundation
 import SwiftUI
 
 
-struct WeatherMapOverlay: View {
+struct WeatherMapOverlayView: View {
     @Bindable var viewModel : WeatherOverlayViewModel
               let onRefresh : () -> Void
 
@@ -20,15 +20,6 @@ struct WeatherMapOverlay: View {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
                 .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .bottom)))
-        }
-
-        if viewModel.isLoading {
-            ProgressView()
-                .padding(10)
-                .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .padding(12)
-                .transition(.opacity)
-        }
+        }        
     }
 }
