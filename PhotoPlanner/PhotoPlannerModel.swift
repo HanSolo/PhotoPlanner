@@ -106,7 +106,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var dofVisible                    : Bool                     = false
     var dofVisibleBinding             : Binding<Bool> {
         Binding(get: { self.dofVisible}, set: { self.dofVisible = $0 })
-    }
+    }    
     var triangleCoordinates           : [CLLocationCoordinate2D] = []
     var minTriangleCoordinates        : [CLLocationCoordinate2D] = []
     var maxTriangleCoordinates        : [CLLocationCoordinate2D] = []

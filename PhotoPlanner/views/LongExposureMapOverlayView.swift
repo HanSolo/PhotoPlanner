@@ -19,7 +19,7 @@ struct LongExposureMapOverlayView: View {
                     .padding(.horizontal, 12)
                     .padding(.bottom, 12)
                     .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .bottom)))
-                    //.onTapGesture { withAnimation { viewModel.dismiss() } }
+                    .onTapGesture { withAnimation { viewModel.dismiss() } }
                     .frame(width: geometry.size.width - 100)
                     .offset(x: 50, y: 100)
             }

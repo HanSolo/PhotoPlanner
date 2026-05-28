@@ -20,6 +20,7 @@ struct WeatherMapOverlayView: View {
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
                 .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .bottom)))
+                .onTapGesture { withAnimation { viewModel.dismiss() } }
         }
 
         if viewModel.isLoading {

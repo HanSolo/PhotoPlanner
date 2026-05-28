@@ -7,30 +7,34 @@
 
 import Foundation
 import CoreLocation
+import SwiftUI
 
 
 @Observable
 class LongExposureViewModel {
-    var timeline  : LongExposureDailyTimeline?
-    var error     : Error?
-    var isLoading : Bool   = false
+    var timeline                   : LongExposureDailyTimeline?
+    var error                      : Error?
+    var longExposureVisible        : Bool = false
+    var longExposureVisibleBinding : Binding<Bool> {
+        Binding(get: { self.longExposureVisible}, set: { self.longExposureVisible = $0 })
+    }
 
     private let predictor = LongExposurePredictor()
 
     
     func fetch(at location: CLLocationCoordinate2D, on date: Date, cameraHeading: Double) async {
-        isLoading = true
-        timeline  = nil
-        error     = nil
+        self.timeline = nil
+        self.error    = nil
 
         do {
-            timeline = try await predictor.dailyTimeline(at: location, on: date, cameraHeading: cameraHeading)
+            self.timeline = try await predictor.dailyTimeline(at: location, on: date, cameraHeading: cameraHeading)
         } catch {
             self.error = error
         }
-
-        isLoading = false
     }
 
-    func dismiss() { timeline = nil }
+    func dismiss() {
+        self.longExposureVisible = false
+        self.timeline            = nil
+    }
 }

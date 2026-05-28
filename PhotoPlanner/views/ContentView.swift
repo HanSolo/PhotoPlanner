@@ -39,8 +39,7 @@ struct ContentView: View {
     @State private var sunsetPredictionVisible   : Bool                    = false
     @State private var moonPhaseVisible          : Bool                    = false
     @State private var milkywayVisible           : Bool                    = false
-    @State private var arVisible                 : Bool                    = false
-    @State private var longExposureVisible       : Bool                    = false
+    @State private var arVisible                 : Bool                    = false    
     @State private var exposureCalculatorVisible : Bool                    = false
     @State private var helpViewVisible           : Bool                    = false
     @State private var centerCameraPosition      : Bool                    = false
@@ -245,6 +244,7 @@ struct ContentView: View {
             if self.model.elevationViewVisible {
                 ElevationProfileView(profile: self.model.elevationProfile)
                     .allowsTightening(false)
+                    .onTapGesture { self.model.elevationViewVisible = false }
             }
                         
             // Controls
@@ -497,19 +497,6 @@ struct ContentView: View {
                     .clipShape(Circle())
                     
                     Spacer()
-                    
-                    Button {
-                        self.arVisible = true
-                    } label: {
-                        Image(systemName: "arkit")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .fullScreenCover(isPresented: $arVisible) {
-                        ARView(coordinate: self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate, onClose: { self.arVisible = false })
-                    }
                 }
                 
                 // Sunrise/Sunset Prediction and Weather forecast
@@ -540,137 +527,19 @@ struct ContentView: View {
                     }
                     
                     Spacer()
-                    
-                    Toggle(isOn: self.weatherViewModel.isVisibleBinding) {
-                        Image(systemName: "cloud.sun")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .disabled(!self.model.networkMonitor.isConnected)
-                    .onChange(of: self.weatherViewModel.isVisible) {
-                        if self.weatherViewModel.isVisible && self.model.cameraMarkerData != nil {
-                            Task {
-                                await self.weatherViewModel.fetch(at: self.model.cameraMarkerData!.coordinate, on: self.model.currentMapDate)
-                            }
-                        }
-                    }
                 }
                      
-                // Moon phase and Exposure Calculator
-                HStack {
-                    Toggle(isOn: self.$moonPhaseVisible) {
-                        Image(systemName: "moon")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.moonPhaseVisible) {
-                        if self.model.cameraMarkerData != nil {
-                            Task {
-                                let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                                let date     : Date                   = self.model.currentMapDate
-                                let timeZone : TimeZone               = await Helper.fetchTimeZone(for: location)
-                                self.moonViewModel.fetch(at: location, time: date, timeZone: timeZone)
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        self.exposureCalculatorVisible = true
-                    } label : {
-                        Image(systemName: "camera.aperture")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                }
-                
-                // Milky Way and Long time exposure
-                HStack {
-                    Toggle(isOn: self.$milkywayVisible) {
-                        Image("milkyway")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.milkywayVisible) {
-                        if self.model.cameraMarkerData != nil {
-                            let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                            let date     : Date                   = self.model.currentMapDate
-                            Task {
-                                await self.milkywayViewModel.fetch(at: location, on: date)
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    Toggle(isOn: self.$longExposureVisible) {
-                        Image(systemName: "clock.badge")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .disabled(!self.model.networkMonitor.isConnected)
-                    .onChange(of: self.longExposureVisible) {
-                        if self.model.cameraMarkerData != nil {
-                            let location      : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                            let date          : Date                   = self.model.currentMapDate
-                            let cameraHeading : Double                 = self.model.currentMapHeading ?? 0.0
-                            Task {
-                                await self.longExposureViewModel.fetch(at: location, on: date, cameraHeading: cameraHeading)                                
-                            }
-                        }
-                    }
-                }
+                Spacer()
 
-                // Elevation and Teleconverter
+                // Radial menues
                 HStack {
-                    Toggle(isOn: self.model.elevationViewVisibleBinding) {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .padding(10)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .disabled(!self.model.networkMonitor.isConnected || self.model.fovData?.distance ?? 0 >= 4000)
-                    .onChange(of: self.model.elevationViewVisible) {
-                        if self.model.elevationViewVisible {
-                            Task {
-                                await self.model.getElevation()
-                            }
-                        }
-                    }
+                    RadialMenu(menuItems: lowerLeftMenuItems, menuPos: RadialMenuPos.bottomLeft, menuRadius: 120, menuButtonSize: 40, menuItemSize: 44, buttonClickCompletion: lowerLeftButtonClickHandler(_:))
+                        .frame(width: 44, height: 44)
                     
                     Spacer()
-                    
-                    Button {
-                        self.teleconverterViewVisible = true
-                    } label: {
-                        Image(systemName: "t.circle")
-                            .font(Constants.REGULAR_FONT_24)
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
+                
+                    RadialMenu(menuItems: lowerRightMenuItems, menuPos: RadialMenuPos.bottomRight, menuRadius: 120, menuButtonSize: 40, menuItemSize: 44, buttonClickCompletion: lowerRightButtonClickHandler(_:))
+                        .frame(width: 44, height: 44)
                 }
                 
                 Spacer()
@@ -710,6 +579,9 @@ struct ContentView: View {
                 }
                 .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 5))
             }
+            .fullScreenCover(isPresented: $arVisible) {
+                ARView(coordinate: self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate, onClose: { self.arVisible = false })
+            }
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
                    
             if self.sunsetPredictionVisible {
@@ -718,13 +590,15 @@ struct ContentView: View {
             
             if self.moonPhaseVisible {
                 MoonPhaseMapOverlay(viewModel: moonViewModel)
+                    .onTapGesture { self.moonPhaseVisible = false }
             }
             
             if self.milkywayVisible {
                 MilkywayMapOverlayView(viewModel: milkywayViewModel)
+                    .onTapGesture { self.milkywayVisible = false }
             }
             
-            if self.longExposureVisible {
+            if self.longExposureViewModel.longExposureVisible {
                 LongExposureMapOverlayView(viewModel: longExposureViewModel)
             }
             
@@ -755,6 +629,49 @@ struct ContentView: View {
         }
         .sheet(isPresented: $exposureCalculatorVisible) {            
             ExposureCalculatorView(baseAperture: self.model.aperture)
+        }
+        .onChange(of: self.moonPhaseVisible) {
+            if self.model.cameraMarkerData != nil {
+                Task {
+                    let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                    let date     : Date                   = self.model.currentMapDate
+                    let timeZone : TimeZone               = await Helper.fetchTimeZone(for: location)
+                    self.moonViewModel.fetch(at: location, time: date, timeZone: timeZone)
+                }
+            }
+        }
+        .onChange(of: self.milkywayVisible) {
+            if self.model.cameraMarkerData != nil {
+                let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                let date     : Date                   = self.model.currentMapDate
+                Task {
+                    await self.milkywayViewModel.fetch(at: location, on: date)
+                }
+            }
+        }
+        .onChange(of: self.model.elevationViewVisible) {
+            if self.model.elevationViewVisible {
+                Task {
+                    await self.model.getElevation()
+                }
+            }
+        }
+        .onChange(of: self.weatherViewModel.isVisible) {
+            if self.weatherViewModel.isVisible && self.model.cameraMarkerData != nil {
+                Task {
+                    await self.weatherViewModel.fetch(at: self.model.cameraMarkerData!.coordinate, on: self.model.currentMapDate)
+                }
+            }
+        }
+        .onChange(of: self.longExposureViewModel.longExposureVisible) {
+            if self.model.cameraMarkerData != nil {
+                let location      : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                let date          : Date                   = self.model.currentMapDate
+                let cameraHeading : Double                 = self.model.currentMapHeading ?? 0.0
+                Task {
+                    await self.longExposureViewModel.fetch(at: location, on: date, cameraHeading: cameraHeading)
+                }
+            }
         }
         .onChange(of: self.model.orientation) {
             self.isPortrait = self.model.orientation == .portrait
@@ -794,7 +711,52 @@ struct ContentView: View {
     private func setMapInteraction(enabled: Bool) {
         self.modes = enabled ? [.all] : []
     }
-           
+    
+    
+    // Lower Left Radial Menu
+    func lowerLeftButtonClickHandler(_ index: Int) {
+        switch index {
+            case 0  : self.arVisible                                 = true
+            case 1  : self.weatherViewModel.isVisible                = true
+            case 2  : self.moonPhaseVisible                          = true
+            case 3  : self.milkywayVisible                           = true
+            case 4  : self.model.elevationViewVisible                = true
+            default : break
+        }
+    }
+    
+    private var lowerLeftMenuItems: [MenuItem] {
+        [
+            MenuItem(id: 0, imageName: "arkit",                     symbolColor: Color.white, isAsset: false),
+            MenuItem(id: 1, imageName: "sunset",                    symbolColor: Color.white, isAsset: false),
+            MenuItem(id: 2, imageName: "moon",                      symbolColor: Color.white, isAsset: false),
+            MenuItem(id: 3, imageName: "milkyway",                  symbolColor: Color.white, isAsset: true),
+            MenuItem(id: 4, imageName: "chart.line.uptrend.xyaxis", symbolColor: Color.white, isAsset: false),
+        ]
+    }
+    
+    
+    // Lower Right Radial Menu
+    func lowerRightButtonClickHandler(_ index: Int) {
+        switch index {
+            case 0  : self.arVisible                                 = true
+            case 1  : self.weatherViewModel.isVisible                = true
+            case 2  : self.exposureCalculatorVisible                 = true
+            case 3  : self.longExposureViewModel.longExposureVisible = true
+            case 4  : self.teleconverterViewVisible                  = true
+            default : break
+        }
+    }
+    
+    private var lowerRightMenuItems: [MenuItem] {
+        [
+            MenuItem(id: 0, imageName: "arkit",           symbolColor: Color.white, isAsset: false),
+            MenuItem(id: 1, imageName: "cloud.sun",       symbolColor: Color.white, isAsset: false),
+            MenuItem(id: 2, imageName: "camera.aperture", symbolColor: Color.white, isAsset: false),
+            MenuItem(id: 3, imageName: "clock.badge",     symbolColor: Color.white, isAsset: false),
+            MenuItem(id: 4, imageName: "t.circle",        symbolColor: Color.white, isAsset: false),
+        ]
+    }
 }
 
 private extension MapProxy {

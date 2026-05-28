@@ -38,32 +38,29 @@ public struct RadialMenu: View {
                         ForEach (0 ..< menuItems.count, id: \.self) { index in
                             Button(action: {
                                 withAnimation {
-                                    debugPrint("[CDCircularMenu] Button id[\(self.menuItems[index].id)] has been clicked.")
                                     self.buttonClickCompletion(self.menuItems[index].id)
                                     self.isOpen.toggle()
                                 }
-                            } , label: {
-                                if self.canDisplaySFSymbol(self.menuItems[index]) {
-                                    ImageSFSymbol(menuItem: self.menuItems[index], menuItemSize: self.menuItemSize)
-                                        .rotationEffect(isOpen ? .zero : .degrees(900))
-                                } else if self.canDisplayImageAsset(self.menuItems[index]) {
-                                    ImageAsset(menuItem: self.menuItems[index], menuItemSize: self.menuItemSize)
-                                        .rotationEffect(isOpen ? .zero : .degrees(900))
-                                }
+                            } , label: {                                
+                                MenuItemSymbol(menuItem: self.menuItems[index], menuItemSize: self.menuItemSize)
+                                    .rotationEffect(isOpen ? .zero : .degrees(900))
+                                    .frame(width: 44, height: 44)
                             })
-                            .buttonStyle(.plain)
+                            .buttonStyle(.glass)
+                            .frame(width: self.menuItemSize, height: self.menuItemSize)
+                            .clipShape(Circle())
                             .offset(x: self.xOffset(index), y: self.yOffset(index))
                         }
                     }
                 }
-                //.modifier(AnimationModifier(isOpen: self.isOpen, scaleEffectValue: self.scaleEffectValue))
+                .modifier(AnimationModifier(isOpen: self.isOpen, scaleEffectValue: self.scaleEffectValue))
 
                 Button(action: {
                     withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
                         self.isOpen.toggle()
                     }
                 }, label: {
-                    MenuButton(isOpen: self.isOpen, scaleEffectValue: self.scaleEffectValue, menuButtonSize: self.menuButtonSize)
+                    CenterButton(isOpen: self.isOpen, scaleEffectValue: self.scaleEffectValue, menuButtonSize: self.menuButtonSize)
                 })
             }
         }
@@ -81,11 +78,11 @@ public struct RadialMenu: View {
     }
     
     private func canDisplaySFSymbol(_ menuItem: MenuItem) -> Bool {
-        menuItem.imageSFSymbol != nil
+        menuItem.imageName != nil
     }
         
     private func canDisplayImageAsset(_ menuItem: MenuItem) -> Bool {
-        menuItem.imageAsset != nil
+        menuItem.isAsset != nil
     }
     
     private func clamp(value: Int, minValue: Int, maxValue: Int) -> Int {
@@ -94,23 +91,3 @@ public struct RadialMenu: View {
         return value
     }
 }
-
-
-#if DEBUG
-struct RadialMenu_Previews: PreviewProvider {
-    
-    static func buttonClickHandler(index: Int) {
-        
-    }
-    
-    static var previews: some View {
-        RadialMenu(menuItems: [
-            MenuItem(id: 0, imageSFSymbol: "tortoise", foregroundSFSymbolColor: Color.white, imageAsset: nil,      backgroundColor: .blue),
-            MenuItem(id: 1, imageSFSymbol: "bolt",     foregroundSFSymbolColor: Color.white, imageAsset: nil,      backgroundColor: .yellow),
-            MenuItem(id: 2, imageSFSymbol: nil,        foregroundSFSymbolColor: nil,         imageAsset: "forest", backgroundColor: .orange),
-            MenuItem(id: 3, imageSFSymbol: "hare",     foregroundSFSymbolColor: Color.white, imageAsset: nil,      backgroundColor: .green),
-            MenuItem(id: 4, imageSFSymbol: "flame",    foregroundSFSymbolColor: Color.white, imageAsset: nil,      backgroundColor: .red),
-        ], menuRadius: 90, menuButtonSize: 44, menuItemSize: 44, buttonClickCompletion: RadialMenu_Previews.buttonClickHandler)
-    }
-}
-#endif
