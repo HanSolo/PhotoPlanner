@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 
-struct LongExposureMapOverlay: View {
+struct LongExposureMapOverlayView: View {
     @Bindable var viewModel: LongExposureViewModel
 
     var body: some View {

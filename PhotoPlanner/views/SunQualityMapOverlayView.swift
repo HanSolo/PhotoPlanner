@@ -9,7 +9,7 @@ import Foundation
 import SwiftUI
 
 
-struct SunQualityMapOverlay: View {
+struct SunQualityMapOverlayView: View {
     @Bindable var viewModel: SunQualityViewModel
 
     var body: some View {

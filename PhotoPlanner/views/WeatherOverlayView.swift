@@ -166,15 +166,15 @@ struct WeatherOverlayView: View {
             .padding(.vertical, 6)
         }
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(.ultraThinMaterial)
+            RoundedRectangle(cornerRadius: 14)
+                .fill(.black.opacity(0.72))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(.black.opacity(0.55))
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.black.opacity(0.72))
                 )
         )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 4)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 4)        
     }
 
 

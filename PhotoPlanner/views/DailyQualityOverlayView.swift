@@ -15,9 +15,16 @@ struct DailyQualityOverlayView: View {
     var body: some View {
         GeometryReader { geometry in
             DailyQualityView(timeline: timeline)
-                .background(.black.opacity(0.72))
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.black.opacity(0.72))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(.black.opacity(0.72))
+                        )
+                )
                 .clipShape(RoundedRectangle(cornerRadius: 14))
-                .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
+                .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 4)                
                 .frame(width: geometry.size.width - 100)
                 .offset(x: 50, y: 100)
         }

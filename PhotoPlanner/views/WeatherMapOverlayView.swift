@@ -10,7 +10,7 @@ import Foundation
 import SwiftUI
 
 
-struct WeatherMapOverlay: View {
+struct WeatherMapOverlayView: View {
     @Bindable var viewModel : WeatherOverlayViewModel
               let onRefresh : () -> Void
 

@@ -89,7 +89,7 @@ struct ExposureCalculatorView: View {
         }
         .padding(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
         .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
     
@@ -278,9 +278,9 @@ struct ExposureCalculatorView: View {
         }
         .padding(16)
         .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(resultColor.opacity(0.3), lineWidth: 1)
         )
         .animation(.easeInOut(duration: 0.2), value: viewModel.setup2Mode)

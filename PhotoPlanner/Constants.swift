@@ -111,4 +111,8 @@ public class Constants {
     public static let REGULAR_FONT_20                : Font          = Font.system(size: 20, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_24                : Font          = Font.system(size: 24, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_28                : Font          = Font.system(size: 28, weight: .regular, design: .rounded)
+    
+    public static let quarterCircle                  : CGFloat       = .pi / 2.0
+    public static let halfCircle                     : CGFloat       = .pi
+    public static let fullCircle                     : CGFloat       = .pi * 2.0
 }

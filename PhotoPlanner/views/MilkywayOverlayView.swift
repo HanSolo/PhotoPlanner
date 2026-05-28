@@ -36,10 +36,16 @@ struct MilkywayOverlayView: View {
                 drawTitle(ctx: ctx, size: size)
             }
             .frame(width: geometry.size.width, height: geometry.size.height)
-            .background(.black.opacity(0.72))
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(.black.opacity(0.72))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(.black.opacity(0.72))
+                    )
+            )
             .clipShape(RoundedRectangle(cornerRadius: 14))
-            .shadow(color: .black.opacity(0.25), radius: 8, x: 0, y: 2)
-            
+            .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 4)            
         }
         .frame(maxWidth: .infinity, minHeight: 160, maxHeight: 160)
     }

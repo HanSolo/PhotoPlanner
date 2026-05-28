@@ -230,7 +230,7 @@ struct ContentView: View {
             
             // Weather overlay
             GeometryReader { geometry in
-                WeatherMapOverlay(viewModel: self.weatherViewModel) {
+                WeatherMapOverlayView(viewModel: self.weatherViewModel) {
                     if self.model.cameraMarkerData != nil {
                         Task {
                             await weatherViewModel.fetch(at: self.model.cameraMarkerData!.coordinate, on: self.model.currentMapDate, forceRefresh: true)
@@ -713,7 +713,7 @@ struct ContentView: View {
             .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
                    
             if self.sunsetPredictionVisible {
-                SunQualityMapOverlay(viewModel: sunQualityViewModel)
+                SunQualityMapOverlayView(viewModel: sunQualityViewModel)
             }
             
             if self.moonPhaseVisible {
@@ -721,11 +721,11 @@ struct ContentView: View {
             }
             
             if self.milkywayVisible {
-                MilkywayMapOverlay(viewModel: milkywayViewModel)
+                MilkywayMapOverlayView(viewModel: milkywayViewModel)
             }
             
             if self.longExposureVisible {
-                LongExposureMapOverlay(viewModel: longExposureViewModel)
+                LongExposureMapOverlayView(viewModel: longExposureViewModel)
             }
             
             if self.helpViewVisible {

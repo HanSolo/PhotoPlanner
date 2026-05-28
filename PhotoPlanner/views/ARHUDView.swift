@@ -109,7 +109,7 @@ struct ARHUDView: View {
                 }
                 .padding(16)
                 .background(.ultraThinMaterial.opacity(0.85))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
                 .padding(.horizontal, 40)
                 .padding(.bottom, 20)
             }
