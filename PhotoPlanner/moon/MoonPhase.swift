@@ -12,7 +12,7 @@ import SwiftUI
 struct MoonPhase {
     let date         : Date
     let illumination : Double    // 0.0 to 1.0
-    let phaseAngle   : Double    // degrees 0–360
+    let phaseAngle   : Double    // degrees 0 to 360
     let phaseName    : PhaseName
     let isWaxing     : Bool
     let riseTime     : Date?
@@ -61,11 +61,11 @@ struct MoonPhase {
 
         var color: Color {
             switch self {
-                case .newMoon                         : return .gray
-                case .waxingCrescent, .waningCrescent : return .yellow.opacity(0.6)
-                case .firstQuarter,   .lastQuarter    : return .yellow.opacity(0.8)
-                case .waxingGibbous,  .waningGibbous  : return .orange
-                case .fullMoon                        : return .white
+                case .newMoon                         : return Color(white: 0.3)
+                case .waxingCrescent, .waningCrescent : return Color(white: 0.6)
+                case .firstQuarter,   .lastQuarter    : return Color(white: 0.75)
+                case .waxingGibbous,  .waningGibbous  : return Color(white: 0.85)
+                case .fullMoon                        : return Color(white: 0.95)
             }
         }
     }

@@ -192,12 +192,12 @@ struct MoonCalculator {
         }
     
     nonisolated static func calcMoonPhase(at coordinate: CLLocationCoordinate2D, time: Date, timeZone: TimeZone) -> MoonPhase {
-        let jd          : Double  = time.timeIntervalSince1970 / 86400.0 + 2440587.5
-        let T           : Double  = (jd - 2451545.0) / 36525.0
+        let jd           : Double = time.timeIntervalSince1970 / 86400.0 + 2440587.5
+        let T            : Double = (jd - 2451545.0) / 36525.0
 
         // Sun's mean anomaly
-        let Ms          : Double  = (357.5291092 + 35999.0502909 * T).truncatingRemainder(dividingBy: 360)
-        let msRad       : Double  = Ms * .pi / 180
+        let Ms           : Double = (357.5291092 + 35999.0502909  * T).truncatingRemainder(dividingBy: 360)
+        let msRad        : Double = Ms * .pi / 180
 
         // Moon's mean anomaly
         let Mm           : Double = (134.9633964 + 477198.8675055 * T).truncatingRemainder(dividingBy: 360)
@@ -207,21 +207,20 @@ struct MoonCalculator {
         let D            : Double = (297.8501921 + 445267.1114034 * T).truncatingRemainder(dividingBy: 360)
         let dRad         : Double = D * .pi / 180
 
-        // Phase angle (0 = new, 180 = full)
-        let phaseAngle   : Double = 180 - D - 6.289 * sin(mmRad) + 2.100 * sin(msRad) - 1.274 * sin(2 * dRad - mmRad) - 0.658 * sin(2 * dRad) - 0.214 * sin(2 * mmRad) - 0.110 * sin(dRad)
+        // Normalise elongation to 0...360 (this is the primary value used for phase name, isWaxing and illumination)
+        var normalisedD  : Double = D.truncatingRemainder(dividingBy: 360)
+        if normalisedD < 0 { normalisedD += 360 }
 
-        let normalised   : Double = phaseAngle.truncatingRemainder(dividingBy: 360)
-        let angle        : Double = normalised < 0 ? normalised + 360 : normalised
+        // Illumination, derived directly from elongation with small correction terms for accuracy (~1%)
+        let correctedD   : Double = normalisedD + 6.289 * sin(mmRad) - 2.100 * sin(msRad) + 1.274 * sin(2 * dRad - mmRad) + 0.658 * sin(2 * dRad) + 0.214 * sin(2 * mmRad) + 0.110 * sin(dRad)
 
-        // Illumination fraction
-        let illumination : Double = (1 - cos(angle * .pi / 180)) / 2
+        let illumination : Double = (1 - cos(correctedD * .pi / 180)) / 2
 
-        // Waxing if angle increasing (D increasing)
-        let isWaxing     : Bool   = angle < 180
+        // Phase name and waxing/waning from normalised elongation
+        let isWaxing : Bool = normalisedD < 180
 
-        // Phase name from illumination + waxing/waning
         let phaseName: MoonPhase.PhaseName
-        switch angle {
+            switch normalisedD {
             case 0..<10, 350..<360 : phaseName = .newMoon
             case 10..<80           : phaseName = .waxingCrescent
             case 80..<100          : phaseName = .firstQuarter
@@ -238,8 +237,9 @@ struct MoonCalculator {
         // Current position
         let (altitude, azimuth) = calcMoonPosition(at: coordinate, time: time)
 
-        return MoonPhase(date: time, illumination: illumination, phaseAngle: angle, phaseName: phaseName, isWaxing: isWaxing,
-                         riseTime: riseTime, setTime: setTime, altitude: altitude, azimuth: azimuth, timeZone: timeZone)
+        return MoonPhase(date: time, illumination: illumination, phaseAngle: normalisedD,
+                         phaseName: phaseName, isWaxing: isWaxing, riseTime: riseTime,
+                         setTime: setTime, altitude: altitude, azimuth: azimuth, timeZone: timeZone)
     }
 
     nonisolated static func calcMoonRiseAndMoonSet(at coordinate: CLLocationCoordinate2D, on date: Date, timeZone: TimeZone) -> (moonRise: Date?, moonSet: Date?) {
