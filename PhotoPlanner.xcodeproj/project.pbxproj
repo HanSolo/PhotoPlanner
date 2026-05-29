@@ -145,11 +145,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PhotoPlanner/PhotoPlanner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 143;
+				CURRENT_PROJECT_VERSION = 147;
 				DEVELOPMENT_TEAM = L4A7549EHC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PhotoPlanner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PhotoPlanner;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Allowing us to use the camera will give you the opportunity to see the path of the sun and moon in the real situation to better plan your photo shots. ";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Turning on location will allow us to show you your location related to the camera position for the photo shoot.";
@@ -164,7 +165,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 26.0.35;
+				MARKETING_VERSION = 26.0.37;
 				PRODUCT_BUNDLE_IDENTIFIER = eu.hansolo.PhotoPlanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -187,11 +188,12 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PhotoPlanner/PhotoPlanner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 143;
+				CURRENT_PROJECT_VERSION = 147;
 				DEVELOPMENT_TEAM = L4A7549EHC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PhotoPlanner/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = PhotoPlanner;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.photography";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Allowing us to use the camera will give you the opportunity to see the path of the sun and moon in the real situation to better plan your photo shots. ";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Turning on location will allow us to show you your location related to the camera position for the photo shoot.";
@@ -206,7 +208,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 26.0.35;
+				MARKETING_VERSION = 26.0.37;
 				PRODUCT_BUNDLE_IDENTIFIER = eu.hansolo.PhotoPlanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;

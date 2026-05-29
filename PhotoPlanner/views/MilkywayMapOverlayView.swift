@@ -15,12 +15,12 @@ struct MilkywayMapOverlayView: View {
 
     var body: some View {
         if let timeline = viewModel.timeline {
-            GeometryReader { geometry in
+            GeometryReader { geometry in                
                 MilkywayOverlayView(timeline: timeline)
                     .padding(.horizontal, 10)  // side margins only
                     .padding(.bottom, 10)
                     .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .bottomTrailing)))
-                    //.onTapGesture { withAnimation { viewModel.dismiss() } }
+                //.onTapGesture { withAnimation { viewModel.dismiss() } }
                     .frame(width: geometry.size.width - 100)
                     .offset(x: 50, y: 100)
             }
