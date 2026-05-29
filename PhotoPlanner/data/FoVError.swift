@@ -9,7 +9,5 @@ import Foundation
 
 
 enum FoVError: Error {
-    case invalidArgument(message: String)
-    //case insufficientFunds(coinsNeeded: Int)
-    //case outOfStock
+    case invalidArgument(message: String)    
 }

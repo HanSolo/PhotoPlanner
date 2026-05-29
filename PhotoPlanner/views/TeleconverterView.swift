@@ -20,16 +20,17 @@ struct TeleconverterView: View {
     var body: some View {
         VStack {
             HStack(spacing: 10) {
+                Text("Setup Teleconverter")
+                    .font(Constants.REGULAR_FONT_18)
                 
                 Spacer()
                 
                 Button("Close") {
-                    
                     dismiss()
                 }
             }
             .buttonStyle(.glass)
-            .padding()
+            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             
             
             HStack {
@@ -73,16 +74,8 @@ struct TeleconverterView: View {
             Spacer()
         }
         .padding()
-        /*
-        .onDisappear {
-            self.model.tc1.factor         = self.tc1Factor
-            Properties.instance.tc1Factor = self.tc1Factor
-            
-            self.model.tc2.factor         = self.tc2Factor
-            Properties.instance.tc2Factor = self.tc2Factor
-            
-            self.model.updateApertureAndFocalLength()
-        }
-        */
+        .backgroundStyle(.thinMaterial)
+        .presentationDetents([.medium, .large])
+        
     }
 }

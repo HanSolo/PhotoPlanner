@@ -181,13 +181,36 @@ struct HelpView: View {
                     
                     Spacer()
                     
-                    Text("Setup Teleconverter(s)")
+                    Text("Min. dist. calculator")
                         .font(font)
                         .foregroundStyle(Color.white)
                         .multilineTextAlignment(.trailing)
                         .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 50))
                 }
                 .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 0))
+                
+                HStack {
+                    if Constants.IS_IPAD {
+                        Spacer()
+                        
+                        Text("Teleconverter")
+                            .font(font)
+                            .foregroundStyle(Color.white)
+                            .multilineTextAlignment(.trailing)
+                            .padding(EdgeInsets(top: 30, leading: 0, bottom: 0, trailing: 50))
+                    } else {
+                        Spacer()
+                        
+                        Text("Teleconverter")
+                            .font(font)
+                            .foregroundStyle(Color.white)
+                            .multilineTextAlignment(.center)
+                            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 50))
+                            .offset(x: 40)
+                        
+                        Spacer()
+                    }
+                }
                 
                 Spacer()
             }

@@ -108,6 +108,7 @@ public class Constants {
     public static let REGULAR_FONT_12                : Font          = Font.system(size: 12, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_14                : Font          = Font.system(size: 14, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_16                : Font          = Font.system(size: 16, weight: .regular, design: .rounded)
+    public static let REGULAR_FONT_18                : Font          = Font.system(size: 18, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_20                : Font          = Font.system(size: 20, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_24                : Font          = Font.system(size: 24, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_28                : Font          = Font.system(size: 28, weight: .regular, design: .rounded)

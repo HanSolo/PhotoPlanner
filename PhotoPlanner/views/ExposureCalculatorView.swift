@@ -24,47 +24,44 @@ struct ExposureCalculatorView: View {
 
     
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 10) {
+        ScrollView {
+            VStack(spacing: 10) {
+                HStack(spacing: 10) {
+                    Text("Exposure Calculator")
+                        .font(Constants.REGULAR_FONT_18)
                     
-                    // Setup 1
-                    setupCard(
-                        title:    "BASE EXPOSURE",
-                        subtitle: "Measure without filter",
-                        color:    .blue,
-                        content:  { setup1Content }
-                    )
-
-                    Image(systemName: "arrow.down")
-                        .font(.system(size: 18, weight: .light))
-                        .foregroundStyle(.secondary)
-
-                    // Setup 2
-                    setupCard(
-                        title:    "FILTERED SHOT",
-                        subtitle: "Adjust for your ND filter",
-                        color:    .purple,
-                        content:  { setup2Content }
-                    )
-
-                    // Result
-                    resultCard
-                }
-                .padding(16)
-            }
-            .navigationTitle("Exposure Calculator")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                    Spacer()
+                    
                     Button("Close") {
                         dismiss()
                     }
-                    .buttonStyle(.glass)
                 }
+                .buttonStyle(.glass)
+                .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                
+                // Setup 1
+                setupCard(title: "BASE EXPOSURE", subtitle: "Measure without filter", color: .blue, content: { setup1Content })
+
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 18, weight: .light))
+                    .foregroundStyle(.secondary)
+
+                // Setup 2
+                setupCard(
+                    title:    "FILTERED SHOT",
+                    subtitle: "Adjust for your ND filter",
+                    color:    .purple,
+                    content:  { setup2Content }
+                )
+
+                // Result
+                resultCard
             }
-            .background(Color(.systemGroupedBackground))
+            .backgroundStyle(.thinMaterial)
+            .padding(16)
         }
+        .background(Color(.systemGroupedBackground).opacity(0.01))
+        .backgroundStyle(.thinMaterial)
         .presentationDragIndicator(.visible)
     }
 
