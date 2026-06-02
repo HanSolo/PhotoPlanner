@@ -55,15 +55,13 @@ struct DateTimeView: View {
             
             Text("Select Date and Time for calculation")
             
-            DatePicker("Select Date and Time", selection: self.model.currentMapDateBinding)
-                .labelsHidden()
-                /*
-                .onChange(of: self.model.currentMapDate) {
-                    self.model.sunTimes  = self.model.magicHours.getTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
-                    self.model.moonTimes = self.model.magicHours.getMoonTimes(date: self.model.currentMapDate, lat: self.model.currentMapLocation?.latitude ?? 0.0, lon: self.model.currentMapLocation?.longitude ?? 0.0)
-                }
-                */
-            
+            DatePicker(
+                "Select Date and Time",
+                selection: self.model.currentMapDateBinding,
+                in: Date()...   // from today onwards, no upper limit            
+            )
+            .labelsHidden()
+                        
             Form {
                 List {
                     Section(header: Text("Blue Hour").foregroundStyle(blueHourColor).font(headerFont).listRowInsets(EdgeInsets(top: 15, leading: 15, bottom: 0, trailing: 0))) {

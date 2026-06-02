@@ -155,7 +155,6 @@ struct OverlayView: View {
                             ctx.draw(photoSymbol, at: CGPoint(x: 160, y: height - offsetY + 60), anchor: .leading)
                         }
                         
-                        
                         // Magic Hours
                         if self.model.epdVisible {
                             ctx.drawLayer { ctx1 in

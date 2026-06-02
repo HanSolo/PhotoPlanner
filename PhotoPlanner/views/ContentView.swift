@@ -300,9 +300,13 @@ struct ContentView: View {
                 
                 // Selected camera and lens
                 HStack {
-                    if self.model.networkMonitor.isConnected {
-                        Spacer()
-                    } else {
+                    Text("\(self.model.camera.name) / \(self.model.lens.name)")
+                        .font(Constants.REGULAR_FONT_14)
+                        .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+                    
+                    Spacer()
+                    
+                    if !self.model.networkMonitor.isConnected {
                         Text("OFFLINE")
                             .font(.system(size: 8))
                             .padding(EdgeInsets(top: 2, leading: 5, bottom: 2, trailing: 5))
@@ -321,17 +325,15 @@ struct ContentView: View {
                                     .stroke(.red, lineWidth: 1)
                                 }
                             )
-                        
-                        Spacer()
                     }
                     
-                    Text("\(self.model.camera.name) / \(self.model.lens.name)")
+                    Spacer()
+                    
+                    Text(self.model.currentMapDate, format: .dateTime.day().month().year())
                         .font(Constants.REGULAR_FONT_14)
                         .foregroundStyle(self.colorScheme == .dark ? .white : .black)
-                    
-                    Spacer()
                 }
-                .padding(EdgeInsets(top: 5, leading: self.model.networkMonitor.isConnected ? 0 : 5, bottom: 5, trailing: 0))
+                .padding(EdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5))
                 .background(self.colorScheme == .dark ? .black.opacity(0.5) : .white.opacity(0.5))
                 .clipShape(RoundedRectangle(cornerSize: CGSize(width: 5, height: 5)))
                 
@@ -641,7 +643,7 @@ struct ContentView: View {
                     }
                 }
 
-                // Elevation, Teleconverter and DistanceCalculator
+                // Elevation and DistanceCalculator
                 HStack {
                     Toggle(isOn: self.model.elevationViewVisibleBinding) {
                         Image(systemName: "chart.line.uptrend.xyaxis")
@@ -675,6 +677,7 @@ struct ContentView: View {
                     .clipShape(Circle())
                 }
                 
+                // Teleconverter
                 HStack {
                     if Constants.IS_IPAD {
                         Spacer()
