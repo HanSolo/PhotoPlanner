@@ -99,7 +99,7 @@ struct LongExposureOverlayView: View {
 
         for slot in timeline.slots {
             let components : DateComponents = localCalendar.dateComponents([.hour, .minute], from: slot.time)
-            guard components.minute == 0, let hour = components.hour, hour % 6 == 0 else { continue }
+            guard components.minute == 0, let hour = components.hour, hour % 2 == 0 else { continue }
 
             let elapsed   : TimeInterval = slot.time.timeIntervalSince(startOfDay)
             let xPosition : CGFloat      = CGFloat(elapsed) / 86400.0 * size.width
