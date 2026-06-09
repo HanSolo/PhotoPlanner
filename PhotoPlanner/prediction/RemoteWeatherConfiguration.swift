@@ -9,11 +9,15 @@ import Foundation
 
 
 struct RemoteWeatherConfiguration: Sendable {
-    /// Distance in kilometres to sample weather in the sun's direction
-    var samplingDistanceKilometres: Double
+    // Near sampling distance in kilometres: the prominent, well lit cloud zone that is most visible in the frame.
+    var nearSamplingDistanceKilometres: Double
 
-    
-    nonisolated init(samplingDistanceKilometres: Double = 100.0) {
-        self.samplingDistanceKilometres = samplingDistanceKilometres
-    }        
+    // Far sampling distance in kilometres: the gateway zone toward the sun that determines whether light is getting through.
+    var farSamplingDistanceKilometres: Double
+
+
+    nonisolated init(nearSamplingDistanceKilometres: Double = 35.0, farSamplingDistanceKilometres:  Double = 70.0) {
+        self.nearSamplingDistanceKilometres = nearSamplingDistanceKilometres
+        self.farSamplingDistanceKilometres  = farSamplingDistanceKilometres
+    }
 }
