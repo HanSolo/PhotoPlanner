@@ -34,7 +34,7 @@ struct ContentView: View {
     @State private var lensViewVisible              : Bool                    = false
     @State private var addPhotoShootViewVisible     : Bool                    = false
     @State private var photoShootsViewVisible       : Bool                    = false
-    @State private var teleconverterViewVisible     : Bool                    = false
+    @State private var settingsViewVisible          : Bool                    = false
     @State private var datePickerVisible            : Bool                    = false
     @State private var sunsetPredictionVisible      : Bool                    = false
     @State private var moonPhaseVisible             : Bool                    = false
@@ -677,14 +677,14 @@ struct ContentView: View {
                     .clipShape(Circle())
                 }
                 
-                // Teleconverter
+                // Settings (Teleconverter, Observer height)
                 HStack {
                     if Constants.IS_IPAD {
                         Spacer()
                         Button {
-                            self.teleconverterViewVisible = true
+                            self.settingsViewVisible = true
                         } label: {
-                            Image(systemName: "t.circle")
+                            Image(systemName: "gearshape")
                                 .resizable()
                                 .frame(width: 20, height: 20)
                                 .padding(7)
@@ -697,9 +697,9 @@ struct ContentView: View {
                         
                         if !self.model.elevationViewVisible {
                             Button {
-                                self.teleconverterViewVisible = true
+                                self.settingsViewVisible = true
                             } label: {
-                                Image(systemName: "t.circle")
+                                Image(systemName: "gearshape")
                                     .resizable()
                                     .frame(width: 20, height: 20)
                                     .padding(7)
@@ -785,8 +785,8 @@ struct ContentView: View {
         .sheet(isPresented: $datePickerVisible) {
             DateTimeView()
         }
-        .sheet(isPresented: $teleconverterViewVisible) {
-            TeleconverterView()
+        .sheet(isPresented: $settingsViewVisible) {
+            SettingsView()
         }
         .sheet(isPresented: $fieldOfViewCalculatorVisible) {
             FieldOfViewCalculatorView(photoPlannerModel: self.model)

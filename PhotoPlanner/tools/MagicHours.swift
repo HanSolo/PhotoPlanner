@@ -129,7 +129,7 @@ struct MagicHours {
     }
     
     // calculates sun times for a given date and latitude/longitude
-    func getTimes(date :Date, lat :Double, lon :Double, observerHeight: Double? = Constants.DEFAULT_OBSERVER_HEIGHT) -> Dictionary<String, Date> {
+    func getTimes(date :Date, lat :Double, lon :Double, observerHeight: Double? = Properties.instance.observerHeight!) -> Dictionary<String, Date> {
         let lw    = rad * -lon
         let phi   = rad * lat
         let dh    = observerAngle(height: observerHeight!)

@@ -118,6 +118,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var moonTimes                     : (moonRise: Date?, moonSet: Date?)
     var tc1                           : Teleconverter            = Teleconverter(factor: Properties.instance.tc1Factor!)
     var tc2                           : Teleconverter            = Teleconverter(factor: Properties.instance.tc2Factor!)
+    var observerHeight                : Double                   = Properties.instance.observerHeight!
     var elevationProfile              : ElevationProfile?
     var triggerCenterToCamera         : Bool                     = false
     var elevationViewVisible          : Bool                     = false
@@ -219,7 +220,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     func getElevation() async {
         if self.networkMonitor.isConnectedToInternet && self.fovData != nil{
             do {
-                self.elevationProfile = try await elevationService.elevationProfile(from: self.fovData!.cameraLocation.coordinate, to: self.fovData!.subjectLocation.coordinate, interval: 50, cameraHeight: Constants.DEFAULT_OBSERVER_HEIGHT, subjectHeight: 0.0)
+                self.elevationProfile = try await elevationService.elevationProfile(from: self.fovData!.cameraLocation.coordinate, to: self.fovData!.subjectLocation.coordinate, interval: 50, cameraHeight: self.observerHeight, subjectHeight: 0.0)
             } catch {
                 debugPrint("Failed: \(error.localizedDescription)")
             }

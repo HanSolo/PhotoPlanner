@@ -24,6 +24,7 @@ extension Key {
     static let distance         : Key = "distance"
     static let tc1Factor        : Key = "tc1Factor"
     static let tc2Factor        : Key = "tc2Factor"
+    static let observerHeight   : Key = "observerHeight"
 }
 
 
@@ -68,6 +69,9 @@ public struct Properties {
     
     @UserDefault(key: .tc2Factor, defaultValue: 1.0)
     var tc2Factor: Double?
+    
+    @UserDefault(key: .observerHeight, defaultValue: 1.7)
+    var observerHeight: Double?
     
     
     private init() {}

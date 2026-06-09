@@ -98,7 +98,6 @@ public class Constants {
                                                                        minAperture   : 2.8,
                                                                        maxAperture   : 22,
                                                                        sensorFormat  : SensorFormat.fullFormat.id)
-    public static let DEFAULT_OBSERVER_HEIGHT        : Double        = 1.70 // Height of Observer in [m] relative to the horizon
     
     public static let DEFAULT_ORIENTATION            : CameraOrientation = CameraOrientation.landscape
     public static let DEFAULT_MAP_SIZE               : MKMapSize     = MKMapSize(width: 97313.02098080516, height: 60438.11837643385)
