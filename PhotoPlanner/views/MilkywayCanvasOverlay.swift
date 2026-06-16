@@ -191,7 +191,7 @@ struct MilkywayCanvasOverlay: View {
             // Main dot
             ctx.fill(Path(ellipseIn: CGRect(x: gcPoint.x - 6, y: gcPoint.y - 6, width: 12, height: 12)), with: .color(gcColor))
             
-            // White centre
+            // White center
             ctx.fill(Path(ellipseIn: CGRect(x: gcPoint.x - 2.5, y: gcPoint.y - 2.5, width: 5, height: 5)), with: .color(.white.opacity(0.9)))
         }
     }
@@ -241,41 +241,75 @@ struct MilkywayCanvasOverlay: View {
     
     private func drawCurrentPosition(ctx: GraphicsContext, size: CGSize, projection: SkyProjection) {
         guard let position = viewModel.currentGalacticCenterPosition else { return }
-                
+
         let isVisible    : Bool    = position.quality != MilkywayPosition.Quality.notVisible
-        let color        : Color   = isVisible ? calcQualityColor(position.quality) : Color.white.opacity(0.2)
+        let coreColor    : Color   = isVisible ? calcQualityColor(position.quality) : Color.white.opacity(0.2)
         let horizonPoint : CGPoint = projection.calcHorizonPoint(azimuth: position.azimuth)
 
-        // Dashed direction line from centre to horizon
+        // Dashed direction line from center to horizon, always shown
         var linePath : Path = Path()
         linePath.move(to: projection.center)
         linePath.addLine(to: horizonPoint)
-        ctx.stroke(linePath, with: .color(color.opacity(0.3)), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+        ctx.stroke(linePath, with: .color(coreColor.opacity(0.3)), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
 
-        if let point = projection.calcScreenPoint(altitude: position.altitude, azimuth: position.azimuth) {
-            // Outer glow
-            ctx.fill(Path(ellipseIn: CGRect(x: point.x - 14, y: point.y - 14, width: 28, height: 28)), with: .color(color.opacity(0.2)))
-            
+        // Sample galactic latitudes on both sides of the core
+        // to show the full band width at the selected time
+        guard let coord : CLLocationCoordinate2D = viewModel.coordinate else { return }
+
+        // The galactic longitude of the core at the current azimuth,
+        // we sample b = ±5, ±10, ±15, ±20 at the same longitude (l=0)
+        // since we want dots along the band through the core
+        let bandLatitudes : [(l: Double, sizeFraction: Double, opacityFraction: Double)] = [
+            (-80, 0.20, 0.20),
+            (-50, 0.35, 0.35),
+            (-25, 0.55, 0.55),
+            (-10, 0.75, 0.75),
+            (  0, 1.00, 1.00),   // core
+            ( 10, 0.75, 0.75),
+            ( 25, 0.55, 0.55),
+            ( 50, 0.35, 0.35),
+            ( 80, 0.20, 0.20)
+        ]
+
+        // Find the galactic longitude that corresponds to the current
+        // core azimuth by using l=0 (galactic center direction)
+        // The band dots are spaced along galactic latitude at l=0
+        for band in bandLatitudes {
+            let (ra, dec)   : (Double, Double) = GalacticConverter.galacticToEquatorial(l: band.l, b: 0)
+            let (alt, az)   : (Double, Double) = GalacticConverter.equatorialToHorizontal(ra: ra, dec: dec, coordinate: coord, time: viewModel.selectedTime)
+
+            guard let point : CGPoint          = projection.calcScreenPoint(altitude: alt, azimuth: az) else { continue }
+
+            let dotRadius   : CGFloat          = CGFloat(8.0 * band.sizeFraction)
+            let opacity     : Double           = band.opacityFraction
+            let dotColor    : Color            = isVisible ? calcQualityColor(position.quality).opacity(opacity) : Color.white.opacity(opacity * 0.2)
+
+            // Glow for larger dots
+            if band.sizeFraction >= 0.5 {
+                ctx.fill(Path(ellipseIn: CGRect(x: point.x - dotRadius * 2, y: point.y - dotRadius * 2, width: dotRadius * 4, height: dotRadius * 4)), with: .color(dotColor.opacity(0.15)))
+            }
+
             // Main dot
-            ctx.fill(Path(ellipseIn: CGRect(x: point.x - 8, y: point.y - 8, width: 16, height: 16)), with: .color(color))
-            
-            // White centre
-            ctx.fill(Path(ellipseIn: CGRect(x: point.x - 3.5, y: point.y - 3.5, width: 7, height: 7)), with: .color(.white.opacity(0.9)))
-            
-            // Altitude label with dark background pill
-            let labelText  : String  = String(format: "%.0f°", position.altitude)
-            let angleRad   : CGFloat = CGFloat((position.azimuth - 90.0) * .pi / 180.0)
-            let labelPoint : CGPoint = CGPoint(x: point.x + 22 * cos(angleRad), y: point.y + 22 * sin(angleRad))
+            ctx.fill(Path(ellipseIn: CGRect(x: point.x - dotRadius, y: point.y - dotRadius, width: dotRadius * 2, height: dotRadius * 2)), with: .color(dotColor))
 
-            // Draw dark pill background first
-            let pillWidth  : CGFloat = 32
-            let pillHeight : CGFloat = 16
-            ctx.fill(Path(roundedRect: CGRect(x: labelPoint.x - pillWidth  / 2, y: labelPoint.y - pillHeight / 2, width: pillWidth, height: pillHeight), cornerRadius: pillHeight / 2), with: .color(Color.black.opacity(0.65)))
+            // White center only on the core dot
+            if band.l == 0 {
+                ctx.fill(Path(ellipseIn: CGRect(x: point.x - 3.5, y: point.y - 3.5, width: 7, height: 7)), with: .color(.white.opacity(0.9)))
 
-            // Draw label on top
-            ctx.draw(Text(labelText).font(.system(size: 10, weight: .bold).monospacedDigit()).foregroundStyle(color), at: labelPoint, anchor: .center)
-        } else {
-            // Below horizon indicator
+                // Altitude label with dark pill background
+                let labelText  : String  = String(format: "%.0f°", alt)
+                let angleRad   : CGFloat = CGFloat((az - 90.0) * .pi / 180.0)
+                let labelPoint : CGPoint = CGPoint(x: point.x + 22 * cos(angleRad), y: point.y + 22 * sin(angleRad))
+
+                let pillWidth  : CGFloat = 32
+                let pillHeight : CGFloat = 16
+                ctx.fill(Path(roundedRect: CGRect(x: labelPoint.x - pillWidth  / 2, y: labelPoint.y - pillHeight / 2, width: pillWidth, height: pillHeight), cornerRadius: pillHeight / 2), with: .color(Color.black.opacity(0.65)))
+                ctx.draw(Text(labelText).font(.system(size: 10, weight: .bold).monospacedDigit()).foregroundStyle(coreColor), at: labelPoint, anchor: .center)
+            }
+        }
+
+        // Below horizon fallback — small indicator on horizon ring
+        if projection.calcScreenPoint(altitude: position.altitude, azimuth: position.azimuth) == nil {
             ctx.fill(Path(ellipseIn: CGRect(x: horizonPoint.x - 5, y: horizonPoint.y - 5, width: 10, height: 10)), with: .color(.white.opacity(0.2)))
         }
     }

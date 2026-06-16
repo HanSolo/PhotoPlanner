@@ -19,11 +19,11 @@ struct MilkywayPosition {
     let quality:       Quality
 
     enum Quality: String {
-        case notVisible    = "Not Visible"
-        case poor          = "Poor"
-        case fair          = "Fair"
-        case good          = "Good"
-        case excellent     = "Excellent"
+        case notVisible = "Not Visible"
+        case poor       = "Poor"
+        case fair       = "Fair"
+        case good       = "Good"
+        case excellent  = "Excellent"
 
         var color: Color {
             switch self {

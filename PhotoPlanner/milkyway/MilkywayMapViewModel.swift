@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 import CoreLocation
 
+
 @Observable
 class MilkywayMapViewModel {
     var selectedTime   :  Date                       = Date()
@@ -22,6 +23,72 @@ class MilkywayMapViewModel {
     private var cachedCoordinate: CLLocationCoordinate2D?
     private var cachedDate      : Date?
 
+    var currentGalacticCenterPosition: (altitude: Double, azimuth: Double, quality: MilkywayPosition.Quality)? {
+        guard let coord   : CLLocationCoordinate2D = coordinate else { return nil }
+        let (gcAlt, gcAz) : (Double, Double)       = GalacticConverter.equatorialToHorizontal(ra: GalacticConverter.galacticCenterRA, dec: GalacticConverter.galacticCenterDec, coordinate: coord, time: selectedTime) // precise galactic centre RA and galactic centre Dec
+        let isDark        : Bool                   = Self.sunAltitude(at: coord, time: selectedTime) < -18
+        let quality       : MilkywayPosition.Quality
+        if !isDark || gcAlt <= 0 {
+            quality = .notVisible
+        } else {
+            switch gcAlt {
+                case ..<5    : quality = .poor
+                case 5..<15  : quality = .fair
+                case 15..<25 : quality = .good
+                default      : quality = .excellent
+            }
+        }
+        return (gcAlt, gcAz, quality)
+    }
+    
+    var currentPosition: MilkywayMapPosition? {
+        guard !positions.isEmpty else { return nil }
+        let timestamp : TimeInterval = selectedTime.timeIntervalSince1970
+        guard let firstTime : TimeInterval = positions.first?.time.timeIntervalSince1970,
+              let lastTime  : TimeInterval = positions.last?.time.timeIntervalSince1970 else { return nil }
+
+        if timestamp <= firstTime { return positions.first }
+        if timestamp >= lastTime  { return positions.last  }
+
+        var low = 0, high = positions.count - 1
+        while low < high - 1 {
+            let mid = (low + high) / 2
+            if positions[mid].time.timeIntervalSince1970 <= timestamp { low  = mid }
+            else                                                        { high = mid }
+        }
+
+        let before   = positions[low]
+        let after    = positions[high]
+        let fraction = selectedTime.timeIntervalSince(before.time) / after.time.timeIntervalSince(before.time)
+        let altitude = before.altitude + (after.altitude - before.altitude) * fraction
+
+        var delta    = after.azimuth - before.azimuth
+        if delta >  180 { delta -= 360 }
+        if delta < -180 { delta += 360 }
+        var azimuth  = (before.azimuth + delta * fraction).truncatingRemainder(dividingBy: 360)
+        if azimuth < 0 { azimuth += 360 }
+
+        let isDark   = before.isAstronomicallyDark
+        let quality: MilkywayPosition.Quality
+        if !isDark || altitude <= 0 {
+            quality = .notVisible
+        } else {
+            switch altitude {
+                case ..<5    : quality = .poor
+                case 5..<15  : quality = .fair
+                case 15..<25 : quality = .good
+                default      : quality = .excellent
+            }
+        }
+
+        return MilkywayMapPosition(time: selectedTime, altitude: altitude, azimuth: azimuth, isAstronomicallyDark: isDark, quality: quality)
+    }
+    
+    var isCurrentlyDark: Bool {
+        guard let coord : CLLocationCoordinate2D = coordinate else { return false }
+        return Self.sunAltitude(at: coord, time: selectedTime) < -18
+    }
+    
     
     func show(at coordinate: CLLocationCoordinate2D, on date: Date, timeZone: TimeZone) {
         self.timeZone     = timeZone
@@ -89,77 +156,9 @@ class MilkywayMapViewModel {
         }
     }
 
-    
-    var currentGalacticCenterPosition: (altitude: Double, azimuth: Double, quality: MilkywayPosition.Quality)? {
-        guard let coord   : CLLocationCoordinate2D = coordinate else { return nil }        
-        let (gcAlt, gcAz) : (Double, Double)       = GalacticConverter.equatorialToHorizontal(ra: GalacticConverter.galacticCenterRA, dec: GalacticConverter.galacticCenterDec, coordinate: coord, time: selectedTime) // precise galactic centre RA and galactic centre Dec
-        let isDark        : Bool                   = Self.sunAltitude(at: coord, time: selectedTime) < -18
-        let quality       : MilkywayPosition.Quality
-        if !isDark || gcAlt <= 0 {
-            quality = .notVisible
-        } else {
-            switch gcAlt {
-                case ..<5    : quality = .poor
-                case 5..<15  : quality = .fair
-                case 15..<25 : quality = .good
-                default      : quality = .excellent
-            }
-        }
-        return (gcAlt, gcAz, quality)
-    }
-    
-    var currentPosition: MilkywayMapPosition? {
-        guard !positions.isEmpty else { return nil }
-        let timestamp : TimeInterval = selectedTime.timeIntervalSince1970
-        guard let firstTime : TimeInterval = positions.first?.time.timeIntervalSince1970,
-              let lastTime  : TimeInterval = positions.last?.time.timeIntervalSince1970 else { return nil }
-
-        if timestamp <= firstTime { return positions.first }
-        if timestamp >= lastTime  { return positions.last  }
-
-        var low = 0, high = positions.count - 1
-        while low < high - 1 {
-            let mid = (low + high) / 2
-            if positions[mid].time.timeIntervalSince1970 <= timestamp { low  = mid }
-            else                                                        { high = mid }
-        }
-
-        let before   = positions[low]
-        let after    = positions[high]
-        let fraction = selectedTime.timeIntervalSince(before.time) / after.time.timeIntervalSince(before.time)
-        let altitude = before.altitude + (after.altitude - before.altitude) * fraction
-
-        var delta    = after.azimuth - before.azimuth
-        if delta >  180 { delta -= 360 }
-        if delta < -180 { delta += 360 }
-        var azimuth  = (before.azimuth + delta * fraction).truncatingRemainder(dividingBy: 360)
-        if azimuth < 0 { azimuth += 360 }
-
-        let isDark   = before.isAstronomicallyDark
-        let quality: MilkywayPosition.Quality
-        if !isDark || altitude <= 0 {
-            quality = .notVisible
-        } else {
-            switch altitude {
-                case ..<5    : quality = .poor
-                case 5..<15  : quality = .fair
-                case 15..<25 : quality = .good
-                default      : quality = .excellent
-            }
-        }
-
-        return MilkywayMapPosition(time: selectedTime, altitude: altitude, azimuth: azimuth, isAstronomicallyDark: isDark, quality: quality)
-    }
-
     func currentGalacticPlanePoints() -> [(altitude: Double, azimuth: Double)] {
         guard let coord = coordinate else { return [] }
         return GalacticConverter.galacticPlanePoints(at: coord, time: selectedTime, stepDegrees: 2.0)
-    }
-
-
-    var isCurrentlyDark: Bool {
-        guard let coord : CLLocationCoordinate2D = coordinate else { return false }
-        return Self.sunAltitude(at: coord, time: selectedTime) < -18
     }
 
     nonisolated static func sunAltitude(at coordinate: CLLocationCoordinate2D, time: Date) -> Double {
