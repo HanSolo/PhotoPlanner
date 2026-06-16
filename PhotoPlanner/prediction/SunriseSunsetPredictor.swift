@@ -298,234 +298,237 @@ actor SunriseSunsetPredictor {
     
     func calcScore(window: [HourWeather], primary: HourWeather, event: SolarEvent, directional: DirectionalCloudInfo, sunAltitude: Double) -> SunriseSunsetScore {
         var reasons: [String] = []
-        
+                
         // Directional context
         switch directional.angularDifference {
-        case ..<45:
-            reasons.append("Shooting toward sun: backlit, lens flare risk")
-        case 45..<90:
-            reasons.append("Sun at \(Int(directional.angularDifference))° : strong sidelight")
-        case 90..<135:
-            reasons.append("Sun at \(Int(directional.angularDifference))° : soft sidelight")
-        default:
-            reasons.append("Shooting away from sun: reflected colour on clouds")
+            case ..<45    : reasons.append("Shooting toward sun: backlit, lens flare risk")
+            case 45..<90  : reasons.append("Sun at \(Int(directional.angularDifference))° : strong sidelight")
+            case 90..<135 : reasons.append("Sun at \(Int(directional.angularDifference))° : soft sidelight")
+            default       : reasons.append("Shooting away from sun: reflected colour on clouds")
         }
-        
+
         let altitudeScore: Double
         switch sunAltitude {
-        case ..<(-6):
-            // Civil twilight: blue hour, still worth scoring
-            altitudeScore = 0.6
-        case (-6)..<0:
-            // Just below horizon: peak blue hour
-            altitudeScore = 0.9
-        case 0..<6:
-            // Just above horizon: golden hour peak
-            altitudeScore = 1.0
-        case 6..<12:
-            // Still golden light but fading
-            altitudeScore = 0.7
-        case 12..<20:
-            // Warm light but no longer golden
-            altitudeScore = 0.3
-        default:
-            // Midday: irrelevant for sunrise/sunset prediction
-            altitudeScore = 0.05
+            case ..<(-6)  : altitudeScore = 0.6  // Civil twilight: blue hour, still worth scoring
+            case (-6)..<0 : altitudeScore = 0.9  // Just below horizon: peak blue hour
+            case 0..<6    : altitudeScore = 1.0  // Just above horizon: golden hour peak
+            case 6..<12   : altitudeScore = 0.7  // Still golden light but fading
+            case 12..<20  : altitudeScore = 0.3  // Warm light but no longer golden
+            default       : altitudeScore = 0.05 // Midday: irrelevant for sunrise/sunset prediction
         }
-        
-        // Cloud score: varies by shooting direction
-        let cloud     : Double = primary.cloudCover   // 0.0–1.0
+
+        let cloud        : Double = primary.cloudCover
+        let humidity     : Double = primary.humidity
+        let visibilityKm : Double = primary.visibility.converted(to: .kilometers).value
+
+        // A solid or near-solid overcast layer during golden hour with
+        // good visibility means the sun can illuminate the underside of
+        // the cloud from below and the entire sky lights up in orange-red.
+        // This is one of the most spectacular sunrise/sunset conditions
+        // and must NOT be penalised as "blocked overcast".
+        //
+        // Conditions required:
+        //   - High cloud coverage (> 0.70) -> the "wall"
+        //   - Golden hour window, sun low enough to light the cloud base
+        //   - Visibility > 8km, can see the illuminated cloud layer
+        //   - Humidity < 0.88, not so humid that fog obscures everything
+        //   - Shooting toward or perpendicular to sun, not away from it
+        let isGoldenHourWindow : Bool = sunAltitude >= -6 && sunAltitude <= 8
+        let isSolidOvercast    : Bool = cloud > 0.70
+        let visibilityOk       : Bool = visibilityKm > 8
+        let humidityOk         : Bool = humidity < 0.95
+        let directionOk        : Bool = !directional.shootingAwaySun
+        let isCloudCanvas      : Bool = isSolidOvercast && isGoldenHourWindow && visibilityOk && humidityOk && directionOk
+
+        if isCloudCanvas {
+            reasons.append("Cloud canvas detected: solid overcast may light up in orange-red")
+        }
+
         let cloudScore: Double
-        
         if directional.shootingTowardSun {
             switch cloud {
-            case ..<0.1:
-                cloudScore = 0.5
-                reasons.append("Clear sky toward sun: clean but limited colour")
-            case 0.1..<0.25:
-                cloudScore = 0.85
-                reasons.append("Light cloud toward sun: good colour potential")
-            case 0.25..<0.45:
-                cloudScore = 1.0
-                reasons.append("Scattered cloud toward sun: backlit drama likely")
-            case 0.45..<0.60:
-                cloudScore = 0.7
-                reasons.append("Broken cloud toward sun: colour possible")
-            case 0.60..<0.80:
-                cloudScore = 0.3
-                reasons.append("Heavy cloud toward sun: colour burst likely blocked")
-            default:
-                cloudScore = 0.05
-                reasons.append("Solid overcast toward sun: colour burst blocked")
+                case ..<0.1:
+                    cloudScore = 0.5
+                    reasons.append("Clear sky toward sun: clean but limited colour")
+                case 0.1..<0.25:
+                    cloudScore = 0.85
+                    reasons.append("Light cloud toward sun: good colour potential")
+                case 0.25..<0.45:
+                    cloudScore = 1.0
+                    reasons.append("Scattered cloud toward sun: backlit drama likely")
+                case 0.45..<0.60:
+                    cloudScore = 0.7
+                    reasons.append("Broken cloud toward sun: colour possible")
+                case 0.60..<0.80:
+                    cloudScore = 0.5
+                    reasons.append("Heavy cloud toward sun: colour possible if gap at horizon")
+                default:
+                    // Solid overcast toward sun, could be spectacular cloud canvas or could be flat grey nothing, depends on canvas detection
+                    if isCloudCanvas {
+                        cloudScore = 0.90
+                        reasons.append("Solid cloud canvas toward sun: entire sky may light up")
+                    } else {
+                        cloudScore = 0.10
+                        reasons.append("Solid overcast toward sun: colour burst likely blocked")
+                    }
             }
-            
+
         } else if directional.shootingAwaySun {
             switch cloud {
-            case ..<0.15:
-                cloudScore = 0.25
-                reasons.append("Clear sky ahead: nothing to reflect colour onto")
-            case 0.15..<0.40:
-                cloudScore = 0.85
-                reasons.append("Clouds ahead will catch reflected colour")
-            case 0.40..<0.65:
-                cloudScore = 1.0
-                reasons.append("Good cloud canvas ahead for reflected colour")
-            case 0.65..<0.85:
-                cloudScore = 0.45
-                reasons.append("Heavy cloud ahead: colour may be muted")
-            default:
-                cloudScore = 0.1
-                reasons.append("Solid overcast ahead: flat light likely")
+                case ..<0.15:
+                    cloudScore = 0.25
+                    reasons.append("Clear sky ahead: nothing to reflect colour onto")
+                case 0.15..<0.40:
+                    cloudScore = 0.85
+                    reasons.append("Clouds ahead will catch reflected colour")
+                case 0.40..<0.65:
+                    cloudScore = 1.0
+                    reasons.append("Good cloud canvas ahead for reflected colour")
+                case 0.65..<0.85:
+                    cloudScore = 0.45
+                    reasons.append("Heavy cloud ahead: colour may be muted")
+                default:
+                    cloudScore = 0.1
+                    reasons.append("Solid overcast ahead: flat light likely")
             }
-            
+
         } else {
             // Sidelight
             switch cloud {
-            case ..<0.1     : cloudScore = 0.45
-            case 0.1..<0.3  : cloudScore = 0.75
-            case 0.3..<0.5  : cloudScore = 0.95
-            case 0.5..<0.7  : cloudScore = 0.7
-            case 0.7..<0.85 : cloudScore = 0.3
-            default         : cloudScore = 0.05
+                case ..<0.1     : cloudScore = 0.45
+                case 0.1..<0.3  : cloudScore = 0.75
+                case 0.3..<0.5  : cloudScore = 0.95
+                case 0.5..<0.7  : cloudScore = 0.7
+                case 0.7..<0.85 :
+                    cloudScore = isCloudCanvas ? 0.85 : 0.3
+                    if isCloudCanvas { reasons.append("Heavy cloud canvas from side: dramatic sidelit wall possible") }
+                default         :
+                    cloudScore = isCloudCanvas ? 0.80 : 0.05
+                    if isCloudCanvas { reasons.append("Solid cloud canvas from side: uniform sidelit glow possible") }
+                }
+        }
+        
+        // For cloud canvas conditions moderate-high humidity intensifies colour saturation rather than washing it out,
+        // the moisture amplifies the scattering of the low-angle light.
+        let humidityScore: Double
+        if isCloudCanvas && humidity >= 0.50 && humidity < 0.95 {
+            humidityScore = 0.75
+            reasons.append("Humid air with cloud canvas: intensified colour saturation likely")
+        } else {
+            switch humidity {
+                case ..<0.35:
+                    humidityScore = 1.0
+                    reasons.append("Low humidity: crisp colours expected")
+                case 0.35..<0.50:
+                    humidityScore = 0.8
+                case 0.50..<0.65:
+                    humidityScore = 0.55
+                    reasons.append("Moderate humidity: some haze likely")
+                case 0.65..<0.80:
+                    humidityScore = 0.3
+                    reasons.append("High humidity: hazy colours likely")
+                default:
+                    humidityScore = 0.1
+                    reasons.append("Very high humidity: significant haze expected")
             }
         }
-        
-        // Tighten humidity: maritime/coastal locations penalised more
-        let humidity      : Double = primary.humidity
-        let humidityScore : Double
-        switch humidity {
-        case ..<0.35:
-            humidityScore = 1.0
-            reasons.append("Low humidity: crisp colours expected")
-        case 0.35..<0.50:
-            humidityScore = 0.8
-        case 0.50..<0.65:
-            humidityScore = 0.55
-            reasons.append("Moderate humidity: some haze likely")
-        case 0.65..<0.80:
-            humidityScore = 0.3
-            reasons.append("High humidity: hazy colours likely")
-        default:
-            humidityScore = 0.1
-            reasons.append("Very high humidity: significant haze expected")
-        }
-        
+
+        // Relaxed for cloud canvas, the cap exists to prevent hazy days scoring well, but a solid cloud layer at golden hour with
+        // moderate humidity IS a spectacular condition.
         let humidityCap: Double
-        switch humidity {
-        case ..<0.50     : humidityCap = 1.00   // no cap
-        case 0.50..<0.65 : humidityCap = 0.80   // max "Great"
-        case 0.65..<0.75 : humidityCap = 0.64   // max "Good"
-        case 0.75..<0.85 : humidityCap = 0.48   // max "Fair"
-        default          : humidityCap = 0.30   // max "Poor", very humid, colours washed out
+        if isCloudCanvas {
+            humidityCap = 0.95   // don't cap cloud canvas, let it score high
+        } else {
+            switch humidity {
+                case ..<0.50     : humidityCap = 1.00
+                case 0.50..<0.65 : humidityCap = 0.80
+                case 0.65..<0.75 : humidityCap = 0.64
+                case 0.75..<0.85 : humidityCap = 0.48
+                default          : humidityCap = 0.30
+            }
         }
-        
+
+        // For cloud canvas .cloudy is actually the desired condition, raise the penalty from 0.35 to 0.85 in that case.
         let conditionPenalty: Double
         switch primary.condition {
-            
-            // Clear: full potential
-        case .clear, .mostlyClear                            : conditionPenalty = 1.0
-            
-            // Partial cloud: good potential
-        case .partlyCloudy                                   : conditionPenalty = 0.95
-            
-            // Mostly cloudy: reduced
-        case .mostlyCloudy                                   : conditionPenalty = 0.6
-            
-            // Full overcast: flat light
-        case .cloudy                                         : conditionPenalty = 0.35
-            
-            // Atmospheric: haze kills colour
-        case .haze                                           : conditionPenalty = 0.4
-        case .smoky                                          : conditionPenalty = 0.3
-        case .blowingDust                                    : conditionPenalty = 0.2
-        case .foggy                                          : conditionPenalty = 0.1
-            
-            // Temperature extremes: not directly relevant to colour
-            // but often associated with haze or poor visibility
-        case .hot                                            : conditionPenalty = 0.7
-        case .frigid                                         : conditionPenalty = 0.8 // cold clear air is often very crisp
-            
-            // Light precipitation: can still produce colour
-        case .drizzle, .freezingDrizzle, .sunShowers         : conditionPenalty = 0.7 // it was 0.4, moved to 0.7-0.8 might be better
-        case .sunFlurries                                    : conditionPenalty = 0.5 // snow flurries with sun can be beautiful
-            
-            // Moderate precipitation
-        case .rain, .sleet, .flurries                        : conditionPenalty = 0.2
-        case .wintryMix, .freezingRain                       : conditionPenalty = 0.15
-            
-            // Heavy precipitation
-        case .heavyRain, .snow, .hail                        : conditionPenalty = 0.05
-        case .heavySnow, .blowingSnow                        : conditionPenalty = 0.05
-        case .blizzard                                       : conditionPenalty = 0.02
-            
-            // Storms
-        case .isolatedThunderstorms, .scatteredThunderstorms : conditionPenalty = 0.15
-        case .strongStorms, .thunderstorms                   : conditionPenalty = 0.05
-            
-            // Tropical hazards
-        case .tropicalStorm                                  : conditionPenalty = 0.05
-        case .hurricane                                      : conditionPenalty = 0.02
-        default                                              : conditionPenalty = 1.0
+            case .clear, .mostlyClear                            : conditionPenalty = 1.0  // Clear: full potential
+            case .partlyCloudy                                   : conditionPenalty = 0.95  // Partial cloud: good potential
+            case .mostlyCloudy                                   : conditionPenalty = isCloudCanvas ? 0.85 : 0.6 // Mostly cloudy: reduced — unless cloud canvas
+            case .cloudy                                         : conditionPenalty = isCloudCanvas ? 0.85 : 0.35 // Full overcast: flat light normally — spectacular if cloud canvas
+            case .haze                                           : conditionPenalty = 0.4 // Atmospheric: haze kills colour
+            case .smoky                                          : conditionPenalty = 0.3
+            case .blowingDust                                    : conditionPenalty = 0.2
+            case .foggy                                          : conditionPenalty = 0.1
+            case .hot                                            : conditionPenalty = 0.7 // Temperature extremes
+            case .frigid                                         : conditionPenalty = 0.8
+            case .drizzle, .freezingDrizzle, .sunShowers         : conditionPenalty = 0.7 // Light precipitation: can still produce colour
+            case .sunFlurries                                    : conditionPenalty = 0.5
+            case .rain, .sleet, .flurries                        : conditionPenalty = 0.2 // Moderate precipitation
+            case .wintryMix, .freezingRain                       : conditionPenalty = 0.15
+            case .heavyRain, .snow, .hail                        : conditionPenalty = 0.05 // Heavy precipitation
+            case .heavySnow, .blowingSnow                        : conditionPenalty = 0.05
+            case .blizzard                                       : conditionPenalty = 0.02
+            case .isolatedThunderstorms, .scatteredThunderstorms : conditionPenalty = 0.15 // Storms
+            case .strongStorms, .thunderstorms                   : conditionPenalty = 0.05
+            case .tropicalStorm                                  : conditionPenalty = 0.05 // Tropical hazards
+            case .hurricane                                      : conditionPenalty = 0.02
+            default                                              : conditionPenalty = 1.0
         }
         
-        // Visibility: weight bad visibility more harshly
-        let visibilityKm    : Double = primary.visibility.converted(to: .kilometers).value
-        let visibilityScore : Double
+        let visibilityScore: Double
         switch visibilityKm {
-        case 25...   : visibilityScore = 1.0
-        case 15..<25 : visibilityScore = 0.8
-        case 10..<15 : visibilityScore = 0.6
-        case 5..<10  :
-            visibilityScore = 0.3
-            reasons.append("Reduced visibility: haze or mist present")
-        default      :
-            visibilityScore = 0.05
-            reasons.append("Poor visibility: fog or heavy haze")
+            case 25...   : visibilityScore = 1.0
+            case 15..<25 : visibilityScore = 0.8
+            case 10..<15 : visibilityScore = 0.6
+            case 5..<10  :
+                visibilityScore = 0.3
+                reasons.append("Reduced visibility: haze or mist present")
+            default      :
+                visibilityScore = 0.05
+                reasons.append("Poor visibility: fog or heavy haze")
         }
-        
-        // Low cloud base proxy: tighter threshold
-        let likelyLowCloud = cloud > 0.5 && visibilityKm < 10
-        if likelyLowCloud && directional.shootingTowardSun {
+
+        // In normal conditions low cloud blocks colour, but for cloud canvas the low cloud base IS what creates the illuminated wall, so skip the penalty in that case.
+        let likelyLowCloud : Bool = cloud > 0.5 && visibilityKm < 10
+        if likelyLowCloud && directional.shootingTowardSun && !isCloudCanvas {
             reasons.append("Low cloud base likely: colour burst may be above clouds")
         }
-        
-        // Rebalanced weights: humidity and visibility penalise more
+
         var composite : Double = (cloudScore * 0.45) + (humidityScore * 0.30) + (visibilityScore * 0.25)
         let isRainy   : Bool   = window.contains { $0.precipitationChance > 0.4 }
-        if isRainy        { composite *= 0.3 }
-        if likelyLowCloud { composite *= 0.6 }
-        
+        if isRainy { composite *= 0.3 }
+
+        // Apply low cloud penalty only when NOT a cloud canvas
+        if likelyLowCloud && !isCloudCanvas { composite *= 0.6 }
+
         // Wind bonus only if also low humidity: breezy + humid isn't better
         let windKph : Double = primary.wind.speed.converted(to: .kilometersPerHour).value
         if windKph > 20 && humidity < 0.6 {
             composite += 0.05
             reasons.append("Breezy and dry: atmosphere likely clear")
         }
-        
+
         // Apply condition as a multiplier
         composite *= conditionPenalty
-        
-        // Apply humidity as a hard cap: this is the key change
+
+        // Apply humidity cap
         composite = min(composite, humidityCap)
         
-        // Altitude proximity: applied last as a hard multiplier
-        // so midday hours can never score well regardless of conditions
+        // Altitude proximity: applied last as a hard multiplier so midday hours can never score well regardless of conditions
         composite *= altitudeScore
-        
         composite = min(1.0, max(0.0, composite))
-        
-        // Raise the bar for top grades
+
         let grade: SunriseSunsetScore.Grade
         switch composite {
-        case ..<0.30     : grade = .poor
-        case 0.30..<0.48 : grade = .fair
-        case 0.48..<0.64 : grade = .good
-        case 0.64..<0.80 : grade = .great
-        default          : grade = .grand
+            case ..<0.30     : grade = .poor
+            case 0.30..<0.48 : grade = .fair
+            case 0.48..<0.64 : grade = .good
+            case 0.64..<0.80 : grade = .great
+            default          : grade = .grand
         }
+
         return SunriseSunsetScore(overall: grade, cloudScore: cloudScore, humidityScore: humidityScore, visibilityScore: visibilityScore, reasoning: reasons)
     }
-    
     
     private func getSolarNoonTime(at coordinate: CLLocationCoordinate2D, startOfDay: Date) -> Date {
         var bestTime     = startOfDay.addingTimeInterval(12 * 3600)

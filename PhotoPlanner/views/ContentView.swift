@@ -16,7 +16,7 @@ struct ContentView: View {
         
     let home                                        : CLLocationCoordinate2D  = Constants.DEFAULT_LOCATION.coordinate
     @State private var sunQualityViewModel          : SunQualityViewModel     = SunQualityViewModel()
-    @State private var milkywayViewModel            : MilkywayViewModel       = MilkywayViewModel()
+    @State private var milkywayViewModel            : MilkywayMapViewModel    = MilkywayMapViewModel()
     @State private var moonViewModel                : MoonViewModel           = MoonViewModel()
     @State private var longExposureViewModel        : LongExposureViewModel   = LongExposureViewModel()
     @State private var weatherViewModel             : WeatherOverlayViewModel = WeatherOverlayViewModel()
@@ -38,7 +38,6 @@ struct ContentView: View {
     @State private var datePickerVisible            : Bool                    = false
     @State private var sunsetPredictionVisible      : Bool                    = false
     @State private var moonPhaseVisible             : Bool                    = false
-    @State private var milkywayVisible              : Bool                    = false
     @State private var arVisible                    : Bool                    = false
     @State private var longExposureVisible          : Bool                    = false
     @State private var exposureCalculatorVisible    : Bool                    = false
@@ -222,6 +221,7 @@ struct ContentView: View {
                     .onAppear {
                         self.model.checkIfLocationIsEnabled()
                     }
+                    .allowsHitTesting(!self.model.milkywayVisible)
                 }
             }
             
@@ -598,8 +598,8 @@ struct ContentView: View {
                 
                 // Milky Way and Long time exposure
                 HStack {
-                    Toggle(isOn: self.$milkywayVisible) {
-                        Image("milkyway")
+                    Toggle(isOn: self.model.milkywayVisibleBinding) {
+                        Image(colorScheme == .dark ? "milkyway" : "milkyway_black")
                             .resizable()
                             .frame(width: 20, height: 20)
                             .padding(7)
@@ -608,12 +608,13 @@ struct ContentView: View {
                     .toggleStyle(.button)
                     .buttonStyle(.glass)
                     .clipShape(Circle())
-                    .onChange(of: self.milkywayVisible) {
+                    .onChange(of: self.model.milkywayVisible) {
                         if self.model.cameraMarkerData != nil {
+                            self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
                             let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
                             let date     : Date                   = self.model.currentMapDate
                             Task {
-                                await self.milkywayViewModel.fetch(at: location, on: date)
+                                milkywayViewModel.show(at: location, on: date, timeZone: await Helper.fetchTimeZone(for: location))
                             }
                         }
                     }
@@ -681,21 +682,23 @@ struct ContentView: View {
                 HStack {
                     if Constants.IS_IPAD {
                         Spacer()
-                        Button {
-                            self.settingsViewVisible = true
-                        } label: {
-                            Image(systemName: "gearshape")
-                                .resizable()
-                                .frame(width: 20, height: 20)
-                                .padding(7)
+                        if !self.model.milkywayVisible {
+                            Button {
+                                self.settingsViewVisible = true
+                            } label: {
+                                Image(systemName: "gearshape")
+                                    .resizable()
+                                    .frame(width: 20, height: 20)
+                                    .padding(7)
+                            }
+                            .frame(width: 44, height: 44)
+                            .buttonStyle(.glass)
+                            .clipShape(Circle())
                         }
-                        .frame(width: 44, height: 44)
-                        .buttonStyle(.glass)
-                        .clipShape(Circle())
                     } else {
                         Spacer()
                         
-                        if !self.model.elevationViewVisible {
+                        if !self.model.elevationViewVisible && !self.model.milkywayVisible {
                             Button {
                                 self.settingsViewVisible = true
                             } label: {
@@ -761,8 +764,10 @@ struct ContentView: View {
                 MoonPhaseMapOverlayView(viewModel: moonViewModel)
             }
             
-            if self.milkywayVisible {
-                MilkywayMapOverlayView(viewModel: milkywayViewModel)
+            if self.model.milkywayVisible {
+                MilkywayMapOverlayView(viewModel: milkywayViewModel, onClose: {
+                    self.model.milkywayVisible = false
+                })
             }
             
             if self.longExposureVisible {

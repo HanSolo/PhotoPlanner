@@ -26,36 +26,7 @@ struct MilkywayCalculator {
 
         return MilkywayPosition(time: time, altitude: altitude, azimuth: azimuth, isVisible: isCoreVisible, coreAltitude: altitude, quality: quality)
     }
-
-    static func getNightTimeline(at coordinate: CLLocationCoordinate2D, on date: Date, stepMinutes: Int = 15) async -> MilkywayTimeline {
-        let timeZone   : TimeZone = await Helper.fetchTimeZone(for: coordinate)
-        var calendar   : Calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timeZone
-        
-        let startOfDay : Date               = calendar.startOfDay(for: date)
-        var slots      : [MilkywayPosition] = []
-        var current    : Date               = startOfDay
-        let step       : TimeInterval       = TimeInterval(stepMinutes * 60)
-
-        while current < startOfDay + 86400 {
-            let sunPos : SunPosition      = SolarCalculator.calcSunPosition(at: coordinate, time: current)
-            let mwPos  : MilkywayPosition = getMilkywayPosition(at: coordinate, time: current, sunAltitude: sunPos.altitude)
-            slots.append(mwPos)
-            current += step
-        }
-
-        // Peak = highest core altitude during astronomical darkness
-        let peakSlot = slots
-            .filter { $0.isVisible }
-            .max { $0.coreAltitude < $1.coreAltitude }
-
-        // Shooting window = continuous block where core is visible
-        let windowStart : Date? = slots.first { $0.isVisible }?.time
-        let windowEnd   : Date? = slots.last  { $0.isVisible }?.time
-
-        return MilkywayTimeline(date: date, slots: slots, peakSlot: peakSlot, windowStart: windowStart, windowEnd: windowEnd, timeZone: timeZone)
-    }
-
+    
     private static func computeQuality(coreAltitude: Double, isAstroDark:  Bool) -> MilkywayPosition.Quality {
         guard isAstroDark && coreAltitude > 0 else { return .notVisible }
 

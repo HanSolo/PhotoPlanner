@@ -125,6 +125,10 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var elevationViewVisibleBinding   : Binding<Bool> {
         Binding(get: { self.elevationViewVisible}, set: { self.elevationViewVisible = $0 })
     }
+    var milkywayVisible               : Bool                     = false
+    var milkywayVisibleBinding        : Binding<Bool> {
+        Binding(get: { self.milkywayVisible}, set: { self.milkywayVisible = $0 })
+    }
     
 
     override init() {

@@ -72,13 +72,13 @@ struct OverlayView: View {
                         var goldenHourDuskEndAngle : Double                               = 0.0
                         var blueHourDuskAngle      : Double                               = 0.0
                         var blueHourDuskEndAngle   : Double                               = 0.0
-                                                
+                        
                         let minorDirectionFontSize : Double                               = minSize * 0.03
                         let minorDirectionFont     : Font                                 = Font.system(size: minorDirectionFontSize)
                         let smallDegreeFontSize    : Double                               = minSize * 0.03
                         let smallDegreeFont        : Font                                 = Font.system(size: smallDegreeFontSize)
                         let textColor              : Color                                = darkMode ? Constants.TEXT_DARK : Constants.TEXT_BRIGHT
-                                                
+                        
                         let innerRingLineWidth     : Double                               = minSize * 0.0666666666
                         let innerRingRadius        : Double                               = minSize * 0.25
                         let outerRingRadius        : Double                               = innerRingRadius + innerRingLineWidth
@@ -88,24 +88,24 @@ struct OverlayView: View {
                             let angle   : Double = 180.0 - Helper.toDegrees(angles.0) - (self.model.currentMapHeading ?? 0.0)
                             let endAngle: Double = 180.0 - Helper.toDegrees(angles.1) - (self.model.currentMapHeading ?? 0.0)
                             switch event {
-                                case Constants.EPD_BLUE_HOUR_MORNING:
-                                    blueHourDuskAngle      = angle
-                                    blueHourDuskEndAngle   = endAngle
-                                case Constants.EPD_GOLDEN_HOUR_MORNING:
-                                    goldenHourDuskAngle    = angle
-                                    goldenHourDuskEndAngle = endAngle
-                                case Constants.EPD_GOLDEN_HOUR_EVENING:
-                                    goldenHourDawnAngle    = angle
-                                    goldenHourDawnEndAngle = endAngle
-                                case Constants.EPD_BLUE_HOUR_EVENING:
-                                    blueHourDawnAngle      = angle
-                                    blueHourDawnEndAngle   = endAngle
-                                case Constants.EPD_SUNRISE:
-                                    sunriseAngle           = angle
-                                case Constants.EPD_SUNSET:
-                                    sunsetAngle            = angle
-                                default:
-                                    break
+                            case Constants.EPD_BLUE_HOUR_MORNING:
+                                blueHourDuskAngle      = angle
+                                blueHourDuskEndAngle   = endAngle
+                            case Constants.EPD_GOLDEN_HOUR_MORNING:
+                                goldenHourDuskAngle    = angle
+                                goldenHourDuskEndAngle = endAngle
+                            case Constants.EPD_GOLDEN_HOUR_EVENING:
+                                goldenHourDawnAngle    = angle
+                                goldenHourDawnEndAngle = endAngle
+                            case Constants.EPD_BLUE_HOUR_EVENING:
+                                blueHourDawnAngle      = angle
+                                blueHourDawnEndAngle   = endAngle
+                            case Constants.EPD_SUNRISE:
+                                sunriseAngle           = angle
+                            case Constants.EPD_SUNSET:
+                                sunsetAngle            = angle
+                            default:
+                                break
                             }
                         }
                         
@@ -113,22 +113,22 @@ struct OverlayView: View {
                         ctx.fill(bkgRoundedRect, with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
                         
                         // Draw hyperfocal text and stroke
-                        if !self.model.elevationViewVisible {
+                        if !self.model.elevationViewVisible && !self.model.milkywayVisible {
                             let hyperFocalBkg : Path = Path(roundedRect: hyperFocalRect, cornerSize: CGSize(width: 5, height: 5), style: .continuous)
                             ctx.fill(hyperFocalBkg, with: GraphicsContext.Shading.color(darkMode ? .black.opacity(0.5) : .white.opacity(0.5)))
                             
                             ctx.draw(hyperFocalText, at: CGPoint(x: 20, y: height - offsetY + 12), anchor: .leading)
-                        }
                         
-                        let hyperFocalPath : Path = Path {
-                            let points : [CGPoint] = [
-                                .init(x: 30, y: height - offsetY + 30),
-                                .init(x: 110, y: height - offsetY + 30)
-                            ]
-                            $0.move(to: points[0])
-                            $0.addLine(to: points[1])
+                            let hyperFocalPath : Path = Path {
+                                let points : [CGPoint] = [
+                                    .init(x: 30, y: height - offsetY + 30),
+                                    .init(x: 110, y: height - offsetY + 30)
+                                ]
+                                $0.move(to: points[0])
+                                $0.addLine(to: points[1])
+                            }
+                            ctx.stroke(hyperFocalPath, with: hyperFocalStroke, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, miterLimit: 0, dash: [2, 4], dashPhase: 4))
                         }
-                        ctx.stroke(hyperFocalPath, with: hyperFocalStroke, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, miterLimit: 0, dash: [2, 4], dashPhase: 4))
                         
                         if !self.model.elevationViewVisible {
                             if cameraOrientation == .portrait {
