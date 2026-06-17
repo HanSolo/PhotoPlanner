@@ -16,6 +16,20 @@ struct MilkywayCanvasOverlay: View {
     
     let viewModel : MilkywayMapViewModel
     let onClose   :   () -> Void
+    
+    @State private var clarityViewModel = MilkywaySkyClarityViewModel()
+    
+    private var startOfDay: Date {
+        var calendar      : Calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = viewModel.timeZone
+        return calendar.startOfDay(for: viewModel.selectedTime)
+    }
+
+    private var isInDarknessWindow: Bool {
+        guard let start : Date = viewModel.darknessWindow.start,
+              let end   : Date = viewModel.darknessWindow.end else { return false }
+        return viewModel.selectedTime >= start && viewModel.selectedTime <= end
+    }
 
     
     var body: some View {
@@ -58,18 +72,32 @@ struct MilkywayCanvasOverlay: View {
                         infoCard
                             .padding(.top, 100)
                             .frame(width: geometry.size.width - 120)
+                        
+                        SkyClarityHint(clarityViewModel: clarityViewModel, selectedTime: viewModel.selectedTime, isInDarknessWindow: isInDarknessWindow)
+                            .frame(width: geometry.size.width - 120)
+                        
                         Spacer()
                     }
                 }
-                
+                            
                 VStack {
                     Spacer()
-                    MilkywayTimeSliderView(selectedTime: Binding(get: { viewModel.selectedTime }, set: { viewModel.selectedTime = $0 }), viewModel: viewModel)
-                        .padding(.bottom, 110)
-                        .frame(width: geometry.size.width - 120)
+                    VStack(spacing: 6) {
+                        MilkywayTimeSliderView(selectedTime: Binding(get: { viewModel.selectedTime }, set: { viewModel.selectedTime = $0 }), viewModel: viewModel)
+
+                        //SkyClarityBar(clarityViewModel: clarityViewModel, startOfDay: startOfDay)
+                        //.padding(.horizontal, 4)
+                    }
+                    .padding(.bottom, 110)
+                    .frame(width: geometry.size.width - 120)
                 }
             }
         }
+        //.onAppear {
+        //    if let coord = viewModel.coordinate {
+        //        clarityViewModel.loadClarity(at: coord, on: viewModel.selectedTime, timeZone: viewModel.timeZone)
+        //    }
+        //}
     }
 
     
@@ -115,7 +143,7 @@ struct MilkywayCanvasOverlay: View {
         .background(.black.opacity(0.75))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
-
+    
     private func drawHorizonRing(ctx: GraphicsContext, projection: SkyProjection) {
         // Outer horizon
         ctx.stroke(Path(ellipseIn: CGRect(x: projection.center.x - projection.maxRadius, y: projection.center.y - projection.maxRadius, width: projection.maxRadius * 2, height: projection.maxRadius * 2)), with: .color(.white.opacity(0.15)), lineWidth: 1)

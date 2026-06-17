@@ -25,26 +25,19 @@ actor SunriseSunsetPredictor {
     static let farBlendWeight    : Double                     = 0.30
     
     
-    
-    func blendCameraAndRemoteScores(cameraScore: SunriseSunsetScore, remoteScore: SunriseSunsetScore, remoteWeightFraction: Double = 0.6) -> SunriseSunsetScore {
-        let cameraWeightFraction   : Double = 1.0 - remoteWeightFraction
+    func blendCameraAndRemoteScores(cameraScore: SunriseSunsetScore, remoteScore: SunriseSunsetScore?) -> SunriseSunsetScore {
+        guard let remoteScore else { return cameraScore }
 
-        let blendedCloudScore      : Double = cameraScore.cloudScore      * cameraWeightFraction + remoteScore.cloudScore      * remoteWeightFraction
-        let blendedHumidityScore   : Double = cameraScore.humidityScore   * cameraWeightFraction + remoteScore.humidityScore   * remoteWeightFraction
-        let blendedVisibilityScore : Double = cameraScore.visibilityScore * cameraWeightFraction + remoteScore.visibilityScore * remoteWeightFraction
+        let cameraWeight : Double = 0.4
+        let remoteWeight : Double = 0.6
 
-            // Prefix remote reasoning so the photographer can distinguish
-            // which conditions are local vs in the sun's direction
-            let remoteReasoning = remoteScore.reasoning.map {
-                "At \(Int(remoteWeightFraction * 100))km: \($0)"
-            }
-        let combinedReasoning : Array<String> = cameraScore.reasoning + remoteReasoning
-
-        var composite = (blendedCloudScore * 0.45) + (blendedHumidityScore * 0.30) + (blendedVisibilityScore * 0.25)
-        composite = min(1.0, max(0.0, composite))
+        let blendedCloudScore      : Double = (cameraScore.cloudScore      * cameraWeight) + (remoteScore.cloudScore      * remoteWeight)
+        let blendedHumidityScore   : Double = (cameraScore.humidityScore   * cameraWeight) + (remoteScore.humidityScore   * remoteWeight)
+        let blendedVisibilityScore : Double = (cameraScore.visibilityScore * cameraWeight) + (remoteScore.visibilityScore * remoteWeight)
+        let blendedComposite       : Double = min(1.0, max(0.0, (cameraScore.composite * cameraWeight) + (remoteScore.composite * remoteWeight)))
 
         let grade: SunriseSunsetScore.Grade
-        switch composite {
+        switch blendedComposite {
             case ..<0.30     : grade = .poor
             case 0.30..<0.48 : grade = .fair
             case 0.48..<0.64 : grade = .good
@@ -52,7 +45,9 @@ actor SunriseSunsetPredictor {
             default          : grade = .grand
         }
 
-        return SunriseSunsetScore(overall: grade, cloudScore: blendedCloudScore, humidityScore: blendedHumidityScore, visibilityScore: blendedVisibilityScore, reasoning: combinedReasoning)
+        let combinedReasoning = cameraScore.reasoning + remoteScore.reasoning.map { "Remote: \($0)" }
+
+        return SunriseSunsetScore(overall: grade, composite: blendedComposite, cloudScore: blendedCloudScore, humidityScore: blendedHumidityScore, visibilityScore: blendedVisibilityScore, reasoning: combinedReasoning)
     }
 
     // Blends camera, near (prominent cloud zone) and far (gateway zone) scores using the fixed weighting. Normalises by the total weight actually used so it degrades gracefully if a remote score is nil.
@@ -60,6 +55,7 @@ actor SunriseSunsetPredictor {
         var weightedCloud      : Double        = cameraScore.cloudScore      * SunriseSunsetPredictor.cameraBlendWeight
         var weightedHumidity   : Double        = cameraScore.humidityScore   * SunriseSunsetPredictor.cameraBlendWeight
         var weightedVisibility : Double        = cameraScore.visibilityScore * SunriseSunsetPredictor.cameraBlendWeight
+        var weightedComposite  : Double        = cameraScore.composite       * SunriseSunsetPredictor.cameraBlendWeight
         var totalWeight        : Double        = SunriseSunsetPredictor.cameraBlendWeight
         var combinedReasoning  : Array<String> = cameraScore.reasoning
 
@@ -67,6 +63,7 @@ actor SunriseSunsetPredictor {
             weightedCloud      += nearScore.cloudScore      * SunriseSunsetPredictor.nearBlendWeight
             weightedHumidity   += nearScore.humidityScore   * SunriseSunsetPredictor.nearBlendWeight
             weightedVisibility += nearScore.visibilityScore * SunriseSunsetPredictor.nearBlendWeight
+            weightedComposite  += nearScore.composite       * SunriseSunsetPredictor.nearBlendWeight
             totalWeight        += SunriseSunsetPredictor.nearBlendWeight
             combinedReasoning  += nearScore.reasoning.map { "Near: \($0)" }
         }
@@ -75,6 +72,7 @@ actor SunriseSunsetPredictor {
             weightedCloud      += farScore.cloudScore      * SunriseSunsetPredictor.farBlendWeight
             weightedHumidity   += farScore.humidityScore   * SunriseSunsetPredictor.farBlendWeight
             weightedVisibility += farScore.visibilityScore * SunriseSunsetPredictor.farBlendWeight
+            weightedComposite  += farScore.composite        * SunriseSunsetPredictor.farBlendWeight
             totalWeight        += SunriseSunsetPredictor.farBlendWeight
             combinedReasoning  += farScore.reasoning.map { "Far: \($0)" }
         }
@@ -84,12 +82,10 @@ actor SunriseSunsetPredictor {
         let blendedCloudScore      : Double = weightedCloud      / totalWeight
         let blendedHumidityScore   : Double = weightedHumidity   / totalWeight
         let blendedVisibilityScore : Double = weightedVisibility / totalWeight
-
-        var composite : Double = (blendedCloudScore * 0.45) + (blendedHumidityScore * 0.30) + (blendedVisibilityScore * 0.25)
-        composite = min(1.0, max(0.0, composite))
+        let blendedComposite       : Double = min(1.0, max(0.0, weightedComposite / totalWeight))
 
         let grade: SunriseSunsetScore.Grade
-        switch composite {
+        switch blendedComposite {
             case ..<0.30     : grade = .poor
             case 0.30..<0.48 : grade = .fair
             case 0.48..<0.64 : grade = .good
@@ -97,7 +93,7 @@ actor SunriseSunsetPredictor {
             default          : grade = .grand
         }
 
-        return SunriseSunsetScore(overall: grade, cloudScore: blendedCloudScore, humidityScore: blendedHumidityScore, visibilityScore: blendedVisibilityScore, reasoning: combinedReasoning)
+        return SunriseSunsetScore(overall: grade, composite: blendedComposite, cloudScore: blendedCloudScore, humidityScore: blendedHumidityScore, visibilityScore: blendedVisibilityScore, reasoning: combinedReasoning)
     }
     
     // Fetches weather at the camera location plus four remote points: near + far in the direction of sunrise, and near + far in the direction of sunset, then blends the three relevant points per event (camera + near + far) for a more accurate prediction.
@@ -214,24 +210,38 @@ actor SunriseSunsetPredictor {
 
         // Blend the three points (camera + near + far)
         var blendedScore : SunriseSunsetScore = blendThreePointScores(cameraScore: cameraLocationScore, nearScore: nearLocationScore, farScore: farLocationScore)
-
+        
         // Apply atmospheric tendency bonus from the camera forecast
         let atmosphericTendency : AtmosphericTendency = getAtmosphericTendency(from: cameraForecast.forecast, at: cameraHour.date)
         if atmosphericTendency.tendencyBonus > 0 {
             var updatedReasons = blendedScore.reasoning
-            if atmosphericTendency.isPostFrontal        { updatedReasons.append("Post-frontal clearing: exceptional light possible") }
-            if atmosphericTendency.isPressureRising     { updatedReasons.append("Rising pressure: atmosphere clearing") }
+            if atmosphericTendency.isPostFrontal         { updatedReasons.append("Post-frontal clearing: exceptional light possible") }
+            if atmosphericTendency.isPressureRising      { updatedReasons.append("Rising pressure: atmosphere clearing") }
             if atmosphericTendency.isConditionsImproving { updatedReasons.append("Improving conditions: cloud cover decreasing") }
 
-            blendedScore = SunriseSunsetScore(
-                overall         : upgradeGradeIfNeeded(blendedScore.overall, bonus: atmosphericTendency.tendencyBonus),
-                cloudScore      : blendedScore.cloudScore,
-                humidityScore   : blendedScore.humidityScore,
-                visibilityScore : blendedScore.visibilityScore,
-                reasoning       : updatedReasons
-            )
-        }
+            let upgradedGrade = upgradeGradeIfNeeded(blendedScore.overall, bonus: atmosphericTendency.tendencyBonus)
 
+            // If the grade was upgraded, nudge the composite into the new
+            // band so the stored value stays consistent with the displayed
+            // grade. If no upgrade happened, leave composite untouched.
+            let upgradedComposite: Double
+            if upgradedGrade != blendedScore.overall {
+                let bandFloor: Double
+                switch upgradedGrade {
+                    case .poor  : bandFloor = 0.0
+                    case .fair  : bandFloor = 0.30
+                    case .good  : bandFloor = 0.48
+                    case .great : bandFloor = 0.64
+                    case .grand : bandFloor = 0.80
+                }
+                upgradedComposite = min(1.0, bandFloor + 0.02)
+            } else {
+                upgradedComposite = blendedScore.composite
+            }
+
+            blendedScore = SunriseSunsetScore(overall : upgradedGrade, composite : upgradedComposite, cloudScore : blendedScore.cloudScore, humidityScore : blendedScore.humidityScore, visibilityScore : blendedScore.visibilityScore, reasoning : updatedReasons)
+        }
+        
         // Expose the near score as the representative remote score for the overlay
         return BlendedDailyQualityTimeline.BlendedHourSlot(time: cameraHour.date, blendedScore: blendedScore, cameraLocationScore: cameraLocationScore,
                                                            remoteLocationScore: nearLocationScore, sunAltitude: currentSunPosition.altitude,
@@ -513,9 +523,10 @@ actor SunriseSunsetPredictor {
 
         // Apply humidity cap
         composite = min(composite, humidityCap)
-        
-        // Altitude proximity: applied last as a hard multiplier so midday hours can never score well regardless of conditions
+
+        // Altitude proximity: applied last as a hard multiplier
         composite *= altitudeScore
+
         composite = min(1.0, max(0.0, composite))
 
         let grade: SunriseSunsetScore.Grade
@@ -527,7 +538,7 @@ actor SunriseSunsetPredictor {
             default          : grade = .grand
         }
 
-        return SunriseSunsetScore(overall: grade, cloudScore: cloudScore, humidityScore: humidityScore, visibilityScore: visibilityScore, reasoning: reasons)
+        return SunriseSunsetScore(overall: grade, composite: composite, cloudScore: cloudScore, humidityScore: humidityScore, visibilityScore: visibilityScore, reasoning: reasons)
     }
     
     private func getSolarNoonTime(at coordinate: CLLocationCoordinate2D, startOfDay: Date) -> Date {

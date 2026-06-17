@@ -15,6 +15,9 @@ struct MilkywayTimeSliderView: View {
     @Binding var selectedTime : Date
     let viewModel             : MilkywayMapViewModel
     
+    @State private var clarityViewModel = MilkywaySkyClarityViewModel()
+    
+    
     private var startOfDay    : Date {
         var calendar : Calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = viewModel.timeZone
@@ -109,6 +112,8 @@ struct MilkywayTimeSliderView: View {
                 }
             }
 
+            SkyClarityBar(clarityViewModel: clarityViewModel, startOfDay: startOfDay)
+            
             // Darkness window label
             if viewModel.darknessWindow.hasDarkness,
                let start : Date = viewModel.darknessWindow.start,
@@ -131,6 +136,11 @@ struct MilkywayTimeSliderView: View {
         .padding(.vertical, 12)
         .background(.black.opacity(0.75))
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        .onAppear {
+            if let coord = viewModel.coordinate {
+                clarityViewModel.loadClarity(at: coord, on: viewModel.selectedTime, timeZone: viewModel.timeZone)
+            }
+        }
     }
 
     private var timeString: String {
