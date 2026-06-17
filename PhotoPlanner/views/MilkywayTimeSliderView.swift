@@ -14,8 +14,7 @@ struct MilkywayTimeSliderView: View {
     
     @Binding var selectedTime : Date
     let viewModel             : MilkywayMapViewModel
-    
-    @State private var clarityViewModel = MilkywaySkyClarityViewModel()
+    let clarityViewModel      : MilkywaySkyClarityViewModel
     
     
     private var startOfDay    : Date {

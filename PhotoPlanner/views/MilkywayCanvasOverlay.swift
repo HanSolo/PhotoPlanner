@@ -14,10 +14,10 @@ import CoreLocation
 struct MilkywayCanvasOverlay: View {
     @Environment(\.colorScheme) private var colorScheme
     
-    let viewModel : MilkywayMapViewModel
-    let onClose   :   () -> Void
+    let viewModel        : MilkywayMapViewModel
+    let clarityViewModel : MilkywaySkyClarityViewModel
+    let onClose          :   () -> Void
     
-    @State private var clarityViewModel = MilkywaySkyClarityViewModel()
     
     private var startOfDay: Date {
         var calendar      : Calendar = Calendar(identifier: .gregorian)
@@ -83,21 +83,13 @@ struct MilkywayCanvasOverlay: View {
                 VStack {
                     Spacer()
                     VStack(spacing: 6) {
-                        MilkywayTimeSliderView(selectedTime: Binding(get: { viewModel.selectedTime }, set: { viewModel.selectedTime = $0 }), viewModel: viewModel)
-
-                        //SkyClarityBar(clarityViewModel: clarityViewModel, startOfDay: startOfDay)
-                        //.padding(.horizontal, 4)
+                        MilkywayTimeSliderView(selectedTime: Binding(get: { viewModel.selectedTime }, set: { viewModel.selectedTime = $0 }), viewModel: viewModel, clarityViewModel: clarityViewModel)
                     }
                     .padding(.bottom, 110)
                     .frame(width: geometry.size.width - 120)
                 }
             }
-        }
-        //.onAppear {
-        //    if let coord = viewModel.coordinate {
-        //        clarityViewModel.loadClarity(at: coord, on: viewModel.selectedTime, timeZone: viewModel.timeZone)
-        //    }
-        //}
+        }        
     }
 
     
