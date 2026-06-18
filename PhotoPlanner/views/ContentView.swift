@@ -543,7 +543,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.weatherViewModel.isVisible || self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible)
+                    .disabled(self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible)
                     
                     Spacer()
                     
@@ -563,7 +563,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible)
+                    .disabled(self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible)
                 }
                      
                 // Moon phase and Exposure Calculator
@@ -586,7 +586,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.weatherViewModel.isVisible || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible)
                     
                     Spacer()
                     
@@ -625,7 +625,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.weatherViewModel.isVisible || self.sunsetPredictionVisible || self.moonPhaseVisible || self.weatherViewModel.isVisible || self.longExposureVisible)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.longExposureVisible || self.moonPhaseVisible)
                     
                     Spacer()
                     
@@ -650,7 +650,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.weatherViewModel.isVisible || self.sunsetPredictionVisible || self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible)
                 }
 
                 // Elevation and DistanceCalculator
