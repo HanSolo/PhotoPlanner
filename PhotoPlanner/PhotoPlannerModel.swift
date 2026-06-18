@@ -133,16 +133,17 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
 
     override init() {
         super.init()
-        
-        Task {
-            await updateSunAndMoonTimes()
-        }
+                
         self.tc1.factorDidChange = {
             self.updateApertureAndFocalLength()
         } // listen to changes of tc1 factor
         self.tc2.factorDidChange = {
             self.updateApertureAndFocalLength()
         } // listen to changes of tc2 factor
+        
+        Task {
+            await updateSunAndMoonTimes()
+        }
     }
     
     
