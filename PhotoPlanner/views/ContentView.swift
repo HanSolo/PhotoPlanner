@@ -15,37 +15,37 @@ struct ContentView: View {
     @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
         
-    let home                                        : CLLocationCoordinate2D      = Constants.DEFAULT_LOCATION.coordinate
-    @State private var sunQualityViewModel          : SunQualityViewModel         = SunQualityViewModel()
-    @State private var milkywayViewModel            : MilkywayMapViewModel        = MilkywayMapViewModel()
-    @State private var moonViewModel                : MoonViewModel               = MoonViewModel()
-    @State private var longExposureViewModel        : LongExposureViewModel       = LongExposureViewModel()
-    @State private var weatherViewModel             : WeatherOverlayViewModel     = WeatherOverlayViewModel()
+    let home                                        : CLLocationCoordinate2D  = Constants.DEFAULT_LOCATION.coordinate
+    @State private var sunQualityViewModel          : SunQualityViewModel     = SunQualityViewModel()
+    @State private var milkywayViewModel            : MilkywayMapViewModel    = MilkywayMapViewModel()
+    @State private var moonViewModel                : MoonViewModel           = MoonViewModel()
+    @State private var longExposureViewModel        : LongExposureViewModel   = LongExposureViewModel()
+    @State private var weatherViewModel             : WeatherOverlayViewModel = WeatherOverlayViewModel()
     @State private var clarityViewModel             : MilkywaySkyClarityViewModel = MilkywaySkyClarityViewModel()
-    @State private var position                     : MapCameraPosition           = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,
+    @State private var position                     : MapCameraPosition       = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,
                                                                                                                                    longitude: Properties.instance.cameraLongitude!),
                                                                                           distance: Properties.instance.distance!))
-    @State private var modes                        : MapInteractionModes         = [.pan, .rotate, .zoom]
-    @State private var cameraMarkerActive           : Bool                        = false
-    @State private var subjectMarkerActive          : Bool                        = false
-    @State private var isPortrait                   : Bool                        = !Properties.instance.landscape!
-    @State private var isCameraMarkerDragging       : Bool                        = false
-    @State private var isSubjectMarkerDragging      : Bool                        = false
-    @State private var mapStyle                     : MapStyle                    = .standard
-    @State private var cameraViewVisible            : Bool                        = false
-    @State private var lensViewVisible              : Bool                        = false
-    @State private var addPhotoShootViewVisible     : Bool                        = false
-    @State private var photoShootsViewVisible       : Bool                        = false
-    @State private var settingsViewVisible          : Bool                        = false
-    @State private var datePickerVisible            : Bool                        = false
-    @State private var sunsetPredictionVisible      : Bool                        = false
-    @State private var moonPhaseVisible             : Bool                        = false
-    @State private var arVisible                    : Bool                        = false
-    @State private var longExposureVisible          : Bool                        = false
-    @State private var exposureCalculatorVisible    : Bool                        = false
-    @State private var fieldOfViewCalculatorVisible : Bool                        = false
-    @State private var helpViewVisible              : Bool                        = false
-    @State private var centerCameraPosition         : Bool                        = false
+    @State private var modes                        : MapInteractionModes     = [.pan, .rotate, .zoom]
+    @State private var cameraMarkerActive           : Bool                    = false
+    @State private var subjectMarkerActive          : Bool                    = false
+    @State private var isPortrait                   : Bool                    = !Properties.instance.landscape!
+    @State private var isCameraMarkerDragging       : Bool                    = false
+    @State private var isSubjectMarkerDragging      : Bool                    = false
+    @State private var mapStyle                     : MapStyle                = .standard
+    @State private var cameraViewVisible            : Bool                    = false
+    @State private var lensViewVisible              : Bool                    = false
+    @State private var addPhotoShootViewVisible     : Bool                    = false
+    @State private var photoShootsViewVisible       : Bool                    = false
+    @State private var settingsViewVisible          : Bool                    = false
+    @State private var datePickerVisible            : Bool                    = false
+    @State private var sunsetPredictionVisible      : Bool                    = false
+    @State private var moonPhaseVisible             : Bool                    = false
+    @State private var arVisible                    : Bool                    = false
+    @State private var longExposureVisible          : Bool                    = false
+    @State private var exposureCalculatorVisible    : Bool                    = false
+    @State private var fieldOfViewCalculatorVisible : Bool                    = false
+    @State private var helpViewVisible              : Bool                    = false
+    @State private var centerCameraPosition         : Bool                    = false
         
     @Query(sort: [SortDescriptor(\Camera.name,     comparator: .localizedStandard)]) private var cameras     : [Camera]
     @Query(sort: [SortDescriptor(\Lens.name,       comparator: .localizedStandard)]) private var lenses      : [Lens]
@@ -888,7 +888,7 @@ struct ContentView: View {
     private func setMapInteraction(enabled: Bool) {
         self.modes = enabled ? [.all] : []
     }
-        
+           
 }
 
 private extension MapProxy {

@@ -79,17 +79,17 @@ struct MilkywayCanvasOverlay: View {
                         Spacer()
                     }
                 }
-                            
+                
                 VStack {
                     Spacer()
                     VStack(spacing: 6) {
                         MilkywayTimeSliderView(selectedTime: Binding(get: { viewModel.selectedTime }, set: { viewModel.selectedTime = $0 }), viewModel: viewModel, clarityViewModel: clarityViewModel)
                     }
-                    .padding(.bottom, 110)
-                    .frame(width: geometry.size.width - 120)
+                        .padding(.bottom, 110)
+                        .frame(width: geometry.size.width - 120)
                 }
             }
-        }        
+        }
     }
 
     
@@ -135,7 +135,7 @@ struct MilkywayCanvasOverlay: View {
         .background(.black.opacity(0.75))
         .clipShape(RoundedRectangle(cornerRadius: 14))
     }
-    
+
     private func drawHorizonRing(ctx: GraphicsContext, projection: SkyProjection) {
         // Outer horizon
         ctx.stroke(Path(ellipseIn: CGRect(x: projection.center.x - projection.maxRadius, y: projection.center.y - projection.maxRadius, width: projection.maxRadius * 2, height: projection.maxRadius * 2)), with: .color(.white.opacity(0.15)), lineWidth: 1)

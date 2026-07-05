@@ -8,9 +8,9 @@
 
 import Foundation
 import SwiftUI
+import WeatherKit
 import CoreLocation
 import MapKit
-import WeatherKit
 
 
 @Observable

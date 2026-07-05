@@ -10,9 +10,9 @@ import CoreLocation
 
 
 struct MilkywayMapOverlayView: View {
-    let viewModel        : MilkywayMapViewModel
+    let viewModel : MilkywayMapViewModel
     let clarityViewModel : MilkywaySkyClarityViewModel
-    let onClose          :   () -> Void
+    let onClose   :   () -> Void
 
     
     var body: some View {
