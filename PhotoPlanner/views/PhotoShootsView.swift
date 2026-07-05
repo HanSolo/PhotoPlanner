@@ -23,7 +23,7 @@ struct PhotoShootsView: View {
         
     var body: some View {
         ZStack {
-        NavigationStack {
+            NavigationStack {
             VStack {
                 HStack(spacing: 10) {
                     
