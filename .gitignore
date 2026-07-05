@@ -1,2 +1,5 @@
 /PhotoPlanner.xcodeproj/project.xcworkspace/xcuserdata/hansolo.xcuserdatad/UserInterfaceState.xcuserstate
 .DS_Store
+/PhotoPlanner/Secrets.xconfig
+/Secrets.xconfig
+/Secrets.xcconfig

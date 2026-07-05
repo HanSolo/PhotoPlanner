@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import MapKit
+import WeatherKit
 
 
 struct ContentView: View {
@@ -225,6 +226,30 @@ struct ContentView: View {
                     .allowsHitTesting(!self.model.milkywayVisible)
                 }
             }
+            
+            VStack {
+                Spacer()
+                HStack(alignment: .center) {
+                    Spacer()
+                    if let attribution = self.weatherViewModel.attributionInfo {
+                        AsyncImage(url: attribution.combinedMarkDarkURL) { image in
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(height: 12)
+                                .opacity(0.7)
+                        } placeholder: {
+                            ProgressView()
+                        }
+                        Link("Legal", destination: URL(string: "\(attribution.legalPageURL)")!)
+                            .font(.system(size: 9))
+                            .foregroundColor(.white)
+                            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 5))
+                    }
+                    Spacer()
+                }
+                .padding(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
+            }.ignoresSafeArea(edges: .all)
             
             // OverlayView
             OverlayView()

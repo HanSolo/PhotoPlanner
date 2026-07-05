@@ -8,9 +8,9 @@
 
 import Foundation
 import SwiftUI
-import WeatherKit
 import CoreLocation
 import MapKit
+import WeatherKit
 
 
 @Observable
@@ -23,9 +23,20 @@ class WeatherOverlayViewModel {
         Binding(get: { self.isVisible}, set: { self.isVisible = $0 })
     }
     var error            : Error?
+    var attributionInfo  : WeatherAttribution?
 
     private let service = WeatherOverlayService()
 
+    
+    init() {
+        Task.detached(priority: .background) {
+            let attribution = try await WeatherService.shared.attribution
+            DispatchQueue.main.async {
+                self.attributionInfo = attribution
+            }
+        }
+    }
+    
     
     func fetch(at location: CLLocationCoordinate2D, on date: Date, forceRefresh: Bool = false) async {
         let clLocation : CLLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)

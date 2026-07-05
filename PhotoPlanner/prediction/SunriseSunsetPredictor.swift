@@ -12,8 +12,8 @@ import MapKit
 
 
 actor SunriseSunsetPredictor {
-    
     private let weatherService   : WeatherService             = WeatherService.shared
+    private let nowcastChecker   : NowcastChecker             = NowcastChecker()
     
     static let coastal           : RemoteWeatherConfiguration = RemoteWeatherConfiguration(nearSamplingDistanceKilometres: 45, farSamplingDistanceKilometres: 90)
     static let inland            : RemoteWeatherConfiguration = RemoteWeatherConfiguration(nearSamplingDistanceKilometres: 35, farSamplingDistanceKilometres: 70)
@@ -25,19 +25,25 @@ actor SunriseSunsetPredictor {
     static let farBlendWeight    : Double                     = 0.30
     
     
-    func blendCameraAndRemoteScores(cameraScore: SunriseSunsetScore, remoteScore: SunriseSunsetScore?) -> SunriseSunsetScore {
-        guard let remoteScore else { return cameraScore }
+    func blendCameraAndRemoteScores(cameraScore: SunriseSunsetScore, remoteScore: SunriseSunsetScore, remoteWeightFraction: Double = 0.6) -> SunriseSunsetScore {
+        let cameraWeightFraction   : Double = 1.0 - remoteWeightFraction
 
-        let cameraWeight : Double = 0.4
-        let remoteWeight : Double = 0.6
+        let blendedCloudScore      : Double = cameraScore.cloudScore      * cameraWeightFraction + remoteScore.cloudScore      * remoteWeightFraction
+        let blendedHumidityScore   : Double = cameraScore.humidityScore   * cameraWeightFraction + remoteScore.humidityScore   * remoteWeightFraction
+        let blendedVisibilityScore : Double = cameraScore.visibilityScore * cameraWeightFraction + remoteScore.visibilityScore * remoteWeightFraction
 
-        let blendedCloudScore      : Double = (cameraScore.cloudScore      * cameraWeight) + (remoteScore.cloudScore      * remoteWeight)
-        let blendedHumidityScore   : Double = (cameraScore.humidityScore   * cameraWeight) + (remoteScore.humidityScore   * remoteWeight)
-        let blendedVisibilityScore : Double = (cameraScore.visibilityScore * cameraWeight) + (remoteScore.visibilityScore * remoteWeight)
-        let blendedComposite       : Double = min(1.0, max(0.0, (cameraScore.composite * cameraWeight) + (remoteScore.composite * remoteWeight)))
+            // Prefix remote reasoning so the photographer can distinguish
+            // which conditions are local vs in the sun's direction
+            let remoteReasoning = remoteScore.reasoning.map {
+                "At \(Int(remoteWeightFraction * 100))km: \($0)"
+            }
+        let combinedReasoning : Array<String> = cameraScore.reasoning + remoteReasoning
+
+        var composite = (blendedCloudScore * 0.45) + (blendedHumidityScore * 0.30) + (blendedVisibilityScore * 0.25)
+        composite = min(1.0, max(0.0, composite))
 
         let grade: SunriseSunsetScore.Grade
-        switch blendedComposite {
+        switch composite {
             case ..<0.30     : grade = .poor
             case 0.30..<0.48 : grade = .fair
             case 0.48..<0.64 : grade = .good
@@ -45,19 +51,16 @@ actor SunriseSunsetPredictor {
             default          : grade = .grand
         }
 
-        let combinedReasoning = cameraScore.reasoning + remoteScore.reasoning.map { "Remote: \($0)" }
-
-        return SunriseSunsetScore(overall: grade, composite: blendedComposite, cloudScore: blendedCloudScore, humidityScore: blendedHumidityScore, visibilityScore: blendedVisibilityScore, reasoning: combinedReasoning)
+        return SunriseSunsetScore(overall: grade, composite: composite, cloudScore: blendedCloudScore, humidityScore: blendedHumidityScore, visibilityScore: blendedVisibilityScore, reasoning: combinedReasoning)
     }
-
-    // Blends camera, near (prominent cloud zone) and far (gateway zone) scores using the fixed weighting. Normalises by the total weight actually used so it degrades gracefully if a remote score is nil.
+    
     func blendThreePointScores(cameraScore: SunriseSunsetScore, nearScore: SunriseSunsetScore?, farScore: SunriseSunsetScore?) -> SunriseSunsetScore {
-        var weightedCloud      : Double        = cameraScore.cloudScore      * SunriseSunsetPredictor.cameraBlendWeight
-        var weightedHumidity   : Double        = cameraScore.humidityScore   * SunriseSunsetPredictor.cameraBlendWeight
-        var weightedVisibility : Double        = cameraScore.visibilityScore * SunriseSunsetPredictor.cameraBlendWeight
-        var weightedComposite  : Double        = cameraScore.composite       * SunriseSunsetPredictor.cameraBlendWeight
-        var totalWeight        : Double        = SunriseSunsetPredictor.cameraBlendWeight
-        var combinedReasoning  : Array<String> = cameraScore.reasoning
+        var weightedCloud      : Double   = cameraScore.cloudScore      * SunriseSunsetPredictor.cameraBlendWeight
+        var weightedHumidity   : Double   = cameraScore.humidityScore   * SunriseSunsetPredictor.cameraBlendWeight
+        var weightedVisibility : Double   = cameraScore.visibilityScore * SunriseSunsetPredictor.cameraBlendWeight
+        var weightedComposite  : Double   = cameraScore.composite       * SunriseSunsetPredictor.cameraBlendWeight
+        var totalWeight        : Double   = SunriseSunsetPredictor.cameraBlendWeight
+        var combinedReasoning  : [String] = cameraScore.reasoning
 
         if let nearScore {
             weightedCloud      += nearScore.cloudScore      * SunriseSunsetPredictor.nearBlendWeight
@@ -72,7 +75,7 @@ actor SunriseSunsetPredictor {
             weightedCloud      += farScore.cloudScore      * SunriseSunsetPredictor.farBlendWeight
             weightedHumidity   += farScore.humidityScore   * SunriseSunsetPredictor.farBlendWeight
             weightedVisibility += farScore.visibilityScore * SunriseSunsetPredictor.farBlendWeight
-            weightedComposite  += farScore.composite        * SunriseSunsetPredictor.farBlendWeight
+            weightedComposite  += farScore.composite       * SunriseSunsetPredictor.farBlendWeight
             totalWeight        += SunriseSunsetPredictor.farBlendWeight
             combinedReasoning  += farScore.reasoning.map { "Far: \($0)" }
         }
@@ -98,168 +101,189 @@ actor SunriseSunsetPredictor {
     
     // Fetches weather at the camera location plus four remote points: near + far in the direction of sunrise, and near + far in the direction of sunset, then blends the three relevant points per event (camera + near + far) for a more accurate prediction.
     func getBlendedDailyTimeline(at cameraLocation: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, configuration: RemoteWeatherConfiguration = SunriseSunsetPredictor.inland) async throws -> BlendedDailyQualityTimeline {
+        let timeZone : TimeZone = await Helper.fetchTimeZone(for: cameraLocation)
+        var calendar : Calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timeZone
 
-    let timeZone : TimeZone = await Helper.fetchTimeZone(for: cameraLocation)
-    var calendar : Calendar = Calendar(identifier: .gregorian)
-    calendar.timeZone = timeZone
+        let startOfDay = calendar.startOfDay(for: date)
+        let endOfDay   = startOfDay.addingTimeInterval(86400)
 
-    let startOfDay = calendar.startOfDay(for: date)
-    let endOfDay   = startOfDay.addingTimeInterval(86400)
+        // Calculate approximate sunrise and sunset times by finding
+        // when the sun crosses the horizon during the day
+        let approximateSunriseTime : Date? = calcApproximateHorizonCrossingTime(at: cameraLocation, startOfDay: startOfDay, lookingForRising: true)
+        let approximateSunsetTime  : Date? = calcApproximateHorizonCrossingTime(at: cameraLocation, startOfDay: startOfDay, lookingForRising: false)
 
-    // Calculate approximate sunrise and sunset times by finding
-    // when the sun crosses the horizon during the day
-    let approximateSunriseTime : Date? = calcApproximateHorizonCrossingTime(at: cameraLocation, startOfDay: startOfDay, lookingForRising: true)
-    let approximateSunsetTime  : Date? = calcApproximateHorizonCrossingTime(at: cameraLocation, startOfDay: startOfDay, lookingForRising: false)
+        // Calculate sun azimuths at sunrise and sunset
+        let sunriseAzimuth : Double = approximateSunriseTime.map { SolarCalculator.calcSunPosition(at: cameraLocation, time: $0).azimuth } ?? 90.0   // default to east if no sunrise found
+        let sunsetAzimuth  : Double = approximateSunsetTime.map  { SolarCalculator.calcSunPosition(at: cameraLocation, time: $0).azimuth } ?? 270.0  // default to west if no sunset found
 
-    // Calculate sun azimuths at sunrise and sunset
-    let sunriseAzimuth : Double = approximateSunriseTime.map { SolarCalculator.calcSunPosition(at: cameraLocation, time: $0).azimuth } ?? 90.0   // default to east if no sunrise found
-    let sunsetAzimuth  : Double = approximateSunsetTime.map  { SolarCalculator.calcSunPosition(at: cameraLocation, time: $0).azimuth } ?? 270.0  // default to west if no sunset found
+        // Calculate the four remote coordinates: near + far toward each event
+        let sunriseNearCoordinate : CLLocationCoordinate2D = await cameraLocation.coordinateByOffsetting(distanceKilometres: configuration.nearSamplingDistanceKilometres, bearingDegrees: sunriseAzimuth)
+        let sunriseFarCoordinate  : CLLocationCoordinate2D = await cameraLocation.coordinateByOffsetting(distanceKilometres: configuration.farSamplingDistanceKilometres,  bearingDegrees: sunriseAzimuth)
+        let sunsetNearCoordinate  : CLLocationCoordinate2D = await cameraLocation.coordinateByOffsetting(distanceKilometres: configuration.nearSamplingDistanceKilometres, bearingDegrees: sunsetAzimuth)
+        let sunsetFarCoordinate   : CLLocationCoordinate2D = await cameraLocation.coordinateByOffsetting(distanceKilometres: configuration.farSamplingDistanceKilometres,  bearingDegrees: sunsetAzimuth)
 
-    // Calculate the four remote coordinates: near + far toward each event
-    let sunriseNearCoordinate : CLLocationCoordinate2D = await cameraLocation.coordinateByOffsetting(distanceKilometres: configuration.nearSamplingDistanceKilometres, bearingDegrees: sunriseAzimuth)
-    let sunriseFarCoordinate  : CLLocationCoordinate2D = await cameraLocation.coordinateByOffsetting(distanceKilometres: configuration.farSamplingDistanceKilometres,  bearingDegrees: sunriseAzimuth)
-    let sunsetNearCoordinate  : CLLocationCoordinate2D = await cameraLocation.coordinateByOffsetting(distanceKilometres: configuration.nearSamplingDistanceKilometres, bearingDegrees: sunsetAzimuth)
-    let sunsetFarCoordinate   : CLLocationCoordinate2D = await cameraLocation.coordinateByOffsetting(distanceKilometres: configuration.farSamplingDistanceKilometres,  bearingDegrees: sunsetAzimuth)
+        let cameraCLLocation      : CLLocation = CLLocation(latitude: cameraLocation.latitude,          longitude: cameraLocation.longitude)
+        let sunriseNearLocation   : CLLocation = CLLocation(latitude: sunriseNearCoordinate.latitude,   longitude: sunriseNearCoordinate.longitude)
+        let sunriseFarLocation    : CLLocation = CLLocation(latitude: sunriseFarCoordinate.latitude,    longitude: sunriseFarCoordinate.longitude)
+        let sunsetNearLocation    : CLLocation = CLLocation(latitude: sunsetNearCoordinate.latitude,    longitude: sunsetNearCoordinate.longitude)
+        let sunsetFarLocation     : CLLocation = CLLocation(latitude: sunsetFarCoordinate.latitude,     longitude: sunsetFarCoordinate.longitude)
+            
+        // Fetch all five forecasts in parallel
+        async let cameraForecastTask      = weatherService.weather(for: cameraCLLocation,    including: .hourly(startDate: startOfDay, endDate: endOfDay))
+        async let sunriseNearForecastTask = weatherService.weather(for: sunriseNearLocation, including: .hourly(startDate: startOfDay, endDate: endOfDay))
+        async let sunriseFarForecastTask  = weatherService.weather(for: sunriseFarLocation,  including: .hourly(startDate: startOfDay, endDate: endOfDay))
+        async let sunsetNearForecastTask  = weatherService.weather(for: sunsetNearLocation,  including: .hourly(startDate: startOfDay, endDate: endOfDay))
+        async let sunsetFarForecastTask   = weatherService.weather(for: sunsetFarLocation,   including: .hourly(startDate: startOfDay, endDate: endOfDay))
 
-    let cameraCLLocation      : CLLocation = CLLocation(latitude: cameraLocation.latitude,          longitude: cameraLocation.longitude)
-    let sunriseNearLocation   : CLLocation = CLLocation(latitude: sunriseNearCoordinate.latitude,   longitude: sunriseNearCoordinate.longitude)
-    let sunriseFarLocation    : CLLocation = CLLocation(latitude: sunriseFarCoordinate.latitude,    longitude: sunriseFarCoordinate.longitude)
-    let sunsetNearLocation    : CLLocation = CLLocation(latitude: sunsetNearCoordinate.latitude,    longitude: sunsetNearCoordinate.longitude)
-    let sunsetFarLocation     : CLLocation = CLLocation(latitude: sunsetFarCoordinate.latitude,     longitude: sunsetFarCoordinate.longitude)
-        
-    // Fetch all five forecasts in parallel
-    async let cameraForecastTask      = weatherService.weather(for: cameraCLLocation,    including: .hourly(startDate: startOfDay, endDate: endOfDay))
-    async let sunriseNearForecastTask = weatherService.weather(for: sunriseNearLocation, including: .hourly(startDate: startOfDay, endDate: endOfDay))
-    async let sunriseFarForecastTask  = weatherService.weather(for: sunriseFarLocation,  including: .hourly(startDate: startOfDay, endDate: endOfDay))
-    async let sunsetNearForecastTask  = weatherService.weather(for: sunsetNearLocation,  including: .hourly(startDate: startOfDay, endDate: endOfDay))
-    async let sunsetFarForecastTask   = weatherService.weather(for: sunsetFarLocation,   including: .hourly(startDate: startOfDay, endDate: endOfDay))
+        let (cameraForecast, sunriseNearForecast, sunriseFarForecast, sunsetNearForecast, sunsetFarForecast) = try await (cameraForecastTask, sunriseNearForecastTask, sunriseFarForecastTask, sunsetNearForecastTask, sunsetFarForecastTask)
 
-    let (cameraForecast, sunriseNearForecast, sunriseFarForecast, sunsetNearForecast, sunsetFarForecast) = try await (cameraForecastTask, sunriseNearForecastTask, sunriseFarForecastTask, sunsetNearForecastTask, sunsetFarForecastTask)
+        // Filter to the requested day
+        let cameraHours      : [HourWeather] = cameraForecast.forecast.filter      { $0.date >= startOfDay && $0.date < endOfDay }
+        let sunriseNearHours : [HourWeather] = sunriseNearForecast.forecast.filter { $0.date >= startOfDay && $0.date < endOfDay }
+        let sunriseFarHours  : [HourWeather] = sunriseFarForecast.forecast.filter  { $0.date >= startOfDay && $0.date < endOfDay }
+        let sunsetNearHours  : [HourWeather] = sunsetNearForecast.forecast.filter  { $0.date >= startOfDay && $0.date < endOfDay }
+        let sunsetFarHours   : [HourWeather] = sunsetFarForecast.forecast.filter   { $0.date >= startOfDay && $0.date < endOfDay }
 
-    // Filter to the requested day
-    let cameraHours      : [HourWeather] = cameraForecast.forecast.filter      { $0.date >= startOfDay && $0.date < endOfDay }
-    let sunriseNearHours : [HourWeather] = sunriseNearForecast.forecast.filter { $0.date >= startOfDay && $0.date < endOfDay }
-    let sunriseFarHours  : [HourWeather] = sunriseFarForecast.forecast.filter  { $0.date >= startOfDay && $0.date < endOfDay }
-    let sunsetNearHours  : [HourWeather] = sunsetNearForecast.forecast.filter  { $0.date >= startOfDay && $0.date < endOfDay }
-    let sunsetFarHours   : [HourWeather] = sunsetFarForecast.forecast.filter   { $0.date >= startOfDay && $0.date < endOfDay }
+        guard !cameraHours.isEmpty else { throw PredictionError.noForecastData }
 
-    guard !cameraHours.isEmpty else { throw PredictionError.noForecastData }
-
-    // Find indices of slots that bracket horizon crossings
-    var horizonBracketIndices: Set<Int> = []
-    for index in 1..<cameraHours.count {
-        let previousAltitude  : Double = SolarCalculator.calcSunPosition(at: cameraLocation, time: cameraHours[index - 1].date).altitude
-        let currentAltitude   : Double = SolarCalculator.calcSunPosition(at: cameraLocation, time: cameraHours[index].date).altitude
-        let isRisingCrossing  : Bool   = previousAltitude < 0 && currentAltitude >= 0
-        let isSettingCrossing : Bool   = previousAltitude >= 0 && currentAltitude < 0
-        if isRisingCrossing || isSettingCrossing {
-            horizonBracketIndices.insert(index - 1)
-            horizonBracketIndices.insert(index)
-        }
-    }
-
-    // Determine solar noon to split sunrise and sunset halves
-    let solarNoonTime = getSolarNoonTime(at: cameraLocation, startOfDay: startOfDay)
-
-    // Build blended slots
-    let slots: [BlendedDailyQualityTimeline.BlendedHourSlot] = cameraHours.enumerated().map { index, cameraHour in
-
-        let currentSunPosition  : SunPosition          = SolarCalculator.calcSunPosition(at: cameraLocation, time: cameraHour.date)
-        let directionalContext  : DirectionalCloudInfo = getDirectionalInfo(sunAzimuth: currentSunPosition.azimuth, shootAzimuth: shootAzimuth)
-
-        let isBracketingHorizon : Bool                 = horizonBracketIndices.contains(index)
-        let isSunUp             : Bool                 = currentSunPosition.altitude > -6 || isBracketingHorizon
-        let isGoldenHour        : Bool                 = (currentSunPosition.altitude >= -6 && currentSunPosition.altitude <= 12) || isBracketingHorizon
-
-        // Use altitude 2° for bracketing slots so they score as peak golden hour regardless of their measured altitude
-        let scoringAltitude     : Double               = isBracketingHorizon ? 2.0 : currentSunPosition.altitude
-
-        guard isSunUp else {
-            return BlendedDailyQualityTimeline.BlendedHourSlot(time: cameraHour.date, blendedScore: nil, cameraLocationScore: nil,
-                                                               remoteLocationScore: nil, sunAltitude: currentSunPosition.altitude,
-                                                               sunAzimuth: currentSunPosition.azimuth, isSunUp: false, isGoldenHour: false)
+        // Find indices of slots that bracket horizon crossings
+        var horizonBracketIndices: Set<Int> = []
+        for index in 1..<cameraHours.count {
+            let previousAltitude  : Double = SolarCalculator.calcSunPosition(at: cameraLocation, time: cameraHours[index - 1].date).altitude
+            let currentAltitude   : Double = SolarCalculator.calcSunPosition(at: cameraLocation, time: cameraHours[index].date).altitude
+            let isRisingCrossing  : Bool   = previousAltitude < 0 && currentAltitude >= 0
+            let isSettingCrossing : Bool   = previousAltitude >= 0 && currentAltitude < 0
+            if isRisingCrossing || isSettingCrossing {
+                horizonBracketIndices.insert(index - 1)
+                horizonBracketIndices.insert(index)
+            }
         }
 
-        // Score at camera location
-        let cameraLocalWindow   = cameraForecast.forecast.filter { abs($0.date.timeIntervalSince(cameraHour.date)) <= 3600 }
-        let cameraLocationScore = calcScore(window: cameraLocalWindow, primary: cameraHour, event: SolarEvent(time: cameraHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude)
+        // Determine solar noon to split sunrise and sunset halves
+        let solarNoonTime = getSolarNoonTime(at: cameraLocation, startOfDay: startOfDay)
 
-        // Choose the correct near/far forecasts based on whether this slot is in the sunrise or sunset half of the day
-        let isInSunriseHalf  : Bool                  = cameraHour.date < solarNoonTime
-
-        let nearHours        : [HourWeather]         = isInSunriseHalf ? sunriseNearHours    : sunsetNearHours
-        let farHours         : [HourWeather]         = isInSunriseHalf ? sunriseFarHours     : sunsetFarHours
-        let nearForecastFull : Forecast<HourWeather> = isInSunriseHalf ? sunriseNearForecast : sunsetNearForecast
-        let farForecastFull  : Forecast<HourWeather> = isInSunriseHalf ? sunriseFarForecast  : sunsetFarForecast
-
-        // Near point score (prominent cloud zone)
-        let nearLocationScore: SunriseSunsetScore? = nearHours
-            .min(by: { abs($0.date.timeIntervalSince(cameraHour.date)) < abs($1.date.timeIntervalSince(cameraHour.date)) })
-            .map { nearHour in
-                let nearLocalWindow : [HourWeather] = nearForecastFull.forecast.filter { abs($0.date.timeIntervalSince(nearHour.date)) <= 3600 }
-                return calcScore(window: nearLocalWindow, primary: nearHour, event: SolarEvent(time: nearHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude)
-            }
-
-        // Far point score (gateway zone)
-        let farLocationScore: SunriseSunsetScore? = farHours
-            .min(by: { abs($0.date.timeIntervalSince(cameraHour.date)) < abs($1.date.timeIntervalSince(cameraHour.date)) })
-            .map { farHour in
-                let farLocalWindow : [HourWeather] = farForecastFull.forecast.filter { abs($0.date.timeIntervalSince(farHour.date)) <= 3600 }
-                return calcScore(window: farLocalWindow, primary: farHour, event: SolarEvent(time: farHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude)
-            }
-
-        // Blend the three points (camera + near + far)
-        var blendedScore : SunriseSunsetScore = blendThreePointScores(cameraScore: cameraLocationScore, nearScore: nearLocationScore, farScore: farLocationScore)
+        // Build blended slots
+        var slots: [BlendedDailyQualityTimeline.BlendedHourSlot] = []
+        slots.reserveCapacity(cameraHours.count)
         
-        // Apply atmospheric tendency bonus from the camera forecast
-        let atmosphericTendency : AtmosphericTendency = getAtmosphericTendency(from: cameraForecast.forecast, at: cameraHour.date)
-        if atmosphericTendency.tendencyBonus > 0 {
-            var updatedReasons = blendedScore.reasoning
-            if atmosphericTendency.isPostFrontal         { updatedReasons.append("Post-frontal clearing: exceptional light possible") }
-            if atmosphericTendency.isPressureRising      { updatedReasons.append("Rising pressure: atmosphere clearing") }
-            if atmosphericTendency.isConditionsImproving { updatedReasons.append("Improving conditions: cloud cover decreasing") }
+        for (index, cameraHour) in cameraHours.enumerated() {
+            let currentSunPosition  : SunPosition          = SolarCalculator.calcSunPosition(at: cameraLocation, time: cameraHour.date)
+            let directionalContext  : DirectionalCloudInfo = getDirectionalInfo(sunAzimuth: currentSunPosition.azimuth, shootAzimuth: shootAzimuth)
 
-            let upgradedGrade = upgradeGradeIfNeeded(blendedScore.overall, bonus: atmosphericTendency.tendencyBonus)
+            let isBracketingHorizon : Bool                 = horizonBracketIndices.contains(index)
+            let isSunUp             : Bool                 = currentSunPosition.altitude > -6 || isBracketingHorizon
+            let isGoldenHour        : Bool                 = (currentSunPosition.altitude >= -6 && currentSunPosition.altitude <= 12) || isBracketingHorizon
 
-            // If the grade was upgraded, nudge the composite into the new
-            // band so the stored value stays consistent with the displayed
-            // grade. If no upgrade happened, leave composite untouched.
-            let upgradedComposite: Double
-            if upgradedGrade != blendedScore.overall {
-                let bandFloor: Double
-                switch upgradedGrade {
-                    case .poor  : bandFloor = 0.0
-                    case .fair  : bandFloor = 0.30
-                    case .good  : bandFloor = 0.48
-                    case .great : bandFloor = 0.64
-                    case .grand : bandFloor = 0.80
+            // Use altitude 2° for bracketing slots so they score as peak golden hour regardless of their measured altitude
+            let scoringAltitude     : Double               = isBracketingHorizon ? 2.0 : currentSunPosition.altitude
+
+            guard isSunUp else {
+                slots.append(BlendedDailyQualityTimeline.BlendedHourSlot(time: cameraHour.date, blendedScore: nil, cameraLocationScore: nil,
+                                                                   remoteLocationScore: nil, sunAltitude: currentSunPosition.altitude,
+                                                                   sunAzimuth: currentSunPosition.azimuth, isSunUp: false, isGoldenHour: false))
+                continue
+            }
+
+            // Score at camera location
+            let cameraLocalWindow   = cameraForecast.forecast.filter { abs($0.date.timeIntervalSince(cameraHour.date)) <= 3600 }
+            let cameraLocationScore = calcScore(window: cameraLocalWindow, primary: cameraHour, event: SolarEvent(time: cameraHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude)
+
+            // Choose the correct near/far forecasts based on whether this slot is in the sunrise or sunset half of the day
+            let isInSunriseHalf  : Bool                  = cameraHour.date < solarNoonTime
+
+            let nearHours        : [HourWeather]         = isInSunriseHalf ? sunriseNearHours    : sunsetNearHours
+            let farHours         : [HourWeather]         = isInSunriseHalf ? sunriseFarHours     : sunsetFarHours
+            let nearForecastFull : Forecast<HourWeather> = isInSunriseHalf ? sunriseNearForecast : sunsetNearForecast
+            let farForecastFull  : Forecast<HourWeather> = isInSunriseHalf ? sunriseFarForecast  : sunsetFarForecast
+
+            // Near point score (prominent cloud zone)
+            let nearLocationScore: SunriseSunsetScore? = nearHours
+                .min(by: { abs($0.date.timeIntervalSince(cameraHour.date)) < abs($1.date.timeIntervalSince(cameraHour.date)) })
+                .map { nearHour in
+                    let nearLocalWindow : [HourWeather] = nearForecastFull.forecast.filter { abs($0.date.timeIntervalSince(nearHour.date)) <= 3600 }
+                    return calcScore(window: nearLocalWindow, primary: nearHour, event: SolarEvent(time: nearHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude)
                 }
-                upgradedComposite = min(1.0, bandFloor + 0.02)
-            } else {
-                upgradedComposite = blendedScore.composite
+
+            // Far point score (gateway zone)
+            let farLocationScore: SunriseSunsetScore? = farHours
+                .min(by: { abs($0.date.timeIntervalSince(cameraHour.date)) < abs($1.date.timeIntervalSince(cameraHour.date)) })
+                .map { farHour in
+                    let farLocalWindow : [HourWeather] = farForecastFull.forecast.filter { abs($0.date.timeIntervalSince(farHour.date)) <= 3600 }
+                    return calcScore(window: farLocalWindow, primary: farHour, event: SolarEvent(time: farHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude)
+                }
+
+            // Blend the three points (camera + near + far)
+            var blendedScore : SunriseSunsetScore = blendThreePointScores(cameraScore: cameraLocationScore, nearScore: nearLocationScore, farScore: farLocationScore)
+
+            // nowcast override block
+            if let nowcast = await nowcastChecker.checkConditions(at: cameraLocation, for: cameraHour.date), await nowcast.shouldOverridePrediction {
+                let cappedComposite : Double                   = min(blendedScore.composite, 0.25)
+                let cappedGrade     : SunriseSunsetScore.Grade = cappedComposite < 0.30 ? .poor : .fair
+                var reasons         : [String]                 = blendedScore.reasoning
+                await reasons.append(nowcast.overrideReason)
+                blendedScore = SunriseSunsetScore(
+                    overall         : cappedGrade,
+                    composite       : cappedComposite,
+                    cloudScore      : blendedScore.cloudScore,
+                    humidityScore   : blendedScore.humidityScore,
+                    visibilityScore : blendedScore.visibilityScore,
+                    reasoning       : reasons
+                )
             }
 
-            blendedScore = SunriseSunsetScore(overall : upgradedGrade, composite : upgradedComposite, cloudScore : blendedScore.cloudScore, humidityScore : blendedScore.humidityScore, visibilityScore : blendedScore.visibilityScore, reasoning : updatedReasons)
+            // Apply atmospheric tendency bonus from the camera forecast
+            let atmosphericTendency : AtmosphericTendency = getAtmosphericTendency(from: cameraForecast.forecast, at: cameraHour.date)
+            if atmosphericTendency.tendencyBonus > 0 {
+                var updatedReasons = blendedScore.reasoning
+                if atmosphericTendency.isPostFrontal         { updatedReasons.append("Post-frontal clearing: exceptional light possible") }
+                if atmosphericTendency.isPressureRising      { updatedReasons.append("Rising pressure: atmosphere clearing") }
+                if atmosphericTendency.isConditionsImproving { updatedReasons.append("Improving conditions: cloud cover decreasing") }
+
+                let upgradedGrade     = upgradeGradeIfNeeded(blendedScore.overall, bonus: atmosphericTendency.tendencyBonus)
+                let upgradedComposite : Double
+                if upgradedGrade != blendedScore.overall {
+                    let bandFloor: Double
+                    switch upgradedGrade {
+                        case .poor  : bandFloor = 0.00
+                        case .fair  : bandFloor = 0.30
+                        case .good  : bandFloor = 0.48
+                        case .great : bandFloor = 0.64
+                        case .grand : bandFloor = 0.80
+                    }
+                    upgradedComposite = min(1.0, bandFloor + 0.02)
+                } else {
+                    upgradedComposite = blendedScore.composite
+                }
+
+                blendedScore = SunriseSunsetScore(overall: upgradedGrade, composite: upgradedComposite, cloudScore: blendedScore.cloudScore, humidityScore: blendedScore.humidityScore, visibilityScore: blendedScore.visibilityScore, reasoning: updatedReasons
+                )
+            }
+            
+            slots.append(BlendedDailyQualityTimeline.BlendedHourSlot(
+                time:                cameraHour.date,
+                blendedScore:        blendedScore,
+                cameraLocationScore: cameraLocationScore,
+                remoteLocationScore: nearLocationScore,
+                sunAltitude:         currentSunPosition.altitude,
+                sunAzimuth:          currentSunPosition.azimuth,
+                isSunUp:             isSunUp,
+                isGoldenHour:        isGoldenHour
+            ))
         }
         
-        // Expose the near score as the representative remote score for the overlay
-        return BlendedDailyQualityTimeline.BlendedHourSlot(time: cameraHour.date, blendedScore: blendedScore, cameraLocationScore: cameraLocationScore,
-                                                           remoteLocationScore: nearLocationScore, sunAltitude: currentSunPosition.altitude,
-                                                           sunAzimuth: currentSunPosition.azimuth, isSunUp: isSunUp, isGoldenHour: isGoldenHour)
+        let bestSunrise = slots
+            .filter { $0.time < solarNoonTime && $0.isGoldenHour && $0.blendedScore != nil }
+            .max { gradeValue($0.blendedScore!.overall) < gradeValue($1.blendedScore!.overall) }
+
+        let bestSunset = slots
+            .filter { $0.time >= solarNoonTime && $0.isGoldenHour && $0.blendedScore != nil }
+            .max { gradeValue($0.blendedScore!.overall) < gradeValue($1.blendedScore!.overall) }
+
+        // Report the near coordinates as the representative sample points
+        return BlendedDailyQualityTimeline(date: date, slots: slots, bestSunrise: bestSunrise, bestSunset: bestSunset, timeZone: timeZone,
+                                           sunriseRemoteCoordinate: sunriseNearCoordinate, sunsetRemoteCoordinate: sunsetNearCoordinate)
     }
-
-    let bestSunrise = slots
-        .filter { $0.time < solarNoonTime && $0.isGoldenHour && $0.blendedScore != nil }
-        .max { gradeValue($0.blendedScore!.overall) < gradeValue($1.blendedScore!.overall) }
-
-    let bestSunset = slots
-        .filter { $0.time >= solarNoonTime && $0.isGoldenHour && $0.blendedScore != nil }
-        .max { gradeValue($0.blendedScore!.overall) < gradeValue($1.blendedScore!.overall) }
-
-    // Report the near coordinates as the representative sample points
-    return BlendedDailyQualityTimeline(date: date, slots: slots, bestSunrise: bestSunrise, bestSunset: bestSunset, timeZone: timeZone,
-                                       sunriseRemoteCoordinate: sunriseNearCoordinate, sunsetRemoteCoordinate: sunsetNearCoordinate)
-}
             
     func getDirectionalInfo(sunAzimuth: Double, shootAzimuth: Double) -> DirectionalCloudInfo {
         var diff = (shootAzimuth - sunAzimuth).truncatingRemainder(dividingBy: 360)
@@ -523,10 +547,9 @@ actor SunriseSunsetPredictor {
 
         // Apply humidity cap
         composite = min(composite, humidityCap)
-
-        // Altitude proximity: applied last as a hard multiplier
+        
+        // Altitude proximity: applied last as a hard multiplier so midday hours can never score well regardless of conditions
         composite *= altitudeScore
-
         composite = min(1.0, max(0.0, composite))
 
         let grade: SunriseSunsetScore.Grade
