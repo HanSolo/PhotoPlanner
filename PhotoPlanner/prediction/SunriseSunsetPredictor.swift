@@ -15,6 +15,7 @@ actor SunriseSunsetPredictor {
     
     private let weatherService   : WeatherService             = WeatherService.shared
     private let nowcastChecker   : NowcastChecker             = NowcastChecker()
+    private let tomorrowIOClient : TomorrowIOClient           = TomorrowIOClient()
     
     static let coastal           : RemoteWeatherConfiguration = RemoteWeatherConfiguration(nearSamplingDistanceKilometres: 45, farSamplingDistanceKilometres: 90)
     static let inland            : RemoteWeatherConfiguration = RemoteWeatherConfiguration(nearSamplingDistanceKilometres: 35, farSamplingDistanceKilometres: 70)
@@ -99,6 +100,9 @@ actor SunriseSunsetPredictor {
     // Fetches weather at the camera location plus four remote points: near + far in the direction of sunrise, and near + far in the direction of sunset, then blends the three relevant points per event (camera + near + far) for a more accurate prediction.
     func getBlendedDailyTimeline(at cameraLocation: CLLocationCoordinate2D, on date: Date, shootAzimuth: Double, configuration: RemoteWeatherConfiguration = SunriseSunsetPredictor.inland) async throws -> BlendedDailyQualityTimeline {
 
+        let tomorrowConditions = await tomorrowIOClient.conditions(at: cameraLocation, time: date)
+        let cloudBaseMeters    = await tomorrowConditions?.cloudBaseMeters
+        
         let timeZone : TimeZone = await Helper.fetchTimeZone(for: cameraLocation)
         var calendar : Calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
@@ -185,7 +189,7 @@ actor SunriseSunsetPredictor {
 
             // Score at camera location
             let cameraLocalWindow   = cameraForecast.forecast.filter { abs($0.date.timeIntervalSince(cameraHour.date)) <= 3600 }
-            let cameraLocationScore = calcScore(window: cameraLocalWindow, primary: cameraHour, event: SolarEvent(time: cameraHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude)
+            let cameraLocationScore = calcScore(window: cameraLocalWindow, primary: cameraHour, event: SolarEvent(time: cameraHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude, cloudBaseMeters: cloudBaseMeters)
 
             // Choose the correct near/far forecasts based on whether this slot is in the sunrise or sunset half of the day
             let isInSunriseHalf  : Bool                  = cameraHour.date < solarNoonTime
@@ -200,7 +204,7 @@ actor SunriseSunsetPredictor {
                 .min(by: { abs($0.date.timeIntervalSince(cameraHour.date)) < abs($1.date.timeIntervalSince(cameraHour.date)) })
                 .map { nearHour in
                     let nearLocalWindow : [HourWeather] = nearForecastFull.forecast.filter { abs($0.date.timeIntervalSince(nearHour.date)) <= 3600 }
-                    return calcScore(window: nearLocalWindow, primary: nearHour, event: SolarEvent(time: nearHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude)
+                    return calcScore(window: nearLocalWindow, primary: nearHour, event: SolarEvent(time: nearHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude, cloudBaseMeters: cloudBaseMeters)
                 }
 
             // Far point score (gateway zone)
@@ -208,7 +212,7 @@ actor SunriseSunsetPredictor {
                 .min(by: { abs($0.date.timeIntervalSince(cameraHour.date)) < abs($1.date.timeIntervalSince(cameraHour.date)) })
                 .map { farHour in
                     let farLocalWindow : [HourWeather] = farForecastFull.forecast.filter { abs($0.date.timeIntervalSince(farHour.date)) <= 3600 }
-                    return calcScore(window: farLocalWindow, primary: farHour, event: SolarEvent(time: farHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude)
+                    return calcScore(window: farLocalWindow, primary: farHour, event: SolarEvent(time: farHour.date, type: .goldenHour), directional: directionalContext, sunAltitude: scoringAltitude, cloudBaseMeters: cloudBaseMeters)
                 }
 
             // Blend the three points (camera + near + far)
@@ -327,9 +331,9 @@ actor SunriseSunsetPredictor {
         return AtmosphericTendency(isPressureRising: isPressureRising, isPostFrontal: isPostFrontal, isConditionsImproving: isConditionsImproving, tendencyBonus: min(0.20, tendencyBonus))
     }
     
-    func calcScore(window: [HourWeather], primary: HourWeather, event: SolarEvent, directional: DirectionalCloudInfo, sunAltitude: Double) -> SunriseSunsetScore {
+    func calcScore(window: [HourWeather], primary: HourWeather, event: SolarEvent, directional: DirectionalCloudInfo, sunAltitude: Double, cloudBaseMeters: Double?) -> SunriseSunsetScore {
         var reasons: [String] = []
-                
+                    
         // Directional context
         switch directional.angularDifference {
             case ..<45    : reasons.append("Shooting toward sun: backlit, lens flare risk")
@@ -364,12 +368,16 @@ actor SunriseSunsetPredictor {
         //   - Visibility > 8km, can see the illuminated cloud layer
         //   - Humidity < 0.88, not so humid that fog obscures everything
         //   - Shooting toward or perpendicular to sun, not away from it
+        let cloudBaseOk        : Bool = {
+            guard let baseM = cloudBaseMeters else { return true }  // no data = don't penalise
+            return baseM >= 150 && baseM <= 2500
+        }()
         let isGoldenHourWindow : Bool = sunAltitude >= -6 && sunAltitude <= 8
         let isSolidOvercast    : Bool = cloud > 0.70
         let visibilityOk       : Bool = visibilityKm > 8
         let humidityOk         : Bool = humidity < 0.88
         let directionOk        : Bool = !directional.shootingAwaySun
-        let isCloudCanvas      : Bool = isSolidOvercast && isGoldenHourWindow && visibilityOk && humidityOk && directionOk
+        let isCloudCanvas      : Bool = isSolidOvercast && isGoldenHourWindow && visibilityOk && humidityOk && directionOk && cloudBaseOk
 
         if isCloudCanvas {
             reasons.append("Cloud canvas detected: solid overcast may light up in orange-red")
