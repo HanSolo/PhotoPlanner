@@ -66,8 +66,7 @@ actor NowcastChecker {
                   http.statusCode == 200
             else { return nil }
  
-            let decoded = try JSONDecoder().decode(OWMResponse.self, from: data)
-            debugPrint("CrossChecked with OpenWeatherMap")
+            let decoded = try JSONDecoder().decode(OWMResponse.self, from: data)            
             return parse(decoded)
         } catch {
             return nil  // fail open
