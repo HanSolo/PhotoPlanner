@@ -367,7 +367,7 @@ actor SunriseSunsetPredictor {
         let isGoldenHourWindow : Bool = sunAltitude >= -6 && sunAltitude <= 8
         let isSolidOvercast    : Bool = cloud > 0.70
         let visibilityOk       : Bool = visibilityKm > 8
-        let humidityOk         : Bool = humidity < 0.95
+        let humidityOk         : Bool = humidity < 0.88
         let directionOk        : Bool = !directional.shootingAwaySun
         let isCloudCanvas      : Bool = isSolidOvercast && isGoldenHourWindow && visibilityOk && humidityOk && directionOk
 
@@ -396,7 +396,7 @@ actor SunriseSunsetPredictor {
                 default:
                     // Solid overcast toward sun, could be spectacular cloud canvas or could be flat grey nothing, depends on canvas detection
                     if isCloudCanvas {
-                        cloudScore = 0.90
+                        cloudScore = 0.75
                         reasons.append("Solid cloud canvas toward sun: entire sky may light up")
                     } else {
                         cloudScore = 0.10
@@ -443,7 +443,7 @@ actor SunriseSunsetPredictor {
         // the moisture amplifies the scattering of the low-angle light.
         let humidityScore: Double
         if isCloudCanvas && humidity >= 0.50 && humidity < 0.95 {
-            humidityScore = 0.75
+            humidityScore = 0.60
             reasons.append("Humid air with cloud canvas: intensified colour saturation likely")
         } else {
             switch humidity {
