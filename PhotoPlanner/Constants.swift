@@ -14,7 +14,7 @@ public class Constants {
     public static let APP_NAME                       : String        = "PhotoPlanner"
     public static let APP_GROUP_ID                   : String        = "group.eu.hansolo.PhotoPlanner"
     public static let CONTAINER_ID                   : String        = "iCloud.eu.hansolo.PhotoPlannerContainer"
-    
+
     public static let IS_IPAD                        : Bool          = UIDevice.current.userInterfaceIdiom == .pad
     
     public static let EARTH_RADIUS                   : Double        = 6_378_137.0 // in m
