@@ -13,8 +13,9 @@ import CoreLocation
 import MapKit
 
 struct WeatherOverlayView: View {
-    @State private var scrollOffset : CGFloat = 0
-        
+    @State    private var scrollOffset : CGFloat = 0
+    @State    private var showClouds   : Bool    = false
+    
     private var localCalendar : Calendar {
         var calendar      : Calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = weather.timeZone
@@ -25,6 +26,7 @@ struct WeatherOverlayView: View {
         return weather.hours.min { abs($0.date.timeIntervalSince(now)) < abs($1.date.timeIntervalSince(now)) }
     }
     
+    let viewModel  : WeatherOverlayViewModel
     let weather    : CachedDailyWeather
     let isOutdated : Bool
     let onRefresh  : () -> Void
@@ -102,7 +104,7 @@ struct WeatherOverlayView: View {
                     } else {
                         Text(fetchedAtString)
                             .font(.system(size: 8))
-                            .foregroundStyle(.white.opacity(0.35))
+                            .foregroundStyle(.white.opacity(0.35))                            
                     }
                 }
             }
@@ -145,10 +147,33 @@ struct WeatherOverlayView: View {
 
             HStack {
                 Image(systemName: "location.fill")
-                    .font(.system(size: 8))
+                    .font(.system(size: 9))
+                    .foregroundStyle(.white.opacity(0.5))
                 Text(locationString)
-                    .font(.system(size: 8))
+                    .font(.system(size: 9))
+                    .foregroundStyle(.white.opacity(0.5))
+                
                 Spacer()
+                
+                if let coord = viewModel.coordinate {
+                    Button {
+                        self.showClouds = true
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "cloud.fill")
+                                .font(.system(size: 9))
+                            Text("Clouds")
+                                .font(.system(size: 9))
+                        }
+                        .foregroundStyle(.white.opacity(0.5))
+                    }
+                    .sheet(isPresented: self.$showClouds) {
+                        CloudMapView(coordinate: coord, apiKey: "32cabca381ca632856caf5d3c7455abb")
+                    }
+                }
+                
+                Spacer()
+                
                 Button {
                     onRefresh()
                 } label: {
@@ -218,7 +243,6 @@ struct WeatherOverlayView: View {
         )
     }
 
-    
     private func hourString(from date: Date) -> String {
         var calendar      : Calendar = Calendar(identifier: .gregorian)
         calendar.timeZone            = weather.timeZone

@@ -24,6 +24,7 @@ class WeatherOverlayViewModel {
     }
     var error            : Error?
     var attributionInfo  : WeatherAttribution?
+    var coordinate       :  CLLocationCoordinate2D? = nil
 
     private let service = WeatherOverlayService()
 
@@ -40,6 +41,7 @@ class WeatherOverlayViewModel {
     
     func fetch(at location: CLLocationCoordinate2D, on date: Date, forceRefresh: Bool = false) async {
         let clLocation : CLLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
+        self.coordinate   = location
         // Check cache first
         if !forceRefresh,
            let cached = WeatherCacheStore.load(),

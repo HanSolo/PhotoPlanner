@@ -16,7 +16,7 @@ struct WeatherMapOverlayView: View {
 
     var body: some View {
         if viewModel.isVisible, let weather = viewModel.weather {
-            WeatherOverlayView(weather: weather, isOutdated: viewModel.isOutdated, onRefresh: onRefresh, onDismiss: { withAnimation { viewModel.dismiss() } })
+            WeatherOverlayView(viewModel: viewModel, weather: weather, isOutdated: viewModel.isOutdated, onRefresh: onRefresh, onDismiss: { withAnimation { viewModel.dismiss() } })
                 .padding(.horizontal, 12)
                 .padding(.bottom, 12)
                 .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .bottom)))

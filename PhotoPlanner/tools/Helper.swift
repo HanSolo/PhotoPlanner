@@ -322,6 +322,24 @@ public class Helper {
         }
     }
     
+    public static func boostCloudOpacity(_ image: UIImage, factor: CGFloat = 3.0) -> UIImage {
+        guard let ciImage = CIImage(image: image) else { return image }
+
+        // Multiply alpha channel by factor — clamps to 1.0 automatically
+        let alphaBoost = CIFilter(name: "CIColorMatrix")!
+        alphaBoost.setValue(ciImage, forKey: kCIInputImageKey)
+        // Identity matrix but boost the alpha row (row 3)
+        alphaBoost.setValue(CIVector(x: 1, y: 0, z: 0, w: 0), forKey: "inputRVector")
+        alphaBoost.setValue(CIVector(x: 0, y: 1, z: 0, w: 0), forKey: "inputGVector")
+        alphaBoost.setValue(CIVector(x: 0, y: 0, z: 1, w: 0), forKey: "inputBVector")
+        alphaBoost.setValue(CIVector(x: 0, y: 0, z: 0, w: factor), forKey: "inputAVector")  // multiply alpha by factor
+        alphaBoost.setValue(CIVector(x: 0, y: 0, z: 0, w: 0), forKey: "inputBiasVector")
+
+        guard let output  = alphaBoost.outputImage else { return image }
+        let       context = CIContext()
+        guard let cgImage = context.createCGImage(output, from: output.extent) else { return image }
+        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+    }
     
     public static func fetchTimeZone(for location: CLLocationCoordinate2D) async -> TimeZone {
         let request = MKReverseGeocodingRequest(location: CLLocation(latitude: location.latitude, longitude: location.longitude))
