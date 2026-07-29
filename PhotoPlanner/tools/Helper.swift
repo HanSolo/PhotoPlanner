@@ -353,6 +353,31 @@ public class Helper {
             return .current
         }
     }
+    
+    public static func formatAddress(name: String, address: Address) -> String {
+        var txt : String = "\(name)"
+        if !address.city.isEmpty {
+            if address.zip.isEmpty {
+                if address.city.lowercased() != name.lowercased() {
+                    txt += "\n\(address.city)"
+                }
+            } else {
+                txt += "\n\(address.zip) \(address.city)"
+            }
+        }
+        if !address.state.isEmpty {
+            if address.subState.isEmpty {
+                txt += "\n\(address.state)"
+            } else {
+                txt += "\n\(address.state) \(address.subState)"
+            }
+        }
+        if !address.country.isEmpty {
+            txt += "\n\(address.country)\(address.isoCode.isEmpty ? "" : " (\(address.isoCode))")"
+        }
+        
+        return txt
+    }
 }
 
 

@@ -22,9 +22,7 @@ struct ContentView: View {
     @State private var longExposureViewModel        : LongExposureViewModel   = LongExposureViewModel()
     @State private var weatherViewModel             : WeatherOverlayViewModel = WeatherOverlayViewModel()
     @State private var clarityViewModel             : MilkywaySkyClarityViewModel = MilkywaySkyClarityViewModel()
-    @State private var position                     : MapCameraPosition       = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,
-                                                                                                                                   longitude: Properties.instance.cameraLongitude!),
-                                                                                          distance: Properties.instance.distance!))
+    @State private var position                     : MapCameraPosition       = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
     @State private var modes                        : MapInteractionModes     = [.pan, .rotate, .zoom]
     @State private var cameraMarkerActive           : Bool                    = false
     @State private var subjectMarkerActive          : Bool                    = false
@@ -37,6 +35,7 @@ struct ContentView: View {
     @State private var addPhotoShootViewVisible     : Bool                    = false
     @State private var photoShootsViewVisible       : Bool                    = false
     @State private var settingsViewVisible          : Bool                    = false
+    @State private var searchViewVisible            : Bool                    = false
     @State private var datePickerVisible            : Bool                    = false
     @State private var sunsetPredictionVisible      : Bool                    = false
     @State private var moonPhaseVisible             : Bool                    = false
@@ -46,7 +45,9 @@ struct ContentView: View {
     @State private var fieldOfViewCalculatorVisible : Bool                    = false
     @State private var helpViewVisible              : Bool                    = false
     @State private var centerCameraPosition         : Bool                    = false
-        
+    
+    @ObservedObject var locationService             : LocationService         = LocationService()
+    
     @Query(sort: [SortDescriptor(\Camera.name,     comparator: .localizedStandard)]) private var cameras     : [Camera]
     @Query(sort: [SortDescriptor(\Lens.name,       comparator: .localizedStandard)]) private var lenses      : [Lens]
     @Query(sort: [SortDescriptor(\PhotoShoot.name, comparator: .localizedStandard)]) private var photoShoots : [PhotoShoot]
@@ -715,6 +716,19 @@ struct ContentView: View {
                 // Settings (Teleconverter, Observer height)
                 HStack {
                     if Constants.IS_IPAD {
+                        Button {
+                            self.searchViewVisible = true
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .disabled(!self.model.networkMonitor.isConnected)
+                        
                         Spacer()
                         if !self.model.milkywayVisible {
                             Button {
@@ -744,7 +758,21 @@ struct ContentView: View {
                             .frame(width: 44, height: 44)
                             .buttonStyle(.glass)
                             .clipShape(Circle())
-                            .offset(x: 20)
+                            .offset(x: 30)
+                            
+                            Button {
+                                self.searchViewVisible = true
+                            } label: {
+                                Image(systemName: "magnifyingglass")
+                                    .resizable()
+                                    .frame(width: 20, height: 20)
+                                    .padding(7)
+                            }
+                            .frame(width: 44, height: 44)
+                            .buttonStyle(.glass)
+                            .clipShape(Circle())
+                            .offset(x: 30)
+                            .disabled(!self.model.networkMonitor.isConnected)
                         }
                         
                         Spacer()
@@ -827,6 +855,9 @@ struct ContentView: View {
         .sheet(isPresented: $settingsViewVisible) {
             SettingsView()
         }
+        .sheet(isPresented: $searchViewVisible) {            
+            SearchView(locationService: self.locationService, functio: setMapLocation)
+        }
         .sheet(isPresented: $fieldOfViewCalculatorVisible) {
             FieldOfViewCalculatorView(photoPlannerModel: self.model)
         }
@@ -887,6 +918,10 @@ struct ContentView: View {
     
     private func setMapInteraction(enabled: Bool) {
         self.modes = enabled ? [.all] : []
+    }
+    
+    private func setMapLocation(coordinates: CLLocationCoordinate2D) {
+        self.position = .camera(.init(centerCoordinate: coordinates, distance: self.model.cameraDistance))        
     }
            
 }
