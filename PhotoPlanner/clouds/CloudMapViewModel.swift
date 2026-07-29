@@ -87,7 +87,7 @@ class CloudMapViewModel {
                 let tileSize   : CGSize = CGSize(width: size.width / scale, height: size.height / scale)
                 let tileOrigin : CGPoint = CGPoint(x: (size.width - tileSize.width) / 2, y: (size.height - tileSize.height) / 2)
                 
-                let boostedCloud = Helper.boostCloudOpacity(cloud, factor: 3.0)
+                let boostedCloud = Helper.boostCloudOpacity(cloud, factor: 1.5) // 3.0 is too much
                 boostedCloud.draw(in: CGRect(origin: tileOrigin, size: tileSize), blendMode: .normal, alpha: 1.0)                                
             }
         }
