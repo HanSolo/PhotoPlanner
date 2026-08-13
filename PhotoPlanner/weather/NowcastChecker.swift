@@ -18,7 +18,7 @@ struct NowcastConditions: Sendable {
     let fetchedAt                       : Date
 }
  
-
+nonisolated
 private struct OWMResponse: Decodable {
  
     struct WeatherEntry: Decodable {

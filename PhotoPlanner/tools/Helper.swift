@@ -378,6 +378,14 @@ public class Helper {
         
         return txt
     }
+    
+    public static func screenPoint(for coordinate: CLLocationCoordinate2D, in region: MKCoordinateRegion, size: CGSize) -> CGPoint {
+        let minLat      : Double = region.center.latitude  - region.span.latitudeDelta  / 2
+        let minLon      : Double = region.center.longitude - region.span.longitudeDelta / 2
+        let latFraction : Double = (coordinate.latitude  - minLat) / region.span.latitudeDelta
+        let lonFraction : Double = (coordinate.longitude - minLon) / region.span.longitudeDelta
+        return CGPoint(x: lonFraction * size.width, y: (1.0 - latFraction) * size.height)
+    }
 }
 
 

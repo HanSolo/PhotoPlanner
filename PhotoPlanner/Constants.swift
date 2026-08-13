@@ -112,4 +112,12 @@ public class Constants {
     public static let REGULAR_FONT_20                : Font          = Font.system(size: 20, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_24                : Font          = Font.system(size: 24, weight: .regular, design: .rounded)
     public static let REGULAR_FONT_28                : Font          = Font.system(size: 28, weight: .regular, design: .rounded)
+    
+    public static let STRIKE_GRADIENT_STOPS          : [CGFloat]     = [0.0, 0.25, 0.6, 1.0]
+    public static let STRIKE_COLORS                  : CFArray       = [
+        UIColor.white.withAlphaComponent(1.0).cgColor,   // fully bright centre
+        UIColor.white.withAlphaComponent(0.6).cgColor,   // still bright at 30%
+        UIColor.white.withAlphaComponent(0.15).cgColor,  // quickly fading at 60%
+        UIColor.white.withAlphaComponent(0.0).cgColor    // fully transparent edge
+    ] as CFArray
 }

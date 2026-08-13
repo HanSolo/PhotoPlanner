@@ -129,6 +129,11 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var milkywayVisibleBinding        : Binding<Bool> {
         Binding(get: { self.milkywayVisible}, set: { self.milkywayVisible = $0 })
     }
+    var lightningVisible              : Bool                     = false
+    var lightningVisibleBinding       : Binding<Bool> {
+        .init(get: { self.lightningVisible }, set: { self.lightningVisible = $0 })
+    }
+    var visibleRegion                 : MKCoordinateRegion       = MKCoordinateRegion()
     
 
     override init() {
@@ -252,6 +257,10 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     
     public func getUserLocation() -> CLLocationCoordinate2D? {
         return self.locationManager?.location?.coordinate
+    }
+    
+    public func updateRegion(_ region: MKCoordinateRegion) {
+        self.visibleRegion = region
     }
     
     private func checkLocationAuthorization() {

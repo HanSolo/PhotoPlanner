@@ -15,38 +15,40 @@ struct ContentView: View {
     @Environment(\.colorScheme)          private var colorScheme
     @Environment(PhotoPlannerModel.self) private var model
         
-    let home                                        : CLLocationCoordinate2D  = Constants.DEFAULT_LOCATION.coordinate
-    @State private var sunQualityViewModel          : SunQualityViewModel     = SunQualityViewModel()
-    @State private var milkywayViewModel            : MilkywayMapViewModel    = MilkywayMapViewModel()
-    @State private var moonViewModel                : MoonViewModel           = MoonViewModel()
-    @State private var longExposureViewModel        : LongExposureViewModel   = LongExposureViewModel()
-    @State private var weatherViewModel             : WeatherOverlayViewModel = WeatherOverlayViewModel()
+    let home                                        : CLLocationCoordinate2D      = Constants.DEFAULT_LOCATION.coordinate
+    @State private var sunQualityViewModel          : SunQualityViewModel         = SunQualityViewModel()
+    @State private var milkywayViewModel            : MilkywayMapViewModel        = MilkywayMapViewModel()
+    @State private var moonViewModel                : MoonViewModel               = MoonViewModel()
+    @State private var longExposureViewModel        : LongExposureViewModel       = LongExposureViewModel()
+    @State private var weatherViewModel             : WeatherOverlayViewModel     = WeatherOverlayViewModel()
     @State private var clarityViewModel             : MilkywaySkyClarityViewModel = MilkywaySkyClarityViewModel()
-    @State private var position                     : MapCameraPosition       = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
-    @State private var modes                        : MapInteractionModes     = [.pan, .rotate, .zoom]
-    @State private var cameraMarkerActive           : Bool                    = false
-    @State private var subjectMarkerActive          : Bool                    = false
-    @State private var isPortrait                   : Bool                    = !Properties.instance.landscape!
-    @State private var isCameraMarkerDragging       : Bool                    = false
-    @State private var isSubjectMarkerDragging      : Bool                    = false
-    @State private var mapStyle                     : MapStyle                = .standard
-    @State private var cameraViewVisible            : Bool                    = false
-    @State private var lensViewVisible              : Bool                    = false
-    @State private var addPhotoShootViewVisible     : Bool                    = false
-    @State private var photoShootsViewVisible       : Bool                    = false
-    @State private var settingsViewVisible          : Bool                    = false
-    @State private var searchViewVisible            : Bool                    = false
-    @State private var datePickerVisible            : Bool                    = false
-    @State private var sunsetPredictionVisible      : Bool                    = false
-    @State private var moonPhaseVisible             : Bool                    = false
-    @State private var arVisible                    : Bool                    = false
-    @State private var longExposureVisible          : Bool                    = false
-    @State private var exposureCalculatorVisible    : Bool                    = false
-    @State private var fieldOfViewCalculatorVisible : Bool                    = false
-    @State private var helpViewVisible              : Bool                    = false
-    @State private var centerCameraPosition         : Bool                    = false
+    @State private var position                     : MapCameraPosition           = .camera(.init(centerCoordinate: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,longitude: Properties.instance.cameraLongitude!), distance: Properties.instance.distance!))
+    @State private var modes                        : MapInteractionModes         = [.pan, .rotate, .zoom]
+    @State private var cameraMarkerActive           : Bool                        = false
+    @State private var subjectMarkerActive          : Bool                        = false
+    @State private var isPortrait                   : Bool                        = !Properties.instance.landscape!
+    @State private var isCameraMarkerDragging       : Bool                        = false
+    @State private var isSubjectMarkerDragging      : Bool                        = false
+    @State private var mapStyle                     : MapStyle                    = .standard
+    @State private var cameraViewVisible            : Bool                        = false
+    @State private var lensViewVisible              : Bool                        = false
+    @State private var addPhotoShootViewVisible     : Bool                        = false
+    @State private var photoShootsViewVisible       : Bool                        = false
+    @State private var settingsViewVisible          : Bool                        = false
+    @State private var searchViewVisible            : Bool                        = false
+    @State private var datePickerVisible            : Bool                        = false
+    @State private var sunsetPredictionVisible      : Bool                        = false
+    @State private var moonPhaseVisible             : Bool                        = false
+    @State private var arVisible                    : Bool                        = false
+    @State private var longExposureVisible          : Bool                        = false
+    @State private var exposureCalculatorVisible    : Bool                        = false
+    @State private var fieldOfViewCalculatorVisible : Bool                        = false
+    @State private var helpViewVisible              : Bool                        = false
+    @State private var centerCameraPosition         : Bool                        = false
+    @State private var visibleRegion                : MKCoordinateRegion          = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,longitude: Properties.instance.cameraLongitude!), latitudinalMeters: 500_000, longitudinalMeters: 500_000)
+    @State private var lightningViewModel           : LightningOverlayViewModel   = LightningOverlayViewModel(username: "hansolo", password: "nuetp0tE.")
     
-    @ObservedObject var locationService             : LocationService         = LocationService()
+    @ObservedObject var locationService             : LocationService             = LocationService()
     
     @Query(sort: [SortDescriptor(\Camera.name,     comparator: .localizedStandard)]) private var cameras     : [Camera]
     @Query(sort: [SortDescriptor(\Lens.name,       comparator: .localizedStandard)]) private var lenses      : [Lens]
@@ -206,6 +208,9 @@ struct ContentView: View {
                         }
                     )
                     .onMapCameraChange(frequency: .onEnd) { pos in
+                        self.visibleRegion = pos.region
+                        self.lightningViewModel.updateRegion(pos.region)
+                        
                         guard self.model.cameraMarkerData != nil else { return }
                         self.model.cameraMarkerData = mapProxy.markerData(coordinate: self.model.cameraMarkerData!.coordinate, geometryProxy: geo)
                         
@@ -227,6 +232,10 @@ struct ContentView: View {
                     .allowsHitTesting(!self.model.milkywayVisible)
                 }
             }
+            
+            //if self.model.lightningVisible {
+                LightningOverlayView(viewModel: self.lightningViewModel)
+            //}
             
             VStack {
                 Spacer()
@@ -589,7 +598,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible)
+                    .disabled(self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesShown)
                 }
                      
                 // Moon phase and Exposure Calculator
@@ -612,7 +621,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.strikesShown)
                     
                     Spacer()
                     
@@ -651,7 +660,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.longExposureVisible || self.moonPhaseVisible)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesShown)
                     
                     Spacer()
                     
@@ -676,7 +685,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible || self.lightningViewModel.strikesShown)
                 }
 
                 // Elevation and DistanceCalculator
@@ -758,7 +767,7 @@ struct ContentView: View {
                             .frame(width: 44, height: 44)
                             .buttonStyle(.glass)
                             .clipShape(Circle())
-                            .offset(x: 30)
+                            .offset(x: 60)
                             
                             Button {
                                 self.searchViewVisible = true
@@ -771,8 +780,28 @@ struct ContentView: View {
                             .frame(width: 44, height: 44)
                             .buttonStyle(.glass)
                             .clipShape(Circle())
-                            .offset(x: 30)
+                            .offset(x: 60)
                             .disabled(!self.model.networkMonitor.isConnected)
+                            
+                            Button {
+                                self.lightningViewModel.strikesShown.toggle()
+                                if self.lightningViewModel.strikesShown {
+                                    self.lightningViewModel.show(region: self.visibleRegion)
+                                } else {
+                                    self.lightningViewModel.hide()
+                                }
+                            } label: {
+                                Image(systemName: self.lightningViewModel.strikesShown ? "bolt.fill" : "bolt")
+                                    .resizable()
+                                    .foregroundStyle(self.lightningViewModel.strikesShown ? .yellow : .primary)
+                                    .frame(width: 20, height: 20)
+                                    .padding(7)
+                            }
+                            .frame(width: 44, height: 44)
+                            .buttonStyle(.glass)
+                            .clipShape(Circle())
+                            .offset(x: 60)
+                            .disabled(!self.model.networkMonitor.isConnected && (self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible))
                         }
                         
                         Spacer()
