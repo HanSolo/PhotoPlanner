@@ -578,7 +578,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.isVisible)
+                    .disabled(!self.model.networkMonitor.isConnected || self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.isVisible)
                     
                     Spacer()
                     
@@ -598,7 +598,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
+                    .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
                 }
                      
                 // Moon phase and Exposure Calculator
@@ -685,7 +685,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
+                    .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
                 }
 
                 // Elevation and DistanceCalculator
@@ -802,7 +802,7 @@ struct ContentView: View {
                             .buttonStyle(.glass)
                             .clipShape(Circle())
                             .offset(x: 60)
-                            .disabled(!self.model.networkMonitor.isConnected && (self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible))
+                            .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible)
                         }
                         
                         Spacer()
