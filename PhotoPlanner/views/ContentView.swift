@@ -727,19 +727,26 @@ struct ContentView: View {
                 HStack {
                     if Constants.IS_IPAD {
                         Button {
-                            self.searchViewVisible = true
+                            self.lightningViewModel.isVisible.toggle()
+                            if self.lightningViewModel.isVisible {
+                                self.lightningViewModel.show(region: self.visibleRegion)
+                            } else {
+                                self.lightningViewModel.hide()
+                            }
                         } label: {
-                            Image(systemName: "magnifyingglass")
+                            Image(systemName: self.lightningViewModel.isVisible ? "bolt.fill" : "bolt")
                                 .resizable()
-                                .frame(width: 20, height: 20)
+                                .foregroundStyle(self.lightningViewModel.isVisible ? .yellow : .primary)
+                                .frame(width: 18, height: 18)
                                 .padding(7)
                         }
                         .frame(width: 44, height: 44)
                         .buttonStyle(.glass)
                         .clipShape(Circle())
-                        .disabled(!self.model.networkMonitor.isConnected)
+                        .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible)
                         
                         Spacer()
+                        
                         if !self.model.milkywayVisible {
                             Button {
                                 self.settingsViewVisible = true
@@ -757,33 +764,7 @@ struct ContentView: View {
                         Spacer()
                         
                         if !self.model.elevationViewVisible && !self.model.milkywayVisible {
-                            Button {
-                                self.settingsViewVisible = true
-                            } label: {
-                                Image(systemName: "gearshape")
-                                    .resizable()
-                                    .frame(width: 20, height: 20)
-                                    .padding(7)
-                            }
-                            .frame(width: 44, height: 44)
-                            .buttonStyle(.glass)
-                            .clipShape(Circle())
-                            .offset(x: 60)
-                            
-                            Button {
-                                self.searchViewVisible = true
-                            } label: {
-                                Image(systemName: "magnifyingglass")
-                                    .resizable()
-                                    .frame(width: 20, height: 20)
-                                    .padding(7)
-                            }
-                            .frame(width: 44, height: 44)
-                            .buttonStyle(.glass)
-                            .clipShape(Circle())
-                            .offset(x: 60)
-                            .disabled(!self.model.networkMonitor.isConnected)
-                            
+                            // Lightning Strikes
                             Button {
                                 self.lightningViewModel.isVisible.toggle()
                                 if self.lightningViewModel.isVisible {
@@ -803,7 +784,55 @@ struct ContentView: View {
                             .clipShape(Circle())
                             .offset(x: 60)
                             .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible)
+                            
+                            // Location Search
+                            Button {
+                                self.searchViewVisible = true
+                            } label: {
+                                Image(systemName: "magnifyingglass")
+                                    .resizable()
+                                    .frame(width: 20, height: 20)
+                                    .padding(7)
+                            }
+                            .frame(width: 44, height: 44)
+                            .buttonStyle(.glass)
+                            .clipShape(Circle())
+                            .offset(x: 60)
+                            .disabled(!self.model.networkMonitor.isConnected)
+                            
+                            // Settings
+                            Button {
+                                self.settingsViewVisible = true
+                            } label: {
+                                Image(systemName: "gearshape")
+                                    .resizable()
+                                    .frame(width: 20, height: 20)
+                                    .padding(7)
+                            }
+                            .frame(width: 44, height: 44)
+                            .buttonStyle(.glass)
+                            .clipShape(Circle())
+                            .offset(x: 60)
                         }
+                        
+                        Spacer()
+                    }
+                }
+                
+                if Constants.IS_IPAD {
+                    HStack {
+                        Button {
+                            self.searchViewVisible = true
+                        } label: {
+                            Image(systemName: "magnifyingglass")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .disabled(!self.model.networkMonitor.isConnected)
                         
                         Spacer()
                     }

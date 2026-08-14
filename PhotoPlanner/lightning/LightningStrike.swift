@@ -28,13 +28,13 @@ struct LightningStrike: Identifiable, Sendable {
         return max(0, 1.0 - (age - fadeStart) / (maxAge - fadeStart))
     }
 
-    func color(at time: Date) -> Color {
+    func color(at time: Date, colorScheme: ColorScheme) -> Color {
         let age : Double = self.age(at: time)
         switch age {
             case ..<10    : return .white
-            case 10..<60  : return Color(red: 1.0, green: 0.95, blue: 0.5)
-            case 60..<120 : return Color(red: 1.0, green: 0.85, blue: 0.2)
-            default       : return Color(red: 1.0, green: 0.65, blue: 0.1)
+            case 10..<60  : return colorScheme == .dark ? Color(red: 1.0, green: 0.95, blue: 0.5) : Color(red: 0.8, green: 0.55, blue: 0.0)
+            case 60..<120 : return colorScheme == .dark ? Color(red: 1.0, green: 0.85, blue: 0.2) : Color(red: 0.7, green: 0.35, blue: 0.0)
+            default       : return colorScheme == .dark ? Color(red: 1.0, green: 0.65, blue: 0.1) : Color(red: 0.6, green: 0.20, blue: 0.0)
         }
     }
 

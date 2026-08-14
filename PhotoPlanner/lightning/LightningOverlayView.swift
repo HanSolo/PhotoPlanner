@@ -12,6 +12,8 @@ import MapKit
 import UIKit
 
 struct LightningOverlayView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    
     let viewModel: LightningOverlayViewModel
 
     var body: some View {
@@ -23,7 +25,7 @@ struct LightningOverlayView: View {
                         let age : Double = strike.age(at: now)
                         guard age < 300 else { continue }
                         let point : CGPoint = Helper.screenPoint(for: CLLocationCoordinate2D(latitude: strike.latitude, longitude: strike.longitude), in: region, size: size)
-                        drawStrike(ctx: ctx, point: point, phase: strike.phase(at: now), age: age, color: strike.color(at: now), opacity: strike.opacity(at: now))
+                        drawStrike(ctx: ctx, point: point, phase: strike.phase(at: now), age: age, color: strike.color(at: now, colorScheme: self.colorScheme), opacity: strike.opacity(at: now))
                     }
                 }
                 .onChange(of: context.date) { _, _ in

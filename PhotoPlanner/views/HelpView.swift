@@ -191,9 +191,15 @@ struct HelpView: View {
                 
                 HStack {
                     if Constants.IS_IPAD {
+                        Text("Lightning Strikes")
+                            .font(font)
+                            .foregroundStyle(Color.white)
+                            .multilineTextAlignment(.leading)
+                            .padding(EdgeInsets(top: 30, leading: 50, bottom: 0, trailing: 50))
+                        
                         Spacer()
                         
-                        Text("Teleconverter")
+                        Text("Settings")
                             .font(font)
                             .foregroundStyle(Color.white)
                             .multilineTextAlignment(.trailing)
@@ -201,12 +207,38 @@ struct HelpView: View {
                     } else {
                         Spacer()
                         
-                        Text("Teleconverter")
+                        Text("Strikes")
                             .font(font)
                             .foregroundStyle(Color.white)
                             .multilineTextAlignment(.center)
-                            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 50))
-                            .offset(x: 40)
+                            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .offset(x: 60)
+                        
+                        Text("Search")
+                            .font(font)
+                            .foregroundStyle(Color.white)
+                            .multilineTextAlignment(.center)
+                            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .offset(x: 60)
+                        
+                        Text("Settings")
+                            .font(font)
+                            .foregroundStyle(Color.white)
+                            .multilineTextAlignment(.center)
+                            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                            .offset(x: 60)
+                        
+                        Spacer()
+                    }
+                }
+                
+                if Constants.IS_IPAD {
+                    HStack {
+                        Text("Location Search")
+                            .font(font)
+                            .foregroundStyle(Color.white)
+                            .multilineTextAlignment(.leading)
+                            .padding(EdgeInsets(top: 30, leading: 50, bottom: 0, trailing: 50))
                         
                         Spacer()
                     }
