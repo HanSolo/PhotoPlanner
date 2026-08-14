@@ -63,7 +63,7 @@ class CloudMapViewModel {
 
     private func fetchCloudTile(coordinate: CLLocationCoordinate2D, apiKey: String) async -> UIImage? {
         let tile = MapTile.tile(for: coordinate, zoom: zoomLevel)
-        guard let url = tile.owmURL(apiKey: apiKey) else { return nil }
+        guard let url = tile.owmCloudURL(apiKey: apiKey) else { return nil }
 
         do {
             let (data, response) = try await URLSession.shared.data(from: url)
