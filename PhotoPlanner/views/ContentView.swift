@@ -578,7 +578,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible)
+                    .disabled(self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.isVisible)
                     
                     Spacer()
                     
@@ -598,7 +598,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesShown)
+                    .disabled(self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
                 }
                      
                 // Moon phase and Exposure Calculator
@@ -621,7 +621,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.strikesShown)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.isVisible)
                     
                     Spacer()
                     
@@ -660,7 +660,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesShown)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
                     
                     Spacer()
                     
@@ -685,7 +685,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible || self.lightningViewModel.strikesShown)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
                 }
 
                 // Elevation and DistanceCalculator
@@ -706,6 +706,7 @@ struct ContentView: View {
                             }
                         }
                     }
+                    .disabled(self.lightningViewModel.isVisible)
                     
                     Spacer()
                     
@@ -784,24 +785,24 @@ struct ContentView: View {
                             .disabled(!self.model.networkMonitor.isConnected)
                             
                             Button {
-                                self.lightningViewModel.strikesShown.toggle()
-                                if self.lightningViewModel.strikesShown {
+                                self.lightningViewModel.isVisible.toggle()
+                                if self.lightningViewModel.isVisible {
                                     self.lightningViewModel.show(region: self.visibleRegion)
                                 } else {
                                     self.lightningViewModel.hide()
                                 }
                             } label: {
-                                Image(systemName: self.lightningViewModel.strikesShown ? "bolt.fill" : "bolt")
+                                Image(systemName: self.lightningViewModel.isVisible ? "bolt.fill" : "bolt")
                                     .resizable()
-                                    .foregroundStyle(self.lightningViewModel.strikesShown ? .yellow : .primary)
-                                    .frame(width: 20, height: 20)
+                                    .foregroundStyle(self.lightningViewModel.isVisible ? .yellow : .primary)
+                                    .frame(width: 18, height: 18)
                                     .padding(7)
                             }
                             .frame(width: 44, height: 44)
                             .buttonStyle(.glass)
                             .clipShape(Circle())
                             .offset(x: 60)
-                            .disabled(!self.model.networkMonitor.isConnected && (self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible))
+                            .disabled(!self.model.networkMonitor.isConnected && (self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible))
                         }
                         
                         Spacer()

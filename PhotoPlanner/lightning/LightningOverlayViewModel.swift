@@ -15,7 +15,7 @@ import UIKit
 @Observable
 class LightningOverlayViewModel {
     var strikes       : [LightningStrike]    = []
-    var strikesShown  : Bool                 = false
+    var isVisible     : Bool                 = false
     var isLoading     : Bool                 = false
     var visibleRegion : MKCoordinateRegion?
 
@@ -43,12 +43,12 @@ class LightningOverlayViewModel {
     
     func show(region: MKCoordinateRegion) {
         visibleRegion = region
-        strikesShown  = true
+        isVisible  = true
         startPolling()
     }
 
     func hide() {
-        strikesShown = false
+        isVisible = false
         stopPolling()
     }
 
@@ -69,7 +69,7 @@ class LightningOverlayViewModel {
             // Initial fetch — get last 200 strikes in region
             await self.poll()
             // Subsequent polls at adaptive interval
-            while !Task.isCancelled && self.strikesShown {
+            while !Task.isCancelled && self.isVisible {
                 let interval = self.activeInterval
                 try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
                 if !Task.isCancelled { await self.poll() }

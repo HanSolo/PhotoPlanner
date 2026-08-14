@@ -26,6 +26,15 @@ struct MapTile {
 
     // OpenWeatherMap cloud tile URL
     func owmCloudURL(apiKey: String) -> URL? {
-        URL(string: "https://tile.openweathermap.org/map/clouds_new/\(z)/\(x)/\(y).png?appid=\(apiKey)")
+        return URL(string: "https://tile.openweathermap.org/map/clouds_new/\(z)/\(x)/\(y).png?appid=\(apiKey)")
     }
+
+    // RainViwer tile URL
+    func rainViewerURL(host: String, path: String) -> URL? {
+        // host = "https://tilecache.rainviewer.com"
+        // path = "/v2/radar/1609401600"
+        // full tile URL = host + path + /256/z/x/y/2/1_1.png
+        return URL(string: "\(host)\(path)/256/\(z)/\(x)/\(y)/2/1_1.png")
+    }       
 }
+
