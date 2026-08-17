@@ -43,7 +43,7 @@ struct LightningOverlayView: View {
         case .expanding:
             let progress     = age / 0.03
             let flashOpacity = (1.0 - progress) * opacity
-            let radius: CGFloat = 45
+            let radius: CGFloat = 55
 
             ctx.withCGContext { cgCtx in
                 cgCtx.saveGState()
@@ -66,7 +66,7 @@ struct LightningOverlayView: View {
             dotCtx.fill(Path(ellipseIn: CGRect(x: point.x - dotRadius, y: point.y - dotRadius, width: dotRadius * 2, height: dotRadius * 2)), with: .color(color))
 
         case .persistent:
-            let dotRadius : CGFloat         = 3
+            let dotRadius : CGFloat         = 1.5
             var glowCtx   : GraphicsContext = ctx
             glowCtx.opacity = opacity * 0.25
             glowCtx.fill(Path(ellipseIn: CGRect(x: point.x - 8, y: point.y - 8, width: 16, height: 16)), with: .color(color))

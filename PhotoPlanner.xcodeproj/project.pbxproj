@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4F690E79303345B3003F5D8D /* CocoaMQTT in Frameworks */ = {isa = PBXBuildFile; productRef = 4F690E78303345B3003F5D8D /* CocoaMQTT */; };
+		4F690E7B303345B3003F5D8D /* CocoaMQTTWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = 4F690E7A303345B3003F5D8D /* CocoaMQTTWebSocket */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		4F0D32132FA088830097C1D3 /* PhotoPlanner.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoPlanner.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -36,6 +41,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4F690E7B303345B3003F5D8D /* CocoaMQTTWebSocket in Frameworks */,
+				4F690E79303345B3003F5D8D /* CocoaMQTT in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -78,6 +85,8 @@
 			);
 			name = PhotoPlanner;
 			packageProductDependencies = (
+				4F690E78303345B3003F5D8D /* CocoaMQTT */,
+				4F690E7A303345B3003F5D8D /* CocoaMQTTWebSocket */,
 			);
 			productName = PhotoPlanner;
 			productReference = 4F0D32132FA088830097C1D3 /* PhotoPlanner.app */;
@@ -107,6 +116,9 @@
 			);
 			mainGroup = 4F0D320A2FA088830097C1D3;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4F690E77303345B3003F5D8D /* XCRemoteSwiftPackageReference "CocoaMQTT" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4F0D32142FA088830097C1D3 /* Products */;
 			projectDirPath = "";
@@ -145,7 +157,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PhotoPlanner/PhotoPlanner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 187;
+				CURRENT_PROJECT_VERSION = 191;
 				DEVELOPMENT_TEAM = L4A7549EHC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -165,7 +177,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 26.0.63;
+				MARKETING_VERSION = 26.0.67;
 				PRODUCT_BUNDLE_IDENTIFIER = eu.hansolo.PhotoPlanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -188,7 +200,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PhotoPlanner/PhotoPlanner.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 187;
+				CURRENT_PROJECT_VERSION = 191;
 				DEVELOPMENT_TEAM = L4A7549EHC;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -208,7 +220,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 26.0.63;
+				MARKETING_VERSION = 26.0.67;
 				PRODUCT_BUNDLE_IDENTIFIER = eu.hansolo.PhotoPlanner;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -369,6 +381,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4F690E77303345B3003F5D8D /* XCRemoteSwiftPackageReference "CocoaMQTT" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/emqx/CocoaMQTT.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.4.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		4F690E78303345B3003F5D8D /* CocoaMQTT */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4F690E77303345B3003F5D8D /* XCRemoteSwiftPackageReference "CocoaMQTT" */;
+			productName = CocoaMQTT;
+		};
+		4F690E7A303345B3003F5D8D /* CocoaMQTTWebSocket */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4F690E77303345B3003F5D8D /* XCRemoteSwiftPackageReference "CocoaMQTT" */;
+			productName = CocoaMQTTWebSocket;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 4F0D320B2FA088830097C1D3 /* Project object */;
 }
