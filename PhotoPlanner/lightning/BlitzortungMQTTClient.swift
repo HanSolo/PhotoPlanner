@@ -65,8 +65,8 @@ class BlitzortungMQTTClient: CocoaMQTTDelegate {
               let data    = payload.data(using: .utf8),
               let strike  = try? JSONDecoder().decode(Strike.self, from: data)
         else { return }
-
-        let lightningStrike = LightningStrike(latitude: strike.lat ?? 0.0, longitude: strike.lon ?? 0.0, timestamp: Date(timeIntervalSince1970: Double(strike.time ?? 0) / 1_000_000_000), nanoseconds: Int64(strike.time ?? 0), polarity: strike.pol ?? 0)
+        
+        let lightningStrike = LightningStrike(latitude: strike.lat ?? 0.0, longitude: strike.lon ?? 0.0, timestamp: Date(), nanoseconds: Int64(strike.time ?? 0), polarity: strike.pol ?? 0)
         onStrike?(lightningStrike)
     }
 

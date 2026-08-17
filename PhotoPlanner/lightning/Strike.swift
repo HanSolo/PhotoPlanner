@@ -16,7 +16,7 @@ class Strike: Codable {
     var mcg    : Int?
     var sig    : [Sig]?
     var status : Int?
-    var time   : Int?
+    var time   : Int64?
     var delay  : Double?
     var pol    : Int?
     var mds    : Int?
@@ -49,7 +49,7 @@ class Strike: Codable {
         mcg    = try? container.decode(Int.self,    forKey: .mcg)
         sig    = try? container.decode([Sig].self,  forKey: .sig)
         status = try? container.decode(Int.self,    forKey: .status)
-        time   = try? container.decode(Int.self,    forKey: .time)
+        time   = try? container.decode(Int64.self,  forKey: .time)
         delay  = try? container.decode(Double.self, forKey: .delay)
         pol    = try? container.decode(Int.self,    forKey: .pol)
         mds    = try? container.decode(Int.self,    forKey: .mds)

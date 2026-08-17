@@ -39,16 +39,11 @@ struct LightningStrike: Identifiable, Sendable {
     }
 
     enum AnimationPhase {
-        case expanding
-        case contracting
+        case flash
         case persistent
     }
 
     func phase(at time: Date) -> AnimationPhase {
-        switch self.age(at: time) {
-            case ..<0.03     : return .expanding    // flash         : 0...0.03s
-            case 0.03..<0.22 : return .contracting  // shrink to dot : 0.03...0.22s
-            default          : return .persistent   // dot           : 0.22s...2.5min
-        }
+        return self.age(at: time) < 0.3 ? .flash : .persistent        
     }
 }
