@@ -17,24 +17,23 @@ struct LightningOverlayView: View {
     let viewModel: LightningOverlayViewModel
 
     var body: some View {
-        if viewModel.strikesVisible, let region = viewModel.visibleRegion {
-            TimelineView(.animation) { context in
-                Canvas { ctx, size in
-                    let now = context.date
-                    for strike in viewModel.strikes {
-                        let age : Double = strike.age(at: now)
-                        guard age < 300 else { continue }
-                        let point : CGPoint = Helper.screenPoint(for: CLLocationCoordinate2D(latitude: strike.latitude, longitude: strike.longitude), in: region, size: size)
-                        drawStrike(ctx: ctx, point: point, phase: strike.phase(at: now), age: age, color: strike.color(at: now, colorScheme: self.colorScheme), opacity: strike.opacity(at: now))
-                    }
-                }
-                .onChange(of: context.date) { _, _ in
-                    viewModel.pruneOldStrikes()
+        TimelineView(.animation) { context in
+            Canvas { ctx, size in
+                guard viewModel.isVisible, let region = viewModel.visibleRegion else { return }
+                let now = context.date
+                for strike in viewModel.strikes {
+                    let age : Double = strike.age(at: now)
+                    guard age < 300 else { continue }
+                    let point : CGPoint = Helper.screenPoint(for: CLLocationCoordinate2D(latitude: strike.latitude, longitude: strike.longitude), in: region, size: size)
+                    drawStrike(ctx: ctx, point: point, phase: strike.phase(at: now), age: age, color: strike.color(at: now, colorScheme: self.colorScheme), opacity: strike.opacity(at: now))
                 }
             }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
+            .onChange(of: context.date) { _, _ in
+                viewModel.pruneOldStrikes()
+            }
         }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 
     private func drawStrike(ctx: GraphicsContext, point: CGPoint, phase: LightningStrike.AnimationPhase, age: Double, color: Color, opacity: Double) {

@@ -52,7 +52,7 @@ class BlitzortungMQTTClient: CocoaMQTTDelegate {
         currentTopics = []
     }
 
-    func mqtt(_ mqtt: CocoaMQTT, didConnectAck ack: CocoaMQTTConnAck) {
+    func mqtt(_ mqtt: CocoaMQTT, didConnectAck ack: CocoaMQTTConnAck) {        
         guard ack == .accept else { return }
         isConnected = true
         if !currentTopics.isEmpty {

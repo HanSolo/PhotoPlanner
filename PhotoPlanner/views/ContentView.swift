@@ -208,8 +208,10 @@ struct ContentView: View {
                             isSubjectMarkerDragging  = false
                         }
                     )
-                    .onMapCameraChange { context in
-                        self.lightningViewModel.isVisible = false
+                    .onMapCameraChange(frequency: .continuous) { context in
+                        if self.lightningViewModel.strikesVisible {
+                            self.lightningViewModel.isVisible = false
+                        }
                     }
                     .onMapCameraChange(frequency: .onEnd) { context in
                         self.visibleRegion = context.region
@@ -238,10 +240,8 @@ struct ContentView: View {
                     .allowsHitTesting(!self.model.milkywayVisible)
                 }
             }
-            
-            //if self.model.lightningVisible {
-                LightningOverlayView(viewModel: self.lightningViewModel)
-            //}
+                        
+            LightningOverlayView(viewModel: self.lightningViewModel)
             
             VStack {
                 Spacer()
@@ -317,10 +317,10 @@ struct ContentView: View {
                     .pickerStyle(.segmented)
                     .onChange(of: self.model.currentMapStyleIndex) { oldValue, newValue in
                         switch newValue {
-                        case  0: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
-                        case  1: self.mapStyle = MapStyle.imagery()
-                        case  2: self.mapStyle = MapStyle.hybrid(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
-                        default: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
+                            case  0: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
+                            case  1: self.mapStyle = MapStyle.imagery()
+                            case  2: self.mapStyle = MapStyle.hybrid(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
+                            default: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
                         }
                     }
                     .disabled(!self.model.networkMonitor.isConnected)
@@ -543,6 +543,22 @@ struct ContentView: View {
                     
                     Spacer()
                     
+                    if lightningViewModel.strikesVisible && lightningViewModel.strikes.isEmpty {
+                        HStack {
+                            Image(systemName: "bolt.slash")
+                                .font(.caption2)
+                            Text("No strikes in current area")
+                                .font(.caption2)
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.black.opacity(0.6))
+                        .clipShape(Capsule())
+                    }
+                    
+                    Spacer()
+                    
                     Button {
                         self.arVisible = true
                     } label: {
@@ -732,7 +748,7 @@ struct ContentView: View {
                 // Settings (Teleconverter, Observer height)
                 HStack {
                     if Constants.IS_IPAD {
-                        Button {
+                        Button { // Lightning Strikes
                             self.lightningViewModel.strikesVisible.toggle()
                             if self.lightningViewModel.isVisible {
                                 self.lightningViewModel.show(region: self.visibleRegion)
@@ -770,8 +786,7 @@ struct ContentView: View {
                         Spacer()
                         
                         if !self.model.elevationViewVisible && !self.model.milkywayVisible {
-                            // Lightning Strikes
-                            Button {
+                            Button { // Lightning Strikes
                                 self.lightningViewModel.strikesVisible.toggle()
                                 if self.lightningViewModel.isVisible {
                                     self.lightningViewModel.show(region: self.visibleRegion)

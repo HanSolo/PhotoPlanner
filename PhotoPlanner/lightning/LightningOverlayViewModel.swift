@@ -16,7 +16,11 @@ import UIKit
 class LightningOverlayViewModel {
     var strikes        : [LightningStrike]    = []
     var isVisible      : Bool                 = false
-    var strikesVisible : Bool                 = false
+    var strikesVisible : Bool                 = false {
+        didSet {
+            self.isVisible = self.strikesVisible
+        }
+    }
     var visibleRegion  : MKCoordinateRegion?
 
     private let mqttClient          : BlitzortungMQTTClient     = BlitzortungMQTTClient()

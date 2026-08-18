@@ -13,24 +13,25 @@ import MapKit
 struct CloudMapView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dismiss)     private var dismiss
-    
+
     @State private var viewModel  : CloudMapViewModel = CloudMapViewModel()
     @State private var activeMode : CloudMapMode      = .cloud
-    
+
     let coordinate                : CLLocationCoordinate2D
     let apiKey                    : String
-    private var currentState      : CloudMapViewModel.State {
+
+    private var isLoading: Bool {
         switch activeMode {
-            case .cloud : return viewModel.cloudState
-            case .radar : return viewModel.radarState
-        }
+            case .cloud:
+                if case .loading = viewModel.cloudState { return true }
+                return false
+            case .radar:
+                return viewModel.radarLoading
+            case .satellite:
+                return viewModel.satelliteLoading
     }
-    private var isLoading         : Bool {
-        if case .loading = currentState { return true }
-        return false
     }
 
-    
     var body: some View {
         ZStack {
             VStack {
@@ -38,8 +39,9 @@ struct CloudMapView: View {
                     Button {
                         Task {
                             switch activeMode {
-                                case .cloud : await viewModel.loadCloud(coordinate: coordinate, apiKey: apiKey, scale: UITraitCollection.current.displayScale)
-                                case .radar : await viewModel.loadRadar(coordinate: coordinate, scale: UITraitCollection.current.displayScale)
+                                case .cloud     : await viewModel.loadCloud(coordinate: coordinate, apiKey: apiKey, scale: UITraitCollection.current.displayScale)
+                                case .radar     : await viewModel.loadRadarFrames(coordinate: coordinate, scale: UITraitCollection.current.displayScale)
+                                case .satellite : await viewModel.loadSatelliteFrames(coordinate: coordinate, scale: UITraitCollection.current.displayScale)
                             }
                         }
                     } label: {
@@ -57,7 +59,7 @@ struct CloudMapView: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(maxWidth: 200)
+                    .frame(maxWidth: 260) // was 200
 
                     Spacer()
                     
@@ -68,59 +70,62 @@ struct CloudMapView: View {
                 }
                 .padding()
 
-                switch currentState {
-                    case .idle:
-                        EmptyView()
-
-                    case .loading:
-                        VStack(spacing: 12) {
-                            ProgressView()
-                                Text("Loading \(activeMode.rawValue.lowercased()) map…")
-                                    .font(.caption)
-                                    .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+                switch activeMode {
+                    case .cloud:
+                        switch viewModel.cloudState {
+                            case .idle:
+                                EmptyView()
+                            case .loading:
+                                VStack(spacing: 12) {
+                                    ProgressView()
+                                    Text("Loading cloud map…")
+                                        .font(.caption)
+                                        .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+                                }
+                            case .loaded(let image):
+                                VStack(spacing: 12) {
+                                    Image(uiImage: image)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    HStack(spacing: 6) {
+                                        Image(systemName: CloudMapMode.cloud.icon)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                        Text(CloudMapMode.cloud.attribution)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Text(String(format: "%.6f°N  %.6f°E", coordinate.latitude, coordinate.longitude))
+                                        .font(.caption2.monospacedDigit())
+                                        .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+                                        .padding(EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 0))
+                                }
+                            case .failed(let message):
+                                VStack(spacing: 8) {
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .font(.largeTitle)
+                                        .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+                                    Text(message)
+                                        .font(.caption)
+                                        .multilineTextAlignment(.center)
+                                        .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+                                }
+                                .padding()
                         }
-                    case .loaded(let image):
-                        VStack(spacing: 12) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .scaledToFit()
-                                .clipShape(RoundedRectangle(cornerRadius: 14))
-
-                            HStack(spacing: 6) {
-                                Image(systemName: activeMode.icon)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                
-                                Text(activeMode.attribution)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-
-                            Text(String(format: "%.6f°N  %.6f°E", coordinate.latitude, coordinate.longitude))
-                                .font(.caption2.monospacedDigit())
-                                .foregroundStyle(self.colorScheme == .dark ? .white : .black)
-                                .padding(EdgeInsets(top: 5, leading: 0, bottom: 0, trailing: 0))
-                        }
-                    case .failed(let message):
-                        VStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.triangle")
-                                .font(.largeTitle)
-                                .foregroundStyle(self.colorScheme == .dark ? .white : .black)
-                            Text(message)
-                                .font(.caption)
-                                .multilineTextAlignment(.center)
-                                .foregroundStyle(self.colorScheme == .dark ? .white : .black)
-                        }
-                        .padding()
+                    case .radar:
+                        AnimatedFrameView(viewModel: viewModel, mode: .radar, coordinate: coordinate, colorScheme: colorScheme)
+                    case .satellite:
+                        AnimatedFrameView(viewModel: viewModel, mode: .satellite, coordinate: coordinate, colorScheme: colorScheme)
                 }
             }
             .padding()
         }
-        .presentationDetents([.height(500)])
+        .presentationDetents([.height(560)]) // was 500
         .presentationDragIndicator(.visible)
         .task {
             // Load both tabs in parallel so switching is instant
             await viewModel.loadAll(coordinate: coordinate, apiKey: apiKey, scale: UITraitCollection.current.displayScale)
         }
-    }            
+    }
 }
