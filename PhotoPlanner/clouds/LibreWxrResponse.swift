@@ -8,7 +8,7 @@
 import Foundation
 
 
-struct RainViewerResponse: Decodable {
+struct LibreWxrResponse: Decodable {
     
     struct Radar: Decodable {
         struct Frame: Decodable {

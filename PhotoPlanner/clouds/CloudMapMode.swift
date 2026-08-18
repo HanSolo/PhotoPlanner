@@ -22,7 +22,7 @@ enum CloudMapMode: String, CaseIterable {
     var attribution: String {
         switch self {
             case .cloud : return "Cloud cover — OpenWeatherMap"
-            case .radar : return "Precipitation radar — RainViewer"
+            case .radar : return "Precipitation radar — LibreWXR"
         }
     }
 }

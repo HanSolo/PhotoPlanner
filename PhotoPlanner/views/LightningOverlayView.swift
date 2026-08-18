@@ -17,7 +17,7 @@ struct LightningOverlayView: View {
     let viewModel: LightningOverlayViewModel
 
     var body: some View {
-        if viewModel.isVisible, let region = viewModel.visibleRegion {
+        if viewModel.strikesVisible, let region = viewModel.visibleRegion {
             TimelineView(.animation) { context in
                 Canvas { ctx, size in
                     let now = context.date

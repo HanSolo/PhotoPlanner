@@ -14,9 +14,10 @@ import UIKit
 
 @Observable
 class LightningOverlayViewModel {
-    var strikes       : [LightningStrike]    = []
-    var isVisible     : Bool                 = false
-    var visibleRegion : MKCoordinateRegion?
+    var strikes        : [LightningStrike]    = []
+    var isVisible      : Bool                 = false
+    var strikesVisible : Bool                 = false
+    var visibleRegion  : MKCoordinateRegion?
 
     private let mqttClient          : BlitzortungMQTTClient     = BlitzortungMQTTClient()
     private let haptic              : UIImpactFeedbackGenerator = UIImpactFeedbackGenerator(style: .light)
@@ -36,16 +37,16 @@ class LightningOverlayViewModel {
 
     
     func show(region: MKCoordinateRegion) {
-        visibleRegion = region
-        isVisible  = true
+        visibleRegion  = region
+        strikesVisible = true
+        isVisible      = true
         mqttClient.connect(username: "", password: "", topics: [ "lightning/strikes" ])
-        //startPolling()
     }
 
     func hide() {
-        isVisible = false
+        strikesVisible = false
+        isVisible      = false
         mqttClient.disconnect()
-        //stopPolling()
     }
 
     func updateRegion(_ region: MKCoordinateRegion) {
@@ -59,7 +60,7 @@ class LightningOverlayViewModel {
     }
 
     private func handleStrike(_ strike: LightningStrike) {
-        guard isVisible, let region = visibleRegion else { return }
+        guard strikesVisible, let region = visibleRegion else { return }
         guard isWithinBuffer(strike, region: region) else { return }
         strikes.append(strike)
         if strikes.count > maxStrikes { strikes.removeFirst(strikes.count - maxStrikes) }

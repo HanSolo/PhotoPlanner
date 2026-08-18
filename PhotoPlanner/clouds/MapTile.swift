@@ -29,12 +29,17 @@ struct MapTile {
         return URL(string: "https://tile.openweathermap.org/map/clouds_new/\(z)/\(x)/\(y).png?appid=\(apiKey)")
     }
 
-    // RainViwer tile URL
-    func rainViewerURL(host: String, path: String) -> URL? {
-        // host = "https://tilecache.rainviewer.com"
+    // LibreWXR tile URL
+    func libreWxrURL(host: String, path: String) -> URL? {
+        // host = "https://hansolo.eu"
         // path = "/v2/radar/1609401600"
         // full tile URL = host + path + /256/z/x/y/2/1_1.png
         return URL(string: "\(host)\(path)/256/\(z)/\(x)/\(y)/2/1_1.png")
-    }       
+    }
+    
+    func libreWxrURL(timestamp: Int) -> URL? {
+        // LibreWXR v2 radar tile, colour scheme 2, smooth 1, snow 1
+        URL(string: "http://hansolo.eu:8081/v2/radar/\(timestamp)/256/\(z)/\(x)/\(y)/2/1_1.png")
+    }
 }
 

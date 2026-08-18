@@ -53,9 +53,11 @@ class CloudMapViewModel {
     func loadRadar(coordinate: CLLocationCoordinate2D, scale: CGFloat) async {
         radarState = .loading
 
-        async let baseTask  = fetchBaseMap(coordinate: coordinate, scale: scale)
-        async let frameTask = fetchLatestRadarFrame()
-        let (base, frame)   = await (baseTask, frameTask)
+        async let baseTask      = fetchBaseMap(coordinate: coordinate, scale: scale)
+        //async let frameTask     = fetchLatestRadarFrame()
+        //let (base, frame)   = await (baseTask, frameTask)
+        async let timestampTask = fetchLatestRadarTimestamp()
+        let (base, timestamp)   = await (baseTask, timestampTask)
 
         guard let base else {
             radarState = .failed("Could not generate map snapshot")
@@ -63,9 +65,20 @@ class CloudMapViewModel {
         }
 
         var radarTile: UIImage?
+        if let ts = timestamp {
+            radarTile = await fetchRadarTile(coordinate: coordinate, timestamp: ts)
+        }
+        if radarTile == nil {
+            radarState = .failed("Radar data unavailable")
+            return
+        }
+        
+        radarState = .loaded(composite(base: base, overlay: radarTile, alpha: 0.85))
+        
+        /*
         if let frame {
             let tile = MapTile.tile(for: coordinate, zoom: zoomLevel)
-            if let url = tile.rainViewerURL(host: frame.host, path: frame.path) {
+            if let url = tile.libreWxrURL(host: frame.host, path: frame.path) {
                 radarTile = await fetchTileImage(from: url)
             }
         }
@@ -76,18 +89,30 @@ class CloudMapViewModel {
         }
 
         radarState = .loaded(composite(base: base, overlay: radarTile, alpha: 0.85))
+        */
     }
 
-    private func fetchLatestRadarFrame() async -> (host: String, path: String)? {
-        guard let url = URL(string: "https://api.rainviewer.com/public/weather-maps.json") else { return nil }
+    private func fetchLatestRadarFrame() async -> (host: String, path: String)? {        
+        guard let url = URL(string: "http://hansolo.eu:8081/public/weather-maps.json") else { return nil }
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
-            let response  = try JSONDecoder().decode(RainViewerResponse.self, from: data)
+            let response  = try JSONDecoder().decode(LibreWxrResponse.self, from: data)
             guard let last = response.radar.past.last else { return nil }
             return (response.host, last.path)
         } catch {
             return nil
         }
+    }
+    
+    private func fetchLatestRadarTimestamp() async -> Int? {
+        guard let url = URL(string: "http://hansolo.eu:8081/public/weather-maps.json") else { return nil }
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                let response  = try JSONDecoder().decode(LibreWxrResponse.self, from: data)
+                return response.radar.past.last?.time
+            } catch {
+                return nil
+            }
     }
     
     private func fetchBaseMap(coordinate: CLLocationCoordinate2D, scale: CGFloat) async -> UIImage? {
@@ -112,6 +137,12 @@ class CloudMapViewModel {
         return await fetchTileImage(from: url)
     }
  
+    private func fetchRadarTile(coordinate: CLLocationCoordinate2D, timestamp: Int) async -> UIImage? {
+        let tile : MapTile = MapTile.tile(for: coordinate, zoom: zoomLevel)
+        guard let url : URL = tile.libreWxrURL(timestamp: timestamp) else { return nil }
+        return await fetchTileImage(from: url)
+    }
+    
     private func fetchTileImage(from url: URL) async -> UIImage? {
         do {
             let (data, response) = try await URLSession.shared.data(from: url)

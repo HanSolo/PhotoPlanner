@@ -57,6 +57,7 @@ struct ContentView: View {
     let lineWidth    : CGFloat = Constants.IS_IPAD ? 1.0 : 0.5
     let fovLineWidth : CGFloat = Constants.IS_IPAD ? 2.0 : 1.0
     
+    
     init() {
         UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(red: 0.25, green: 0.56, blue: 0.96, alpha: 1.00)
         UISegmentedControl.appearance().backgroundColor          = UIColor(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.5)
@@ -207,19 +208,24 @@ struct ContentView: View {
                             isSubjectMarkerDragging  = false
                         }
                     )
-                    .onMapCameraChange(frequency: .onEnd) { pos in
-                        self.visibleRegion = pos.region
-                        self.lightningViewModel.updateRegion(pos.region)
+                    .onMapCameraChange { context in
+                        self.lightningViewModel.isVisible = false
+                    }
+                    .onMapCameraChange(frequency: .onEnd) { context in
+                        self.visibleRegion = context.region
+                        self.lightningViewModel.updateRegion(context.region)
+                        
+                        if self.lightningViewModel.strikesVisible { self.lightningViewModel.isVisible = true }
                         
                         guard self.model.cameraMarkerData != nil else { return }
                         self.model.cameraMarkerData = mapProxy.markerData(coordinate: self.model.cameraMarkerData!.coordinate, geometryProxy: geo)
                         
                         guard self.model.subjectMarkerData != nil else { return }
                         self.model.subjectMarkerData  = mapProxy.markerData(coordinate: self.model.subjectMarkerData!.coordinate, geometryProxy: geo)
-                        self.model.currentMapLocation = pos.region.center
-                        self.model.currentMapHeading  = pos.camera.heading
-                        self.model.cameraDistance     = pos.camera.distance
-                        Properties.instance.distance  = pos.camera.distance
+                        self.model.currentMapLocation = context.region.center
+                        self.model.currentMapHeading  = context.camera.heading
+                        self.model.cameraDistance     = context.camera.distance
+                        Properties.instance.distance  = context.camera.distance
                     }
                     .mapControls {
                         MapScaleView()
@@ -578,7 +584,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(!self.model.networkMonitor.isConnected || self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.isVisible)
+                    .disabled(!self.model.networkMonitor.isConnected || self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.strikesVisible)
                     
                     Spacer()
                     
@@ -598,7 +604,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
+                    .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesVisible)
                 }
                      
                 // Moon phase and Exposure Calculator
@@ -621,7 +627,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.isVisible)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.strikesVisible)
                     
                     Spacer()
                     
@@ -660,7 +666,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
+                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesVisible)
                     
                     Spacer()
                     
@@ -685,7 +691,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible || self.lightningViewModel.isVisible)
+                    .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible || self.lightningViewModel.strikesVisible)
                 }
 
                 // Elevation and DistanceCalculator
@@ -706,7 +712,7 @@ struct ContentView: View {
                             }
                         }
                     }
-                    .disabled(self.lightningViewModel.isVisible)
+                    .disabled(self.lightningViewModel.strikesVisible)
                     
                     Spacer()
                     
@@ -727,16 +733,16 @@ struct ContentView: View {
                 HStack {
                     if Constants.IS_IPAD {
                         Button {
-                            self.lightningViewModel.isVisible.toggle()
+                            self.lightningViewModel.strikesVisible.toggle()
                             if self.lightningViewModel.isVisible {
                                 self.lightningViewModel.show(region: self.visibleRegion)
                             } else {
                                 self.lightningViewModel.hide()
                             }
                         } label: {
-                            Image(systemName: self.lightningViewModel.isVisible ? "bolt.fill" : "bolt")
+                            Image(systemName: self.lightningViewModel.strikesVisible ? "bolt.fill" : "bolt")
                                 .resizable()
-                                .foregroundStyle(self.lightningViewModel.isVisible ? .yellow : .primary)
+                                .foregroundStyle(self.lightningViewModel.strikesVisible ? .yellow : .primary)
                                 .frame(width: 18, height: 18)
                                 .padding(7)
                         }
@@ -766,16 +772,16 @@ struct ContentView: View {
                         if !self.model.elevationViewVisible && !self.model.milkywayVisible {
                             // Lightning Strikes
                             Button {
-                                self.lightningViewModel.isVisible.toggle()
+                                self.lightningViewModel.strikesVisible.toggle()
                                 if self.lightningViewModel.isVisible {
                                     self.lightningViewModel.show(region: self.visibleRegion)
                                 } else {
                                     self.lightningViewModel.hide()
                                 }
                             } label: {
-                                Image(systemName: self.lightningViewModel.isVisible ? "bolt.fill" : "bolt")
+                                Image(systemName: self.lightningViewModel.strikesVisible ? "bolt.fill" : "bolt")
                                     .resizable()
-                                    .foregroundStyle(self.lightningViewModel.isVisible ? .yellow : .primary)
+                                    .foregroundStyle(self.lightningViewModel.strikesVisible ? .yellow : .primary)
                                     .frame(width: 18, height: 18)
                                     .padding(7)
                             }

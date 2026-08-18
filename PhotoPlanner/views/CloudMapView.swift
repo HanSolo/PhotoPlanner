@@ -21,8 +21,8 @@ struct CloudMapView: View {
     let apiKey                    : String
     private var currentState      : CloudMapViewModel.State {
         switch activeMode {
-          case .cloud : return viewModel.cloudState
-          case .radar : return viewModel.radarState
+            case .cloud : return viewModel.cloudState
+            case .radar : return viewModel.radarState
         }
     }
     private var isLoading         : Bool {
