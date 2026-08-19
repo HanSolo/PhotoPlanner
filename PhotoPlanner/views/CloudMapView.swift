@@ -114,9 +114,9 @@ struct CloudMapView: View {
                                 .padding()
                         }
                     case .radar:
-                        AnimatedFrameView(viewModel: viewModel, mode: .radar, coordinate: coordinate, colorScheme: colorScheme)
+                        AnimatedFrameView(viewModel: viewModel, mode: .radar, coordinate: coordinate)
                     case .satellite:
-                        AnimatedFrameView(viewModel: viewModel, mode: .satellite, coordinate: coordinate, colorScheme: colorScheme)
+                        AnimatedFrameView(viewModel: viewModel, mode: .satellite, coordinate: coordinate)
                 }
             }
             .padding()

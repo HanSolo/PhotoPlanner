@@ -69,7 +69,7 @@ struct ContentView: View {
             // MapView
             GeometryReader { geo in
                 MapReader { mapProxy in
-                    Map(position: $position, interactionModes: [.pan, .rotate, .zoom]) {
+                    Map(position: self.$position, interactionModes: [.pan, .zoom]) {
                         // Show annotation for all saved photo shoots
                         ForEach(self.photoShoots) { photoShoot in
                             Annotation("", coordinate: CLLocationCoordinate2D(latitude: photoShoot.cameraLat, longitude: photoShoot.cameraLon)) {
@@ -204,8 +204,8 @@ struct ContentView: View {
                         }
                         .onEnded { drag in
                             setMapInteraction(enabled: true)
-                            isCameraMarkerDragging = false
-                            isSubjectMarkerDragging  = false
+                            isCameraMarkerDragging  = false
+                            isSubjectMarkerDragging = false
                         }
                     )
                     .onMapCameraChange(frequency: .continuous) { context in
