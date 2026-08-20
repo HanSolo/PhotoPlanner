@@ -12,33 +12,35 @@ import WeatherKit
 import CoreLocation
 import MapKit
 
+
 struct WeatherOverlayView: View {
-    @State    private var scrollOffset : CGFloat = 0
-    @State    private var showClouds   : Bool    = false
-    
+    @State private var scrollOffset : CGFloat = 0
+    @State private var showClouds   : Bool    = false
+
     private var localCalendar : Calendar {
-        var calendar      : Calendar = Calendar(identifier: .gregorian)
+        var calendar : Calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = weather.timeZone
         return calendar
     }
+
     private var currentHour   : CachedHourlyWeather? {
         let now : Date = Date()
         return weather.hours.min { abs($0.date.timeIntervalSince(now)) < abs($1.date.timeIntervalSince(now)) }
     }
-    
+
     let viewModel  : WeatherOverlayViewModel
     let weather    : CachedDailyWeather
     let isOutdated : Bool
     let onRefresh  : () -> Void
     let onDismiss  : () -> Void
 
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
 
-            HStack(alignment: .bottom, spacing: 10) {
-                // Current conditions
-                if let current = currentHour {
+            // Current conditions
+            if let current = currentHour {
+                HStack(alignment: .bottom, spacing: 10) {
                     HStack(spacing: 6) {
                         Image(systemName: current.conditionIcon)
                             .font(.system(size: 22))
@@ -58,12 +60,12 @@ struct WeatherOverlayView: View {
                             .background(.white.opacity(0.3))
                             .frame(height: 30)
 
-                        // Wind
+                        // Wind + Rain
                         VStack(alignment: .leading, spacing: 1) {
                             HStack(spacing: 3) {
                                 Image(systemName: "wind")
                                     .font(.caption2)
-                                Text(String(format: "%.0f km/h", current.windSpeedKmh))
+                                Text("\(String(format: "%.0f", current.windSpeedKmh)) km/h \(current.windDirectionLabel)")
                                     .font(.caption2.monospacedDigit())
                             }
                             .foregroundStyle(.white.opacity(0.7))
@@ -79,11 +81,10 @@ struct WeatherOverlayView: View {
                             .foregroundStyle(.white.opacity(0.7))
                         }
                     }
-                }
 
                 Spacer()
 
-                // Outdated indicator + refresh button
+                // Outdated indicator and refresh button
                 VStack(alignment: .trailing, spacing: 4) {
                     if isOutdated {
                         Button {
@@ -104,13 +105,19 @@ struct WeatherOverlayView: View {
                     } else {
                         Text(fetchedAtString)
                             .font(.system(size: 8))
-                            .foregroundStyle(.white.opacity(0.35))                            
+                            .foregroundStyle(.white.opacity(0.35))                           
                     }
                 }
             }
             .padding(.horizontal, 12)
             .padding(.top, 10)
-            .padding(.bottom, 8)
+            .padding(.bottom, 6)
+
+            // Photographer metrics
+            photographerMetricsRow(current: current)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+        }
 
             Divider()
                 .background(.white.opacity(0.15))
@@ -145,6 +152,7 @@ struct WeatherOverlayView: View {
                 }
             }
 
+            // Bottom row: location and buttons
             HStack {
                 Image(systemName: "location.fill")
                     .font(.system(size: 9))
@@ -152,31 +160,27 @@ struct WeatherOverlayView: View {
                 Text(locationString)
                     .font(.system(size: 9))
                     .foregroundStyle(.white.opacity(0.5))
-                
+
                 Spacer()
-                
+
                 if let coord = viewModel.coordinate {
-                    Button {
-                        self.showClouds = true
-                    } label: {
+                    Button { showClouds = true } label: {
                         HStack(spacing: 3) {
-                            Image(systemName: "cloud.fill")
+                            Image(systemName: "dot.radiowaves.up.forward")
                                 .font(.system(size: 9))
-                            Text("Clouds")
+                            Text("Weather Map")
                                 .font(.system(size: 9))
                         }
                         .foregroundStyle(.white.opacity(0.5))
                     }
-                    .sheet(isPresented: self.$showClouds) {
-                        CloudMapView(coordinate: coord, apiKey: "32cabca381ca632856caf5d3c7455abb")
+                    .sheet(isPresented: $showClouds) {
+                        CloudMapView(coordinate: coord)
                     }
                 }
-                
+
                 Spacer()
-                
-                Button {
-                    onRefresh()
-                } label: {
+
+                Button { onRefresh() } label: {
                     HStack(spacing: 3) {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 9))
@@ -186,68 +190,124 @@ struct WeatherOverlayView: View {
                     .foregroundStyle(.white.opacity(0.5))
                 }
             }
-            .foregroundStyle(.white.opacity(0.35))
+            //.foregroundStyle(.white.opacity(0.35))
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
         }
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(.black.opacity(0.72))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .fill(.black.opacity(0.72))
-                )
         )
         .clipShape(RoundedRectangle(cornerRadius: 14))
-        .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 4)        
+        .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 4)
+    }
+
+
+    @ViewBuilder
+    private func photographerMetricsRow(current: CachedHourlyWeather) -> some View {
+        HStack(spacing: 0) {
+            metricPill(icon: "thermometer.medium", label: "Dew Pt", value: String(format: "%.0f°C", current.dewPoint), color: current.condensationRisk ? .orange : .white.opacity(0.7), warning: current.condensationRisk)
+
+            metricDivider()
+
+            metricPill(icon: "humidity", label: "Humidity", value: String(format: "%.0f%%", current.humidity * 100), color: humidityColor(current.humidity))
+
+            metricDivider()
+
+            metricPill(icon: "eye", label: "Visibility", value: current.visibilityKm >= 10 ? String(format: "%.0f km", current.visibilityKm) : String(format: "%.1f km", current.visibilityKm), color: visibilityColor(current.visibilityKm))
+
+            metricDivider()
+
+            metricPill(icon: "sun.max", label: "UV", value: "\(current.uvIndex) · \(current.uvIndexLabel)", color: current.uvIndexColor)
+        }
+        .padding(.vertical, 6)
+        .background(.white.opacity(0.06))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    @ViewBuilder
+    private func metricPill(icon: String, label: String, value: String, color: Color, warning: Bool = false) -> some View {
+        VStack(spacing: 2) {
+            HStack(spacing: 3) {
+                Image(systemName: icon)
+                    .font(.system(size: 9))
+                    .foregroundStyle(color)
+                if warning {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 7))
+                        .foregroundStyle(.orange)
+                }
+            }
+            Text(label)
+                .font(.system(size: 7))
+                .foregroundStyle(.white.opacity(0.45))
+            Text(value)
+                .font(.system(size: 10, weight: .medium).monospacedDigit())
+                .foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    @ViewBuilder
+    private func metricDivider() -> some View {
+        Divider()
+            .background(.white.opacity(0.15))
+            .frame(height: 28)
     }
 
 
     private func hourCell(hour: CachedHourlyWeather) -> some View {
-        let isCurrentHour : Bool = localCalendar.isDate(hour.date, equalTo: Date(), toGranularity: .hour)
-        
-        return VStack(spacing: 4) {
+        let isCurrentHour = localCalendar.isDate(hour.date, equalTo: Date(), toGranularity: .hour)
 
-            // Hour label
+        return VStack(spacing: 4) {
             Text(hourString(from: hour.date))
                 .font(.system(size: 9).monospacedDigit())
                 .foregroundStyle(isCurrentHour ? .white : .white.opacity(0.5))
 
-            // Condition icon
             Image(systemName: hour.conditionIcon)
                 .font(.system(size: 16))
                 .foregroundStyle(hour.conditionColor)
 
-            // Temperature
             Text(String(format: "%.0f°", hour.temperature))
                 .font(.system(size: 11, weight: .medium).monospacedDigit())
                 .foregroundStyle(.white)
 
-            // Rain probability — only show if > 10%
             if hour.precipitationChance > 0.10 {
                 Text(String(format: "%.0f%%", hour.precipitationChance * 100))
                     .font(.system(size: 8).monospacedDigit())
                     .foregroundStyle(.blue.opacity(0.8))
             } else {
-                Text(" ")
-                    .font(.system(size: 8))
+                Text(" ").font(.system(size: 8))
             }
         }
         .frame(width: 44)
         .padding(.vertical, 6)
-        .background(
-            isCurrentHour
-                ? RoundedRectangle(cornerRadius: 8)
-                    .fill(.white.opacity(0.12))
-                : nil
-        )
+        .background(isCurrentHour ? RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.12)) : nil)
+    }
+
+
+    private func humidityColor(_ humidity: Double) -> Color {
+        switch humidity {
+            case ..<0.4     : return .white.opacity(0.7)
+            case 0.4..<0.7  : return .white.opacity(0.7)
+            case 0.7..<0.85 : return .orange
+            default         : return .red.opacity(0.8)
+        }
+    }
+
+    private func visibilityColor(_ km: Double) -> Color {
+        switch km {
+            case ..<2   : return .red.opacity(0.8)
+            case 2..<5  : return .orange
+            case 5..<10 : return .yellow.opacity(0.8)
+            default     : return .white.opacity(0.7)
+        }
     }
 
     private func hourString(from date: Date) -> String {
-        var calendar      : Calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone            = weather.timeZone
-        let hour          : Int      = calendar.component(.hour, from: date)
-        return String(format: "%02d", hour)
+        var calendar : Calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = weather.timeZone
+        return String(format: "%02d", calendar.component(.hour, from: date))
     }
 
     private var fetchedAtString: String {

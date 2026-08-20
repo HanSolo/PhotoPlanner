@@ -14,3 +14,4 @@ struct CloudMapFrame {
     let image     : UIImage
     let isNowcast : Bool
 }
+

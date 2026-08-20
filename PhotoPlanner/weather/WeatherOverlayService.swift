@@ -32,6 +32,7 @@ actor WeatherOverlayService {
                     date                 : hour.date,
                     temperature          : hour.temperature.converted(to: .celsius).value,
                     feelsLike            : hour.apparentTemperature.converted(to: .celsius).value,
+                    dewPoint             : hour.dewPoint.converted(to: .celsius).value,
                     conditionRawValue    : hour.condition.rawValue,
                     precipitationChance  : hour.precipitationChance,
                     windSpeedKmh         : hour.wind.speed.converted(to: .kilometersPerHour).value,

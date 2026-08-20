@@ -238,7 +238,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     }
     
     func updateSunAndMoonTimes() async -> Void {
-        if self.cameraMarkerData != nil {
+        if self.cameraMarkerData != nil && self.cameraMarkerData?.coordinate != nil {
             self.sunTimes = self.magicHours.getTimes(date: self.currentMapDate, lat: self.cameraMarkerData!.coordinate.latitude, lon: self.cameraMarkerData!.coordinate.longitude)
             let timeZone : TimeZone = await Helper.fetchTimeZone(for: self.cameraMarkerData!.coordinate)
             self.moonTimes = MoonCalculator.calcMoonRiseAndMoonSet(at: self.cameraMarkerData!.coordinate, on: self.currentMapDate, timeZone: timeZone)

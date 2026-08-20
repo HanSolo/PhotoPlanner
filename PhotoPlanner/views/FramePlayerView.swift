@@ -11,51 +11,30 @@ internal import Combine
 
 
 struct FramePlayerView: View {
-    @Environment(\.colorScheme) private var colorScheme
+
     let viewModel  : CloudMapViewModel
     let mode       : CloudMapMode
-    
+    @Environment(\.colorScheme) private var colorScheme
 
-    // Timer drives auto-play
     private let timer = Timer.publish(every: 0.6, on: .main, in: .common).autoconnect()
 
     private var frames       : [CloudMapFrame] { mode == .radar ? viewModel.radarFrames       : viewModel.satelliteFrames       }
     private var currentIndex : Int             { mode == .radar ? viewModel.radarCurrentIndex : viewModel.satelliteCurrentIndex }
     private var isPlaying    : Bool            { mode == .radar ? viewModel.radarPlaying      : viewModel.satellitePlaying      }
+    private var frameCount   : Int             { frames.count }
 
-    // Slider value — Double for smooth dragging
-    @State private var sliderValue : Double = 0
-
-    private var frameCount : Int { frames.count }
-
-    private var currentFrame : CloudMapFrame? {
-        guard !frames.isEmpty, currentIndex < frames.count else { return nil }
-        return frames[currentIndex]
-    }
-
-    private var timeLabel : String {
-        guard let frame = currentFrame else { return "--:--" }
-        let date      = Date(timeIntervalSince1970: TimeInterval(frame.time))
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return formatter.string(from: date)
-    }
-
-    // Index of the last non-nowcast frame — everything after is forecast
-    private var nowcastStartIndex : Int? {
+    private var nowcastStartIndex: Int? {
         frames.lastIndex(where: { !$0.isNowcast }).map { $0 + 1 }
     }
 
     var body: some View {
         ZStack(alignment: .leading) {
-
-            // Pill background
             Capsule()
                 .fill(.black.opacity(0.65))
 
             HStack(spacing: 12) {
 
-                // Play / pause button
+                // Play / pause
                 Button {
                     togglePlaying()
                 } label: {
@@ -66,50 +45,47 @@ struct FramePlayerView: View {
                         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(.white)
-                            .offset(x: isPlaying ? 0 : 1)   // optical centering for play triangle
+                            .offset(x: isPlaying ? 0 : 1)
                     }
                 }
                 .buttonStyle(.plain)
 
                 // Time label
-                Text(timeLabel)
+                Text(currentTimeLabel)
                     .font(.system(size: 15, weight: .semibold).monospacedDigit())
                     .foregroundStyle(.white)
                     .frame(width: 44, alignment: .leading)
 
-                // Custom slider with nowcast track coloring
+                // Track + thumb
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
 
-                        // Track background
+                        // Background track
                         Capsule()
                             .fill(.white.opacity(0.2))
                             .frame(height: 4)
 
-                        // Past frames track — white
+                        // Past frames track
                         if frameCount > 1 {
-                            let pastWidth : CGFloat = {
-                                guard let nowStart = nowcastStartIndex, nowStart > 0 else {
-                                    return geo.size.width
-                                }
-                                return geo.size.width * CGFloat(nowStart) / CGFloat(frameCount)
+                            let pastWidth: CGFloat = {
+                                guard let ns = nowcastStartIndex, ns > 0 else { return geo.size.width }
+                                return geo.size.width * CGFloat(ns) / CGFloat(frameCount)
                             }()
                             Capsule()
                                 .fill(.white.opacity(0.6))
                                 .frame(width: pastWidth, height: 4)
 
-                            // Nowcast / forecast track — accent color
-                            if let nowStart = nowcastStartIndex, nowStart < frameCount {
-                                let forecastWidth = geo.size.width - pastWidth
+                            // Nowcast track
+                            if let ns = nowcastStartIndex, ns < frameCount {
                                 Capsule()
                                     .fill(Color.accentColor.opacity(0.7))
-                                    .frame(width: forecastWidth, height: 4)
+                                    .frame(width: geo.size.width - pastWidth, height: 4)
                                     .offset(x: pastWidth)
                             }
                         }
 
                         // Thumb
-                        let thumbX : CGFloat = frameCount > 1
+                        let thumbX: CGFloat = frameCount > 1
                             ? geo.size.width * CGFloat(currentIndex) / CGFloat(frameCount - 1)
                             : 0
                         Circle()
@@ -122,8 +98,7 @@ struct FramePlayerView: View {
                                     .onChanged { value in
                                         setPlaying(false)
                                         let fraction = max(0, min(1, value.location.x / geo.size.width))
-                                        let index    = Int((fraction * Double(frameCount - 1)).rounded())
-                                        setIndex(index)
+                                        setIndex(Int((fraction * Double(frameCount - 1)).rounded()))
                                     }
                             )
                     }
@@ -138,16 +113,17 @@ struct FramePlayerView: View {
             guard isPlaying, !frames.isEmpty else { return }
             stepForward()
         }
-        .onChange(of: currentIndex) { _, newIndex in
-            sliderValue = Double(newIndex)
-        }
     }
 
-    // ── Private ───────────────────────────────────────────────
+    private var currentTimeLabel: String {
+        let frames = mode == .radar ? viewModel.radarFrames : viewModel.satelliteFrames
+        let index  = mode == .radar ? viewModel.radarCurrentIndex : viewModel.satelliteCurrentIndex
+        guard !frames.isEmpty, index < frames.count else { return "--:--" }
+        return viewModel.frameTimeLabel(for: frames[index])
+    }
 
     private func stepForward() {
-        if mode == .radar { viewModel.advanceRadarFrame() }
-        else              { viewModel.advanceSatelliteFrame() }
+        mode == .radar ? viewModel.advanceRadarFrame() : viewModel.advanceSatelliteFrame()
     }
 
     private func togglePlaying() {

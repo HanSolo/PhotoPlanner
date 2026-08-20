@@ -2,32 +2,25 @@
 //  AnimatedFrameView.swift
 //  PhotoPlanner
 //
-//  Created by Gerrit Grunwald on 18.08.26.
-//
 
 import Foundation
 import SwiftUI
-import MapKit
+import CoreLocation
 internal import Combine
 
 
 struct AnimatedFrameView: View {
-    @Environment(\.colorScheme) private var colorScheme
-    
+
     let viewModel  : CloudMapViewModel
     let mode       : CloudMapMode
     let coordinate : CLLocationCoordinate2D
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var isLoading : Bool            { mode == .radar ? viewModel.radarLoading : viewModel.satelliteLoading }
+    private var isFailed  : Bool            { mode == .radar ? viewModel.radarFailed  : viewModel.satelliteFailed  }
+    private var frames    : [CloudMapFrame] { mode == .radar ? viewModel.radarFrames  : viewModel.satelliteFrames  }
+
     
-    private var frames       : [CloudMapFrame] { mode == .radar ? viewModel.radarFrames       : viewModel.satelliteFrames    }
-    private var isLoading    : Bool            { mode == .radar ? viewModel.radarLoading      : viewModel.satelliteLoading   }
-    private var isFailed     : Bool            { mode == .radar ? viewModel.radarFailed       : viewModel.satelliteFailed    }
-    private var currentIndex : Int             { mode == .radar ? viewModel.radarCurrentIndex : viewModel.satelliteCurrentIndex }
-
-    private var currentFrame : CloudMapFrame? {
-        guard !frames.isEmpty, currentIndex < frames.count else { return nil }
-        return frames[currentIndex]
-    }
-
     var body: some View {
         if isLoading {
             VStack(spacing: 12) {
@@ -49,31 +42,60 @@ struct AnimatedFrameView: View {
         } else {
             VStack(spacing: 10) {
 
-                // Frame image with optional nowcast border
-                if let frame = currentFrame {
-                    Image(uiImage: frame.image)
+                // Frame image — uses currentImage() which composites wind arrows if enabled
+                if let image = viewModel.currentImage(for: mode) {
+                    let currentFrame = mode == .radar
+                        ? viewModel.radarFrames[safe: viewModel.radarCurrentIndex]
+                        : viewModel.satelliteFrames[safe: viewModel.satelliteCurrentIndex]
+
+                    Image(uiImage: image)
                         .resizable()
                         .scaledToFit()
                         .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(frame.isNowcast ? Color.accentColor.opacity(0.6) : Color.clear, lineWidth: 2))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .strokeBorder(
+                                    currentFrame?.isNowcast == true ? Color.accentColor.opacity(0.6) : Color.clear,
+                                    lineWidth: 2
+                                )
+                        )
+                        .contextMenu {
+                            if mode == .radar {
+                                ForEach(LibreWxrColorScheme.allCases) { scheme in
+                                    Button {
+                                        Properties.instance.libreWxrColorScheme = scheme.id
+                                        Task {
+                                            await viewModel.loadRadarFrames(
+                                                coordinate: coordinate,
+                                                scale:      UITraitCollection.current.displayScale
+                                            )
+                                        }
+                                    } label: {
+                                        Label(
+                                            scheme.name,
+                                            systemImage: (Properties.instance.libreWxrColorScheme ?? 8) == scheme.id
+                                                ? "checkmark.circle.fill"
+                                                : "circle"
+                                        )
+                                    }
+                                }
+                            }
+                        }
                 }
 
                 // Pill player
                 FramePlayerView(viewModel: viewModel, mode: mode)
                     .padding(.horizontal, 4)
 
-                // Attribution + coordinates
+                // Attribution
                 HStack(spacing: 6) {
                     Image(systemName: mode.icon)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(.caption2).foregroundStyle(.secondary)
                     Text(mode.attribution)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .font(.caption2).foregroundStyle(.secondary)
                     if mode == .satellite {
                         Text("· hourly")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .font(.caption2).foregroundStyle(.secondary)
                     }
                 }
 
@@ -82,22 +104,13 @@ struct AnimatedFrameView: View {
                     .foregroundStyle(colorScheme == .dark ? .white : .black)
             }
             .padding(.vertical, 8)
-            // Long press on radar image to change color scheme
-            .contextMenu {
-                if mode == .radar {
-                    ForEach(LibreWxrColorScheme.allCases) { scheme in
-                        Button {
-                            Properties.instance.libreWxrColorScheme = scheme.id
-                            Task {
-                                await viewModel.loadRadarFrames(coordinate: coordinate, scale: UITraitCollection.current.displayScale)
-                            }
-                        } label: {
-                            Label(scheme.name, systemImage: (Properties.instance.libreWxrColorScheme ?? 8) == scheme.id ? "checkmark.circle.fill" : "circle")
-                                .font(Constants.REGULAR_FONT_10)
-                        }
-                    }
-                }
-            }
         }
+    }
+}
+
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }

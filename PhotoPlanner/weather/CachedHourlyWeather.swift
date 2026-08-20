@@ -2,9 +2,6 @@
 //  CachedHourlyWeather.swift
 //  PhotoPlanner
 //
-//  Created by Gerrit Grunwald on 22.05.26.
-//
-
 
 import Foundation
 import SwiftUI
@@ -13,19 +10,27 @@ import WeatherKit
 
 struct CachedHourlyWeather: Codable {
     let date                 : Date
-    let temperature          : Double // °C
-    let feelsLike            : Double // °C
-    let conditionRawValue    : String // WeatherCondition raw string
-    let precipitationChance  : Double // 0.0...1.0
+    let temperature          : Double   // °C
+    let feelsLike            : Double   // °C
+    let dewPoint             : Double   // °C, added for photographer condensation warning
+    let conditionRawValue    : String
+    let precipitationChance  : Double   // 0.0...1.0
     let windSpeedKmh         : Double
     let windDirectionDegrees : Double
-    let humidity             : Double // 0.0...1.0
+    let humidity             : Double   // 0.0...1.0
     let visibilityKm         : Double
     let uvIndex              : Int
-    var condition            : WeatherCondition? {
-        WeatherCondition(rawValue: conditionRawValue)
-    }
-    var conditionIcon        : String {
+
+    var condition : WeatherCondition? { WeatherCondition(rawValue: conditionRawValue) }
+
+    // Difference between temperature and dew point.
+    // < 2°C condensation/fog risk, critical for photographers
+    var temperatureDewPointSpread : Double { temperature - dewPoint }
+
+    /// True when lens condensation is likely
+    var condensationRisk : Bool { temperatureDewPointSpread < 3.0 }
+
+    var conditionIcon : String {
         switch conditionRawValue {
             case "clear", "mostlyClear"          : return "sun.max.fill"
             case "partlyCloudy"                  : return "cloud.sun.fill"
@@ -54,7 +59,8 @@ struct CachedHourlyWeather: Codable {
             default                              : return "cloud.fill"
         }
     }
-    var conditionColor       : Color {
+
+    var conditionColor : Color {
         switch conditionRawValue {
             case "clear", "mostlyClear"                      : return .yellow
             case "partlyCloudy"                              : return .orange.opacity(0.8)
@@ -65,6 +71,44 @@ struct CachedHourlyWeather: Codable {
             case "snow", "heavySnow", "flurries", "blizzard" : return .white
             case "thunderstorms", "strongStorms"             : return .purple
             default                                          : return .gray
+        }
+    }
+
+    // Wind direction as a compass label
+    var windDirectionLabel : String {
+        let directions = [ "N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW" ]
+        let index      = Int((windDirectionDegrees + 11.25) / 22.5) % 16
+        return directions[index]
+    }
+
+    // Visibility description for quick reading
+    var visibilityDescription : String {
+        switch visibilityKm {
+            case ..<1   : return "Poor"
+            case 1..<5  : return "Low"
+            case 5..<10 : return "Moderate"
+            default     : return "Good"
+        }
+    }
+
+    // UV risk level label
+    var uvIndexLabel : String {
+        switch uvIndex {
+            case 0...2  : return "Low"
+            case 3...5  : return "Moderate"
+            case 6...7  : return "High"
+            case 8...10 : return "Very High"
+            default     : return "Extreme"
+        }
+    }
+
+    var uvIndexColor : Color {
+        switch uvIndex {
+            case 0...2  : return .green
+            case 3...5  : return .yellow
+            case 6...7  : return .orange
+            case 8...10 : return .red
+            default     : return .purple
         }
     }
 }
