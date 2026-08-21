@@ -14,8 +14,10 @@ import MapKit
 
 
 struct WeatherOverlayView: View {
-    @State private var scrollOffset : CGFloat = 0
-    @State private var showClouds   : Bool    = false
+    @State private var scrollOffset : CGFloat             = 0
+    @State private var showClouds   : Bool                = false
+    @State private var showAlerts   : Bool                = false
+    @State private var alertFetcher : WeatherAlertFetcher = WeatherAlertFetcher()
 
     private var localCalendar : Calendar {
         var calendar : Calendar = Calendar(identifier: .gregorian)
@@ -65,11 +67,18 @@ struct WeatherOverlayView: View {
                             HStack(spacing: 3) {
                                 Image(systemName: "wind")
                                     .font(.caption2)
-                                Text("\(String(format: "%.0f", current.windSpeedKmh)) km/h \(current.windDirectionLabel)")
+                                Text("\(String(format: "%.0f", current.windSpeedKmh)) km/h")
                                     .font(.caption2.monospacedDigit())
                             }
                             .foregroundStyle(.white.opacity(0.7))
-
+                            HStack(spacing: 3) {
+                                Image(systemName: "location")
+                                    .font(.caption2)
+                                Text(current.windDirectionLabel)
+                                    .font(.caption2)
+                            }
+                            .foregroundStyle(.white.opacity(0.7))
+                                                        
                             // Rain chance
                             HStack(spacing: 3) {
                                 Image(systemName: "drop.fill")
@@ -86,6 +95,20 @@ struct WeatherOverlayView: View {
 
                 // Outdated indicator and refresh button
                 VStack(alignment: .trailing, spacing: 4) {
+                    // Alert icon only visible when alerts exist
+                    if !alertFetcher.alerts.isEmpty {
+                        Button {
+                            showAlerts = true
+                        } label: {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 14))
+                                .foregroundStyle(alertFetcher.alerts.first?.severity.color ?? .yellow)
+                        }
+                        .popover(isPresented: $showAlerts) {
+                            AlertsPopoverView(alerts: alertFetcher.alerts)
+                        }
+                    }
+
                     if isOutdated {
                         Button {
                             onRefresh()
@@ -190,16 +213,20 @@ struct WeatherOverlayView: View {
                     .foregroundStyle(.white.opacity(0.5))
                 }
             }
-            //.foregroundStyle(.white.opacity(0.35))
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
         }
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(.black.opacity(0.72))
+                .fill(.black.opacity(0.80))
         )
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 4)
+        .task {
+            if let coordinate = viewModel.coordinate {
+                await alertFetcher.fetchIfNeeded(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            }
+        }
     }
 
 
