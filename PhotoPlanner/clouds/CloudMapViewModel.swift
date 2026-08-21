@@ -85,6 +85,8 @@ class CloudMapViewModel {
         radarFailed       = false
         radarFrames       = []
         radarCurrentIndex = 0
+        
+        let tileSize : Int = Properties.instance.hiResWeatherMap! ? 512 : 256
 
         let colorScheme = Properties.instance.libreWxrColorScheme ?? 8
 
@@ -104,7 +106,7 @@ class CloudMapViewModel {
             for (time, path, isNowcast) in past + nowcast {
                 group.addTask { [weak self] in
                     guard let self,
-                          let url     = tile.libreWxrURL(host: manifest.host, path: path, colorScheme: colorScheme),
+                          let url     = tile.libreWxrURL(host: manifest.host, path: path, colorScheme: colorScheme, tileSize: tileSize),
                           let tileImg = await self.fetchTileImage(from: url)
                     else { return nil }
                     let composited = self.composite(base: base, overlay: tileImg, alpha: 0.85)
@@ -144,6 +146,8 @@ class CloudMapViewModel {
         satelliteFailed       = false
         satelliteFrames       = []
         satelliteCurrentIndex = 0
+        
+        let tileSize : Int = Properties.instance.hiResWeatherMap! ? 512 : 256
 
         guard let manifest  = await fetchManifest(),
               let satellite = manifest.satellite,
@@ -196,8 +200,9 @@ class CloudMapViewModel {
     }
 
     private func fetchBaseMap(coordinate: CLLocationCoordinate2D, scale: CGFloat) async -> UIImage? {
-        let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 250_000, longitudinalMeters: 250_000)
-
+        let region   : MKCoordinateRegion = MKCoordinateRegion(center: coordinate, latitudinalMeters: 250_000, longitudinalMeters: 250_000)
+        let tileSize : CGFloat            = Properties.instance.hiResWeatherMap! ? 512 : 360
+        
         // Store region span for wind grid and arrow positioning
         regionCenter  = coordinate
         regionSpanLat = region.span.latitudeDelta
@@ -205,7 +210,7 @@ class CloudMapViewModel {
 
         let options            = MKMapSnapshotter.Options()
         options.region         = region
-        options.size           = CGSize(width: 360, height: 360)
+        options.size           = CGSize(width: tileSize, height: tileSize)
         options.scale          = scale
         options.mapType        = .standard
         options.showsBuildings = false

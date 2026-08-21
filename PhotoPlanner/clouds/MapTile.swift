@@ -45,18 +45,18 @@ struct MapTile {
      ** 11 -> MRMS CREF
      ** 12 -> 33/40 Max Storm
      **/
-    nonisolated func libreWxrURL(host: String, path: String, colorScheme: Int = 8) -> URL? {
+    nonisolated func libreWxrURL(host: String, path: String, colorScheme: Int = 8, tileSize: Int = 256) -> URL? {
         // host  = "https://hansolo.eu"
         // path  = "/v2/radar/1609401600"
         // color = /256/z/x/y/COLOR_SCHEME/SMOOTH_SNOW.png
         // smooth = 0 = false / 1 = true
         // snow   = 0 = false / 1 = true
         // full tile URL = host + path + /256/z/x/y/2/1_1.png
-        return URL(string: "\(host)\(path)/256/\(z)/\(x)/\(y)/\(colorScheme)/1_1.png")
+        return URL(string: "\(host)\(path)/\(tileSize)/\(z)/\(x)/\(y)/\(colorScheme)/1_1.png")
     }
 
     // LibreWXR satellite tile URL
     nonisolated func libreWxrSatelliteURL(host: String, path: String) -> URL? {
-        URL(string: "\(host)\(path)/256/\(z)/\(x)/\(y)/0/0_0.png")
+        return URL(string: "\(host)\(path)/256/\(z)/\(x)/\(y)/0/0_0.png")
     }
 }

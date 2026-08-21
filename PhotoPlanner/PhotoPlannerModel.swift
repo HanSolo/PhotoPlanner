@@ -134,6 +134,14 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
         .init(get: { self.lightningVisible }, set: { self.lightningVisible = $0 })
     }
     var visibleRegion                 : MKCoordinateRegion       = MKCoordinateRegion()
+    var hiResWeatherMap               : Bool                     = Properties.instance.hiResWeatherMap! {
+        didSet {
+            Properties.instance.hiResWeatherMap = self.hiResWeatherMap
+        }
+    }
+    var hiResWeatherMapBinding        : Binding<Bool> {
+        .init(get: { self.hiResWeatherMap }, set: { self.hiResWeatherMap = $0 })
+    }
     
 
     override init() {
