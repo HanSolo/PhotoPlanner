@@ -147,8 +147,6 @@ class CloudMapViewModel {
         satelliteFrames       = []
         satelliteCurrentIndex = 0
         
-        let tileSize : Int = Properties.instance.hiResWeatherMap! ? 512 : 256
-
         guard let manifest  = await fetchManifest(),
               let satellite = manifest.satellite,
               !satellite.infrared.isEmpty,
@@ -214,7 +212,7 @@ class CloudMapViewModel {
         options.scale          = scale
         options.mapType        = .standard
         options.showsBuildings = false
-        return try? await MKMapSnapshotter(options: options).start().image
+        return try? await MKMapSnapshotter(options: options).start().image.tonal
     }
 
     nonisolated private func fetchTileImage(from url: URL) async -> UIImage? {
