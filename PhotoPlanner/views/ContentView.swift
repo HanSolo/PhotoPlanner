@@ -939,7 +939,7 @@ struct ContentView: View {
             SearchView(locationService: self.locationService, functio: setMapLocation)
         }
         .sheet(isPresented: $fieldOfViewCalculatorVisible) {
-            FieldOfViewCalculatorView(photoPlannerModel: self.model)
+            MinimumDistanceCalculatorView(photoPlannerModel: self.model)
         }
         .sheet(isPresented: $addPhotoShootViewVisible) {
             AddPhotoShootView()

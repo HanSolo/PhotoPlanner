@@ -9,19 +9,24 @@ import Foundation
 import SwiftUI
 
 
-struct FieldOfViewCalculatorView: View {
+struct MinimumDistanceCalculatorView: View {
     @Environment(\.dismiss) private var dismiss
-    @State                  private var viewModel : FieldOfViewCalculatorViewModel
+    @State                  private var viewModel         : FieldOfViewCalculatorViewModel
+    @State                  private var showFovCalculator : Bool = false
     
-    let focalLength  : Double
-    let sensorWidth  : Double
-    let sensorHeight : Double
+    let focalLength    : Double
+    let sensorWidth    : Double
+    let sensorHeight   : Double
+    let selectedCamera : Camera
+    let selectedLens   : Lens
     
     
     init(photoPlannerModel: PhotoPlannerModel) {
-        self.focalLength  = photoPlannerModel.focalLength
-        self.sensorWidth  = SensorFormat.fromId(photoPlannerModel.camera.sensorFormat)?.width  ?? SensorFormat.fullFormat.width
-        self.sensorHeight = SensorFormat.fromId(photoPlannerModel.camera.sensorFormat)?.height ?? SensorFormat.fullFormat.height
+        self.focalLength    = photoPlannerModel.focalLength
+        self.sensorWidth    = SensorFormat.fromId(photoPlannerModel.camera.sensorFormat)?.width  ?? SensorFormat.fullFormat.width
+        self.sensorHeight   = SensorFormat.fromId(photoPlannerModel.camera.sensorFormat)?.height ?? SensorFormat.fullFormat.height
+        self.selectedCamera = photoPlannerModel.camera
+        self.selectedLens   = photoPlannerModel.lens
         _viewModel = State(initialValue: FieldOfViewCalculatorViewModel(focalLength: focalLength, sensorWidth: sensorWidth, sensorHeight: sensorHeight))
     }
 
@@ -30,10 +35,19 @@ struct FieldOfViewCalculatorView: View {
         ScrollView {
             VStack(spacing: 10) {
                 HStack(spacing: 10) {
-                    Text("Minimum Distance Calculator")
+                    Text("Min. Distance Calculator")
                         .font(Constants.REGULAR_FONT_18)
                     
                     Spacer()
+                    
+                    Button {
+                        showFovCalculator = true
+                    } label: {
+                        Image(systemName: "viewfinder")
+                    }
+                    .sheet(isPresented: $showFovCalculator) {
+                        FovCalculatorView(camera: self.selectedCamera, lens: self.selectedLens)
+                    }
                     
                     Button("Close") {
                         dismiss()
