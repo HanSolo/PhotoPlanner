@@ -190,7 +190,6 @@ public class Helper {
         return CLLocationCoordinate2D(latitude: toDegrees(lat2), longitude: toDegrees(lon2))
     }
     
-    
     public static func rotatePointAroundCenter(point: MKMapPoint, rotationCenter: MKMapPoint, angleRad: Double) -> MKMapPoint {
         return MKMapPoint(rotatePointAroundCenter(location: point.coordinate, around: rotationCenter.coordinate, angleRad: angleRad))
     }

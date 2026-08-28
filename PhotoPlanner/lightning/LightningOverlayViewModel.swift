@@ -23,13 +23,13 @@ class LightningOverlayViewModel {
     }
     var visibleRegion  : MKCoordinateRegion?
 
-    private let mqttClient          : BlitzortungMQTTClient     = BlitzortungMQTTClient()
-    private let haptic              : UIImpactFeedbackGenerator = UIImpactFeedbackGenerator(style: .light)
-    private var lastHapticTime      : Date                      = Date.distantPast
-    private let hapticThrottle      : Double                    = 0.1    // 100 ms minimum between vibrations
-    private let maxStrikes          : Int                       = 500
-    private let maxAge              : Double                    = 150.0  // 2.5 minutes
-    private let bufferKm            : Double                    = 50.0
+    private let mqttClient     : BlitzortungMQTTClient     = BlitzortungMQTTClient()
+    private let haptic         : UIImpactFeedbackGenerator = UIImpactFeedbackGenerator(style: .light)
+    private var lastHapticTime : Date                      = Date.distantPast
+    private let hapticThrottle : Double                    = 0.1    // 100 ms minimum between vibrations
+    private let maxStrikes     : Int                       = 500
+    public  let maxAge         : Double                    = 300.0  // 5 minutes
+    private let bufferKm       : Double                    = 50.0
 
     
     init(username: String, password: String) {
@@ -59,7 +59,7 @@ class LightningOverlayViewModel {
     }
 
     func pruneOldStrikes() {
-        let cutoff = Date().addingTimeInterval(-maxAge)
+        let cutoff : Date = Date().addingTimeInterval(-self.maxAge)
         strikes.removeAll { $0.timestamp < cutoff }
     }
 

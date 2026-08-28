@@ -22,8 +22,8 @@ struct LightningStrike: Identifiable, Sendable {
 
     func opacity(at time: Date) -> Double {
         let age       : Double = self.age(at: time)
-        let fadeStart : Double = 20.0
-        let maxAge    : Double = 150.0
+        let fadeStart : Double = 100.0 // was 20.0
+        let maxAge    : Double = 300.0
         if age < fadeStart { return 1.0 }
         return max(0, 1.0 - (age - fadeStart) / (maxAge - fadeStart))
     }
@@ -31,10 +31,12 @@ struct LightningStrike: Identifiable, Sendable {
     func color(at time: Date, colorScheme: ColorScheme) -> Color {
         let age : Double = self.age(at: time)
         switch age {
-            case ..<10    : return .white
-            case 10..<60  : return colorScheme == .dark ? Color(red: 1.0, green: 0.95, blue: 0.5) : Color(red: 0.8, green: 0.55, blue: 0.0)
-            case 60..<120 : return colorScheme == .dark ? Color(red: 1.0, green: 0.85, blue: 0.2) : Color(red: 0.7, green: 0.35, blue: 0.0)
-            default       : return colorScheme == .dark ? Color(red: 1.0, green: 0.65, blue: 0.1) : Color(red: 0.6, green: 0.20, blue: 0.0)
+            case    ..<10  : return .white
+            case  10..<60  : return colorScheme == .dark ? Color(red: 1.00, green: 0.95, blue: 0.50) : Color(red: 0.80, green: 0.55, blue: 0.00)
+            case  60..<120 : return colorScheme == .dark ? Color(red: 1.00, green: 0.85, blue: 0.20) : Color(red: 0.70, green: 0.35, blue: 0.00)
+            case 120..<180 : return colorScheme == .dark ? Color(red: 1.00, green: 0.65, blue: 0.10) : Color(red: 0.60, green: 0.20, blue: 0.00)
+            case 180..<240 : return colorScheme == .dark ? Color(red: 1.00, green: 0.00, blue: 0.00) : Color(red: 0.56, green: 0.00, blue: 0.00)
+            default        : return colorScheme == .dark ? Color(red: 0.66, green: 0.00, blue: 0.00) : Color(red: 0.40, green: 0.20, blue: 0.00)
         }
     }
 
