@@ -117,8 +117,8 @@ struct FovDiagram: View {
             fovPath.addLine(to: CGPoint(x: xRight(maxDist), y: topMargin))
             fovPath.closeSubpath()
 
-            ctx.fill(fovPath, with: .color(Color.accentColor.opacity(0.08)))
-            ctx.stroke(fovPath, with: .color(Color.accentColor.opacity(0.35)), lineWidth: 1.5)
+            ctx.fill(fovPath, with: .color(Color.primary.opacity(0.06)))
+            ctx.stroke(fovPath, with: .color(Color.primary.opacity(0.4)), lineWidth: 1.5)
 
             // DOF area
             let nearY = yPos(dof.nearLimit)
@@ -204,60 +204,49 @@ struct FovDiagram: View {
             diam.closeSubpath()
             ctx.fill(diam, with: .color(.orange))
 
+            // When drawing right-side labels, enforce minimum vertical separation
+            let minLabelSpacing : CGFloat = 14
+
+            // Adjust positions if too close:
+            let adjustedFarY    : CGFloat = farY
+            let adjustedFocusY  : CGFloat = max(focusY, adjustedFarY + minLabelSpacing)
+            let adjustedNearY   : CGFloat = max(nearY,  adjustedFocusY + minLabelSpacing)
+
+            
             // Labels on right side
             let labelX : CGFloat = leftMargin + drawW + 6
 
             // Far DOF
             let farLabel : String = dof.farLimit.isInfinite ? "∞" : formatDistance(dof.farLimit)
-            ctx.draw(
-                Text(farLabel)
-                    .font(.system(size: 9, weight: .medium).monospacedDigit())
-                    .foregroundStyle(Color.blue),
-                at: CGPoint(x: labelX, y: farY),
-                anchor: .leading
-            )
+            drawPillLabel(ctx: ctx, text: farLabel, at: CGPoint(x: labelX, y: adjustedFarY),
+                          color: .blue.opacity(0.8))
 
             // Focus distance
-            ctx.draw(
-                Text(formatDistance(vm.focusDistance))
-                    .font(.system(size: 10, weight: .bold).monospacedDigit())
-                    .foregroundStyle(Color.orange),
-                at: CGPoint(x: labelX, y: focusY + 10),
-                anchor: .leading
-            )
+            drawPillLabel(ctx: ctx, text: formatDistance(vm.focusDistance),
+                          at: CGPoint(x: leftMargin - 4, y: adjustedFocusY + 10),
+                          anchor: .trailing, color: .orange,
+                          fontSize: 10, weight: .bold)
 
             // Near DOF
-            ctx.draw(
-                Text(formatDistance(dof.nearLimit))
-                    .font(.system(size: 9, weight: .medium).monospacedDigit())
-                    .foregroundStyle(Color.blue),
-                at: CGPoint(x: labelX, y: nearY),
-                anchor: .leading
-            )
+            drawPillLabel(ctx: ctx, text: formatDistance(dof.nearLimit),
+                          at: CGPoint(x: labelX, y: adjustedNearY), color: .blue.opacity(0.8), fontSize: 8)
 
-            // DOF spread labels on left of area
-            let dofFront : CGFloat = vm.focusDistance - dof.nearLimit
-            let dofRear  : CGFloat = dof.farLimit.isInfinite ? Double.infinity : (dof.farLimit - vm.focusDistance)
-
-            let midFrontY : CGFloat = (nearY + focusY) / 2
-            let midRearY  : CGFloat = (focusY + farY)  / 2
-
-            ctx.draw(
-                Text(formatDistance(dofFront))
-                    .font(.system(size: 8).monospacedDigit())
-                    .foregroundStyle(Color.blue.opacity(0.8)),
-                at: CGPoint(x: labelX, y: midFrontY),
-                anchor: .leading
-            )
+            // DOF spread labels
+            let midFrontY : CGFloat = (adjustedNearY + adjustedFocusY) / 2
+            let midRearY  : CGFloat = (adjustedFocusY + adjustedFarY)  / 2
+            let dofFront  : CGFloat = vm.focusDistance - dof.nearLimit
+            let dofRear   : CGFloat = dof.farLimit.isInfinite ? Double.infinity : (dof.farLimit - vm.focusDistance)
+            
+            drawPillLabel(ctx: ctx, text: formatDistance(dofFront),
+                          at: CGPoint(x: labelX, y: midFrontY),
+                          anchor: .leading, color: .blue.opacity(0.6),
+                          fontSize: 8)
 
             if !dof.farLimit.isInfinite {
-                ctx.draw(
-                    Text(formatDistance(dofRear))
-                        .font(.system(size: 8).monospacedDigit())
-                        .foregroundStyle(Color.blue.opacity(0.8)),
-                    at: CGPoint(x: labelX, y: midRearY),
-                    anchor: .leading
-                )
+                drawPillLabel(ctx: ctx, text: formatDistance(dofRear),
+                              at: CGPoint(x: labelX, y: midRearY),
+                              anchor: .leading, color: .blue.opacity(0.6),
+                              fontSize: 8)
             }
 
             // Camera icon at bottom
@@ -267,7 +256,6 @@ struct FovDiagram: View {
     }
 
     // Helpers
-
     private func formatDistance(_ d: Double) -> String {
         if d >= 100  { return String(format: "%.0fm", d) }
         if d >= 10   { return String(format: "%.1fm", d) }
@@ -279,5 +267,30 @@ struct FovDiagram: View {
         let targetLines = 8.0
         let ideal       = max / targetLines
         return candidates.min(by: { abs($0 - ideal) < abs($1 - ideal) }) ?? 1.0
+    }
+    
+    private func drawPillLabel(ctx: GraphicsContext, text: String, at: CGPoint, anchor: UnitPoint = .leading, color: Color, fontSize: CGFloat = 9, weight: UIFont.Weight = .medium) {
+        let uiFont    : UIFont  = UIFont.systemFont(ofSize: fontSize, weight: weight)
+        let swiftFont : Font    = Font.system(size: fontSize, weight: weight == .bold ? .bold : .medium)
+        let textSize  : CGSize  = (text as NSString).size(withAttributes: [.font: uiFont])
+        let padding   : CGFloat = 4
+        let pillW     : CGFloat = textSize.width  + padding * 2
+        let pillH     : CGFloat = textSize.height + padding * 2
+        let originX   : CGFloat
+        let originY   : CGFloat = at.y - pillH / 2
+
+        switch anchor {
+            case .trailing : originX = at.x - pillW
+            case .center   : originX = at.x - pillW / 2
+            default        : originX = at.x
+        }
+
+        let pillRect : CGRect = CGRect(x: originX, y: originY, width: pillW, height: pillH)
+        ctx.fill(Path(roundedRect: pillRect, cornerRadius: pillH / 2), with: .color(color))
+        ctx.draw(
+            Text(text).font(swiftFont).foregroundStyle(Color.white),
+            at: CGPoint(x: originX + padding, y: at.y),
+            anchor: .leading
+        )
     }
 }
