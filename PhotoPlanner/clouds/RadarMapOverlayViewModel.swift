@@ -156,25 +156,40 @@ class RadarMapOverlayViewModel {
     }
 
     // Converts a tile's geographic bounds to a CGRect in canvas pixel space.
-    nonisolated private func tileRect(tile: MapTile, region: MKCoordinateRegion, canvasSize: CGSize) -> CGRect {
+    nonisolated private func tileRect(tile: MapTile, region: MKCoordinateRegion, canvasSize : CGSize) -> CGRect {
         let n : CGFloat = pow(2.0, Double(tile.z))
 
         // Tile geographic bounds
-        let tileWest  : CGFloat = Double(tile.x) / n * 360.0 - 180.0
+        let tileWest  : CGFloat = Double(tile.x)     / n * 360.0 - 180.0
         let tileEast  : CGFloat = Double(tile.x + 1) / n * 360.0 - 180.0
-        let tileNorth : CGFloat = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y) / n))) * 180.0 / .pi
+        let tileNorth : CGFloat = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y)     / n))) * 180.0 / .pi
         let tileSouth : CGFloat = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y + 1) / n))) * 180.0 / .pi
 
-        // Convert to canvas pixel coordinates
         let regWest  : CGFloat = region.center.longitude - region.span.longitudeDelta / 2
         let regEast  : CGFloat = region.center.longitude + region.span.longitudeDelta / 2
         let regNorth : CGFloat = region.center.latitude  + region.span.latitudeDelta  / 2
         let regSouth : CGFloat = region.center.latitude  - region.span.latitudeDelta  / 2
 
-        let x : CGFloat = (tileWest  - regWest)  / (regEast  - regWest)  * canvasSize.width
-        let w : CGFloat = (tileEast  - tileWest) / (regEast  - regWest)  * canvasSize.width
-        let y : CGFloat = (regNorth  - tileNorth) / (regNorth - regSouth) * canvasSize.height
-        let h : CGFloat = (tileNorth - tileSouth) / (regNorth - regSouth) * canvasSize.height
+        // Convert latitude to Mercator Y
+        func mercatorY(_ lat: Double) -> Double {
+            let rad : Double = lat * .pi / 180.0
+            return log(tan(.pi / 4.0 + rad / 2.0))
+        }
+
+        let mercRegNorth  : CGFloat = mercatorY(regNorth)
+        let mercRegSouth  : CGFloat = mercatorY(regSouth)
+        let mercTileNorth : CGFloat = mercatorY(tileNorth)
+        let mercTileSouth : CGFloat = mercatorY(tileSouth)
+
+        let mercRegHeight : CGFloat = mercRegNorth - mercRegSouth
+
+        // X is still linear in longitude
+        let x : CGFloat = (tileWest  - regWest)  / (regEast - regWest) * canvasSize.width
+        let w : CGFloat = (tileEast  - tileWest) / (regEast - regWest) * canvasSize.width
+
+        // Y uses Mercator coordinates — correct for non-linear latitude spacing
+        let y : CGFloat = (mercRegNorth - mercTileNorth) / mercRegHeight * canvasSize.height
+        let h : CGFloat = (mercTileNorth - mercTileSouth) / mercRegHeight * canvasSize.height
 
         return CGRect(x: x, y: y, width: w, height: h)
     }
