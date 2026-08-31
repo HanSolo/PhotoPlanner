@@ -11,7 +11,7 @@ import SwiftUI
 
 struct SunriseSunsetScore {
     let overall         : Grade
-    let composite       : Double   // raw 0...1 score this grade was derived from, after all penalties/caps
+    let composite       : Double   // 0...1 score this grade was derived from, after all penalties/caps
     let cloudScore      : Double
     let humidityScore   : Double
     let visibilityScore : Double
