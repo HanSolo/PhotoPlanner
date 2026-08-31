@@ -27,6 +27,7 @@ extension Key {
     static let observerHeight      : Key = "observerHeight"
     static let libreWxrColorScheme : Key = "libreWxrColorScheme"
     static let hiResWeatherMap     : Key = "hiResWeatherMap"
+    static let showWeatherRadar    : Key = "showWeatherRadar"
 }
 
 
@@ -80,6 +81,9 @@ public struct Properties {
     
     @UserDefault(key: .hiResWeatherMap, defaultValue: false)
     var hiResWeatherMap: Bool?
+    
+    @UserDefault(key: .showWeatherRadar, defaultValue: false)
+    var showWeatherRadar: Bool?
     
     private init() {}
 }

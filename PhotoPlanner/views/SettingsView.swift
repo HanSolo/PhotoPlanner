@@ -15,7 +15,7 @@ struct SettingsView: View {
     
     @State private var tc1Factor      : Double   = Properties.instance.tc1Factor!
     @State private var tc2Factor      : Double   = Properties.instance.tc2Factor!
-    @State private var observerHeight : Double   = Properties.instance.observerHeight!
+    @State private var observerHeight : Double   = Properties.instance.observerHeight!    
     
     static let observerHeights        : [Double] = {
         var heights: [Double] = []
@@ -139,6 +139,20 @@ struct SettingsView: View {
                     }
                 }
             }
+            
+            HStack {
+                Toggle(isOn: self.model.showWeatherRadarBinding) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Lightning strikes with weather radar")
+                            .font(Constants.REGULAR_FONT_16)
+                        Text("Display current weather radar on full screen")
+                            .font(Constants.REGULAR_FONT_12)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            
+            
             Spacer()
         }
         .padding()

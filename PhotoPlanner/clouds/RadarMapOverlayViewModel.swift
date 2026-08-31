@@ -1,0 +1,181 @@
+//
+//  RadarMapOverlayViewModel.swift
+//  PhotoPlanner
+//
+//  Created by Gerrit Grunwald on 31.08.26.
+//
+import Foundation
+import SwiftUI
+import MapKit
+
+
+@Observable
+class RadarMapOverlayViewModel {
+    var isVisible     : Bool                          = false
+    var isLoading     : Bool                          = false
+    var tiles         : [(MapTile, UIImage, CGRect)]  = []   // tile, image, canvas rect
+    var canvasSize    : CGSize                        = .zero
+    var currentRegion : MKCoordinateRegion?
+
+    private let libreWxrHost : String = "http://hansolo.eu:8081"
+    private let manifestURL  : String = "http://hansolo.eu:8081/public/weather-maps.json"
+    private let tileSize     : Int    = 256
+    private var loadTask     : Task<Void, Never>?
+
+    
+    // Public API
+
+    // Show radar for the given region. Cancels any in-flight load
+    func load(region: MKCoordinateRegion, canvasSize: CGSize) {
+        isVisible       = true
+        currentRegion   = region
+        self.canvasSize = canvasSize
+        startLoad(region: region, canvasSize: canvasSize)
+    }
+
+    // Hide overlay and cancel any in-flight load
+    func hide() {
+        isVisible = false
+        loadTask?.cancel()
+        loadTask  = nil
+        tiles     = []
+        isLoading = false
+    }
+
+    // Called when map pan/zoom ends. Clears old tiles, reloads if visible
+    func mapDidSettle(region: MKCoordinateRegion, canvasSize: CGSize) {
+        guard isVisible else { return }
+        currentRegion   = region
+        self.canvasSize = canvasSize
+        tiles           = []   // clear stale tiles immediately
+        startLoad(region: region, canvasSize: canvasSize)
+    }
+
+    // Called during pan/zoom — hides tiles but keeps isVisible state.
+    func mapDidMove() {
+        tiles = []
+    }
+
+    // Private
+    private func startLoad(region: MKCoordinateRegion, canvasSize: CGSize) {
+        loadTask?.cancel()
+        loadTask = Task { await self.fetchTiles(region: region, canvasSize: canvasSize) }
+    }
+
+    private func fetchTiles(region: MKCoordinateRegion, canvasSize: CGSize) async {
+        guard !Task.isCancelled else { return }
+
+        isLoading = true
+
+        // Fetch manifest to get latest radar frame path
+        guard let manifestData = try? await URLSession.shared.data(from: URL(string: manifestURL)!).0,
+              let response     = try? JSONDecoder().decode(LibreWxrResponse.self, from: manifestData),
+              let lastFrame    = response.radar.past.last
+        else {
+            isLoading = false
+            return
+        }
+
+        guard !Task.isCancelled else { isLoading = false; return }
+
+        let zoom        = zoomLevel(for: region)
+        let tileList    = tilesForRegion(region, zoom: zoom)
+        let colorScheme = Properties.instance.libreWxrColorScheme ?? 8
+        let host        = response.host
+        let path        = lastFrame.path
+
+        // Fetch all tiles in parallel
+        let fetched: [(MapTile, UIImage, CGRect)] = await withTaskGroup(
+            of: (MapTile, UIImage, CGRect)?.self
+        ) { group in
+            for tile in tileList {
+                group.addTask {
+                    guard !Task.isCancelled else { return nil }
+                    let urlStr = "\(host)\(path)/\(self.tileSize)/\(tile.z)/\(tile.x)/\(tile.y)/\(colorScheme)/1_1.png"
+                    guard let url           = URL(string: urlStr),
+                          let (data, resp)  = try? await URLSession.shared.data(from: url),
+                          let http          = resp as? HTTPURLResponse,
+                          http.statusCode   == 200,
+                          let img           = UIImage(data: data)
+                    else { return nil }
+
+                    let rect = self.tileRect(tile: tile, region: region, canvasSize: canvasSize)
+                    return (tile, img, rect)
+                }
+            }
+
+            var results: [(MapTile, UIImage, CGRect)] = []
+            for await result in group {
+                if let r = result { results.append(r) }
+            }
+            return results
+        }
+
+        guard !Task.isCancelled else { isLoading = false; return }
+
+        tiles     = fetched
+        isLoading = false
+    }
+    
+    // Derives an appropriate XYZ zoom level from the visible map span
+    // Larger span = lower zoom = fewer tiles needed
+    private func zoomLevel(for region: MKCoordinateRegion) -> Int {
+        // Approximate zoom from longitude span, each zoom level halves the degrees per tile (360° at zoom 0)
+        let lonSpan : Double = region.span.longitudeDelta
+        let zoom    : Int    = Int(log2(360.0 / lonSpan))
+        return max(4, min(9, zoom)) // Clamp to sensible range for radar tiles
+    }
+
+    // Returns all XYZ tile indices that cover a geographic bounding box at a given zoom
+    private func tilesForRegion(_ region: MKCoordinateRegion, zoom: Int) -> [MapTile] {
+        let n      : Double = pow(2.0, Double(zoom))
+        let minLat : Double = region.center.latitude  - region.span.latitudeDelta  / 2
+        let maxLat : Double = region.center.latitude  + region.span.latitudeDelta  / 2
+        let minLon : Double = region.center.longitude - region.span.longitudeDelta / 2
+        let maxLon : Double = region.center.longitude + region.span.longitudeDelta / 2
+
+        func lon2x(_ lon: Double) -> Int { Int((lon + 180.0) / 360.0 * n) }
+        
+        func lat2y(_ lat: Double) -> Int {
+            let rad = lat * .pi / 180
+            return Int((1.0 - log(tan(rad) + 1.0 / cos(rad)) / .pi) / 2.0 * n)
+        }
+
+        let xMin : Int = lon2x(minLon);
+        let xMax : Int = lon2x(maxLon)
+        let yMin : Int = lat2y(maxLat);
+        let yMax : Int = lat2y(minLat)   // y is inverted
+
+        var tiles : [MapTile] = []
+        for x in xMin...xMax {
+            for y in yMin...yMax {
+                tiles.append(MapTile(x: x, y: y, z: zoom))
+            }
+        }
+        return tiles
+    }
+
+    // Converts a tile's geographic bounds to a CGRect in canvas pixel space.
+    nonisolated private func tileRect(tile: MapTile, region: MKCoordinateRegion, canvasSize: CGSize) -> CGRect {
+        let n : CGFloat = pow(2.0, Double(tile.z))
+
+        // Tile geographic bounds
+        let tileWest  : CGFloat = Double(tile.x) / n * 360.0 - 180.0
+        let tileEast  : CGFloat = Double(tile.x + 1) / n * 360.0 - 180.0
+        let tileNorth : CGFloat = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y) / n))) * 180.0 / .pi
+        let tileSouth : CGFloat = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y + 1) / n))) * 180.0 / .pi
+
+        // Convert to canvas pixel coordinates
+        let regWest  : CGFloat = region.center.longitude - region.span.longitudeDelta / 2
+        let regEast  : CGFloat = region.center.longitude + region.span.longitudeDelta / 2
+        let regNorth : CGFloat = region.center.latitude  + region.span.latitudeDelta  / 2
+        let regSouth : CGFloat = region.center.latitude  - region.span.latitudeDelta  / 2
+
+        let x : CGFloat = (tileWest  - regWest)  / (regEast  - regWest)  * canvasSize.width
+        let w : CGFloat = (tileEast  - tileWest) / (regEast  - regWest)  * canvasSize.width
+        let y : CGFloat = (regNorth  - tileNorth) / (regNorth - regSouth) * canvasSize.height
+        let h : CGFloat = (tileNorth - tileSouth) / (regNorth - regSouth) * canvasSize.height
+
+        return CGRect(x: x, y: y, width: w, height: h)
+    }
+}

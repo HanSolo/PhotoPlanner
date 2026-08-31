@@ -46,6 +46,7 @@ struct ContentView: View {
     @State private var helpViewVisible              : Bool                        = false
     @State private var centerCameraPosition         : Bool                        = false
     @State private var visibleRegion                : MKCoordinateRegion          = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,longitude: Properties.instance.cameraLongitude!), latitudinalMeters: 500_000, longitudinalMeters: 500_000)
+    @State private var radarViewModel               : RadarMapOverlayViewModel    = RadarMapOverlayViewModel()
     @State private var lightningViewModel           : LightningOverlayViewModel   = LightningOverlayViewModel(username: "hansolo", password: "nuetp0tE.")
     
     @ObservedObject var locationService             : LocationService             = LocationService()
@@ -90,7 +91,7 @@ struct ContentView: View {
                                 }
                             }
                         }
-                         
+                        
                         // Show user location
                         UserAnnotation()
                         
@@ -122,7 +123,7 @@ struct ContentView: View {
                                 }
                             }
                         }
-                                                                            
+                        
                         let fovDataAvailable : Bool = self.model.fovData != nil
                         if fovDataAvailable { // Center line from camera to subject
                             MapPolyline(points: [self.model.fovData!.cameraLocation, self.model.fovData!.subjectLocation])
@@ -138,7 +139,7 @@ struct ContentView: View {
                                 .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: fovLineWidth)
                             MapPolygon(coordinates: self.model.minTriangleCoordinates)
                                 .foregroundStyle(Color.clear)
-                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: lineWidth)                                            
+                                .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: lineWidth)
                             MapPolygon(coordinates: self.model.maxTriangleCoordinates)
                                 .foregroundStyle(Color.clear)
                                 .stroke(self.colorScheme == .dark ? Constants.FOV_STROKE_DARK : Constants.FOV_STROKE, lineWidth: lineWidth)
@@ -210,14 +211,22 @@ struct ContentView: View {
                     )
                     .onMapCameraChange(frequency: .continuous) { context in
                         if self.lightningViewModel.strikesVisible {
+                            if self.radarViewModel.isVisible {
+                                self.radarViewModel.mapDidMove()
+                            }
                             self.lightningViewModel.isVisible = false
                         }
                     }
                     .onMapCameraChange(frequency: .onEnd) { context in
                         self.visibleRegion = context.region
-                        self.lightningViewModel.updateRegion(context.region)
-                        
-                        if self.lightningViewModel.strikesVisible { self.lightningViewModel.isVisible = true }
+                                                                                                                   
+                        if self.lightningViewModel.strikesVisible {
+                            if self.radarViewModel.isVisible {
+                                self.radarViewModel.mapDidSettle(region: context.region, canvasSize: geo.size)
+                            }
+                            self.lightningViewModel.updateRegion(context.region)
+                            self.lightningViewModel.isVisible = true
+                        }
                         
                         guard self.model.cameraMarkerData != nil else { return }
                         self.model.cameraMarkerData = mapProxy.markerData(coordinate: self.model.cameraMarkerData!.coordinate, geometryProxy: geo)
@@ -239,40 +248,40 @@ struct ContentView: View {
                     }
                     .allowsHitTesting(!self.model.milkywayVisible)
                 }
-            }
-                        
-            LightningOverlayView(viewModel: self.lightningViewModel)
             
-            VStack {
-                Spacer()
-                HStack(alignment: .center) {
+                RadarMapOverlayView(viewModel: self.radarViewModel)
+                
+                LightningOverlayView(viewModel: self.lightningViewModel)
+                
+                VStack {
                     Spacer()
-                    if let attribution = self.weatherViewModel.attributionInfo {
-                        AsyncImage(url: attribution.combinedMarkDarkURL) { image in
-                            image
-                                .resizable()
-                                .scaledToFit()
-                                .frame(height: 12)
-                                .opacity(0.7)
-                        } placeholder: {
-                            ProgressView()
+                    HStack(alignment: .center) {
+                        Spacer()
+                        if let attribution = self.weatherViewModel.attributionInfo {
+                            AsyncImage(url: attribution.combinedMarkDarkURL) { image in
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 12)
+                                    .opacity(0.7)
+                            } placeholder: {
+                                ProgressView()
+                            }
+                            Link("Legal", destination: URL(string: "\(attribution.legalPageURL)")!)
+                                .font(.system(size: 9))
+                                .foregroundColor(.white)
+                                .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 5))
                         }
-                        Link("Legal", destination: URL(string: "\(attribution.legalPageURL)")!)
-                            .font(.system(size: 9))
-                            .foregroundColor(.white)
-                            .padding(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 5))
+                        Spacer()
                     }
-                    Spacer()
-                }
-                .padding(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
-            }.ignoresSafeArea(edges: .all)
-            
-            // OverlayView
-            OverlayView()
-                .allowsHitTesting(false)
-            
-            // Weather overlay
-            GeometryReader { geometry in
+                    .padding(EdgeInsets(top: 0, leading: 0, bottom: 10, trailing: 0))
+                }.ignoresSafeArea(edges: .all)
+                
+                // OverlayView
+                OverlayView()
+                    .allowsHitTesting(false)
+                
+                // Weather overlay                
                 WeatherMapOverlayView(viewModel: self.weatherViewModel) {
                     if self.model.cameraMarkerData != nil {
                         Task {
@@ -280,517 +289,484 @@ struct ContentView: View {
                         }
                     }
                 }
-                .frame(width: geometry.size.width - 100)
+                .frame(width: geo.size == .zero ? 0 : geo.size.width - 100)
                 .offset(x: 50, y: 100)
-            }
-            
-            // ElevationView
-            if self.model.elevationViewVisible {
-                ElevationProfileView(profile: self.model.elevationProfile)
-                    .allowsTightening(false)
-            }
+                
+                // ElevationView
+                if self.model.elevationViewVisible {
+                    ElevationProfileView(profile: self.model.elevationProfile)
+                        .allowsTightening(false)
+                }
+                
+                // Controls
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Button {
+                            self.helpViewVisible = true
+                        } label: {
+                            Image(systemName: "questionmark.circle")
+                                .padding(7)
+                        }
+                        .frame(width: 22, height: 22)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
                         
-            // Controls
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    Button {
-                        self.helpViewVisible = true
-                    } label: {
-                        Image(systemName: "questionmark.circle")
-                            .padding(7)
-                    }
-                    .frame(width: 22, height: 22)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                                        
-                    
-                    Picker("", selection: self.model.currentMapStyleIndexBinding) {
-                        Text("Std").tag(0)
-                            .font(Constants.REGULAR_FONT_14)
-                        Text("Sat").tag(1)
-                            .font(Constants.REGULAR_FONT_14)
-                            .rotationEffect(Angle(degrees: 90))
-                        Text("Hyb").tag(2)
-                            .font(Constants.REGULAR_FONT_14)
-                            .rotationEffect(Angle(degrees: 90))
-                    }
-                    .pickerStyle(.segmented)
-                    .onChange(of: self.model.currentMapStyleIndex) { oldValue, newValue in
-                        switch newValue {
+                        
+                        Picker("", selection: self.model.currentMapStyleIndexBinding) {
+                            Text("Std").tag(0)
+                                .font(Constants.REGULAR_FONT_14)
+                            Text("Sat").tag(1)
+                                .font(Constants.REGULAR_FONT_14)
+                                .rotationEffect(Angle(degrees: 90))
+                            Text("Hyb").tag(2)
+                                .font(Constants.REGULAR_FONT_14)
+                                .rotationEffect(Angle(degrees: 90))
+                        }
+                        .pickerStyle(.segmented)
+                        .onChange(of: self.model.currentMapStyleIndex) { oldValue, newValue in
+                            switch newValue {
                             case  0: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
                             case  1: self.mapStyle = MapStyle.imagery()
                             case  2: self.mapStyle = MapStyle.hybrid(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
                             default: self.mapStyle = MapStyle.standard(elevation: .realistic, pointsOfInterest: .including([.beach, .castle, .fishing, .fortress, .hiking, .kayaking, .landmark, .marina, .nationalMonument, .nationalPark, .park, .rockClimbing, .skatePark, .surfing, .zoo]), showsTraffic: true)
-                        }
-                    }
-                    .disabled(!self.model.networkMonitor.isConnected)
-                    
-                    
-                    Button {
-                        if let userLocation : CLLocationCoordinate2D = self.model.getUserLocation() {
-                            self.position = .camera(.init(centerCoordinate: userLocation, distance: self.model.cameraDistance))
-                        }
-                    } label: {
-                        Image(systemName: "location.circle")
-                            .padding(7)
-                    }
-                    .frame(width: 22, height: 22)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .disabled(!self.model.networkMonitor.isConnected)
-                }
-                
-                // Selected camera and lens
-                HStack {
-                    Text("\(self.model.camera.name) / \(self.model.lens.name)")
-                        .font(Constants.REGULAR_FONT_14)
-                        .foregroundStyle(self.colorScheme == .dark ? .white : .black)
-                    
-                    Spacer()
-                    
-                    if !self.model.networkMonitor.isConnected {
-                        Text("OFFLINE")
-                            .font(.system(size: 8))
-                            .padding(EdgeInsets(top: 2, leading: 5, bottom: 2, trailing: 5))
-                            .foregroundStyle(.white)
-                            .background(
-                                ZStack {
-                                    RoundedRectangle(
-                                        cornerRadius: 5,
-                                        style       : .continuous
-                                    )
-                                    .fill(.red)
-                                    RoundedRectangle(
-                                        cornerRadius: 5,
-                                        style       : .continuous
-                                    )
-                                    .stroke(.red, lineWidth: 1)
-                                }
-                            )
-                    }
-                    
-                    Spacer()
-                    
-                    Text(self.model.currentMapDate, format: .dateTime.day().month().year())
-                        .font(Constants.REGULAR_FONT_14)
-                        .foregroundStyle(self.colorScheme == .dark ? .white : .black)
-                }
-                .padding(EdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5))
-                .background(self.colorScheme == .dark ? .black.opacity(0.5) : .white.opacity(0.5))
-                .clipShape(RoundedRectangle(cornerSize: CGSize(width: 5, height: 5)))
-                
-                // Camera and CameraPin
-                HStack {
-                    Button {
-                        self.cameraViewVisible = true
-                    } label: {
-                        Image(systemName: "camera")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    
-                    Spacer()
-                    
-                    Toggle(isOn: $cameraMarkerActive) {
-                        Image("cameraPin")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.cameraMarkerActive) { oldValue, newValue in
-                        if newValue && self.subjectMarkerActive { self.subjectMarkerActive = false }
-                    }
-                }
-                
-                // Lens and SubjectPin
-                HStack {
-                    Button {
-                        self.lensViewVisible = true
-                    } label: {
-                        Image(systemName: "loupe")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    
-                    Spacer()
-                    
-                    Toggle(isOn: $subjectMarkerActive) {
-                        Image("subjectPin")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.subjectMarkerActive) { oldValue, newValue in
-                        if newValue && self.cameraMarkerActive { self.cameraMarkerActive = false }
-                    }
-                }
-                
-                // DoF and Center Camera
-                HStack {
-                    Toggle(isOn: self.model.dofVisibleBinding) {
-                        Image(systemName: "trapezoid.and.line.vertical")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.model.dofVisible) { oldValue, newValue in
-                        if newValue {
-                            self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
-                        }
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        self.centerCameraPosition.toggle()
-                    } label: {
-                        Image(systemName: "target")
-                            .font(Constants.REGULAR_FONT_24)
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.centerCameraPosition) {
-                        if self.model.cameraMarkerData != nil {
-                            self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
-                        }
-                    }
-                    .onChange(of: self.model.triggerCenterToCamera) {
-                        if self.model.cameraMarkerData != nil {
-                            self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
-                        }
-                    }
-                }
-                
-                // Camera Orientation and Save PhotoShoot
-                HStack {
-                    Toggle(isOn: $isPortrait) {
-                        Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90.camera")
-                            .padding(7)
-                            .rotationEffect(self.isPortrait ? .degrees(-90) : .zero)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.isPortrait) { oldValue, newValue in
-                        self.model.orientation = newValue ? .portrait : .landscape
-                        self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
-                        if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        self.addPhotoShootViewVisible = true
-                    } label: {
-                        Image(systemName: "photo.badge.plus.fill")
-                            .symbolRenderingMode(.multicolor)
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())                    
-                }
-                
-                // Calendar and PhotoShootViews
-                HStack {
-                    Toggle(isOn: self.$datePickerVisible) {
-                        Image(systemName: "calendar")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    
-                    Spacer()
-                    
-                    Button {
-                        self.photoShootsViewVisible = true
-                    } label : {
-                        Image(systemName: "photo.on.rectangle.angled")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                }
-                       
-                // Blue/Golden Hour Overlay and AR View
-                HStack {
-                    Toggle(isOn: self.model.epdVisibleBinding) {
-                        Image(systemName: "sun.max")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    
-                    Spacer()
-                    
-                    if lightningViewModel.strikesVisible && lightningViewModel.strikes.isEmpty {
-                        HStack {
-                            Image(systemName: "bolt.slash")
-                                .font(.caption2)
-                            Text("No strikes in current area")
-                                .font(.caption2)
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(.black.opacity(0.6))
-                        .clipShape(Capsule())
-                    }
-                    
-                    Spacer()
-                    
-                    Button {
-                        self.arVisible = true
-                    } label: {
-                        Image(systemName: "arkit")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .fullScreenCover(isPresented: $arVisible) {
-                        ARView(coordinate: self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate, onClose: { self.arVisible = false })
-                    }
-                }
-                
-                // Sunrise/Sunset Prediction and Weather forecast
-                HStack {
-                    Toggle(isOn: self.$sunsetPredictionVisible) {
-                        Image(systemName: "sunset")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .disabled(!self.model.networkMonitor.isConnected)
-                    .onChange(of: self.sunsetPredictionVisible) {
-                        if self.sunsetPredictionVisible {
-                            
-                            if self.model.cameraMarkerData != nil {
-                                let date         : Date                   = self.model.currentMapDate
-                                let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                                let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.subjectMarkerData!.coordinate)
-                                var solarEvent   : SolarEvent {
-                                    SolarEvent(time: date, type: .sunset)
-                                }
-                                Task {
-                                    await self.sunQualityViewModel.fetch(at: location, on: date, shootAzimuth: shootAzimuth)
-                                }
                             }
                         }
-                    }
-                    .disabled(!self.model.networkMonitor.isConnected || self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.strikesVisible)
-                    
-                    Spacer()
-                    
-                    Toggle(isOn: self.weatherViewModel.isVisibleBinding) {
-                        Image(systemName: "cloud.sun")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .disabled(!self.model.networkMonitor.isConnected)
-                    .onChange(of: self.weatherViewModel.isVisible) {
-                        if self.weatherViewModel.isVisible && self.model.cameraMarkerData != nil {
-                            Task {
-                                await self.weatherViewModel.fetch(at: self.model.cameraMarkerData!.coordinate, on: self.model.currentMapDate)
-                            }
-                        }
-                    }
-                    .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesVisible)
-                }
-                     
-                // Moon phase and Exposure Calculator
-                HStack {
-                    Toggle(isOn: self.$moonPhaseVisible) {
-                        Image(systemName: "moon")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.moonPhaseVisible) {
-                        if self.model.cameraMarkerData != nil {
-                            Task {
-                                let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                                let date     : Date                   = self.model.currentMapDate
-                                let timeZone : TimeZone               = await Helper.fetchTimeZone(for: location)
-                                self.moonViewModel.fetch(at: location, time: date, timeZone: timeZone)
-                            }
-                        }
-                    }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.strikesVisible)
-                    
-                    Spacer()
-                    
-                    Button {
-                        self.exposureCalculatorVisible = true
-                    } label : {
-                        Image(systemName: "camera.aperture")
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                }
-                
-                // Milky Way and Long time exposure
-                HStack {
-                    Toggle(isOn: self.model.milkywayVisibleBinding) {
-                        Image(colorScheme == .dark ? "milkyway" : "milkyway_black")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .onChange(of: self.model.milkywayVisible) {
-                        if self.model.cameraMarkerData != nil {
-                            self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
-                            let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                            let date     : Date                   = self.model.currentMapDate
-                            Task {
-                                let timeZone : TimeZone = await Helper.fetchTimeZone(for: location)
-                                milkywayViewModel.show(at: location, on: date, timeZone: timeZone)
-                                clarityViewModel.loadClarity(at: location, on: date, timeZone: timeZone)
-                            }
-                        }
-                    }
-                    .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesVisible)
-                    
-                    Spacer()
-                    
-                    Toggle(isOn: self.$longExposureVisible) {
-                        Image(systemName: "clock.badge")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .disabled(!self.model.networkMonitor.isConnected)
-                    .onChange(of: self.longExposureVisible) {
-                        if self.model.cameraMarkerData != nil {
-                            let location      : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                            let date          : Date                   = self.model.currentMapDate
-                            let cameraHeading : Double                 = self.model.currentMapHeading ?? 0.0
-                            Task {
-                                await self.longExposureViewModel.fetch(at: location, on: date, cameraHeading: cameraHeading)                                
-                            }
-                        }
-                    }
-                    .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible || self.lightningViewModel.strikesVisible)
-                }
-
-                // Elevation and DistanceCalculator
-                HStack {
-                    Toggle(isOn: self.model.elevationViewVisibleBinding) {
-                        Image(systemName: "chart.line.uptrend.xyaxis")
-                            .padding(10)
-                    }
-                    .frame(width: 44, height: 44)
-                    .toggleStyle(.button)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                    .disabled(!self.model.networkMonitor.isConnected || self.model.fovData?.distance ?? 0 >= 4000)
-                    .onChange(of: self.model.elevationViewVisible) {
-                        if self.model.elevationViewVisible {
-                            Task {
-                                await self.model.getElevation()
-                            }
-                        }
-                    }
-                    .disabled(self.lightningViewModel.strikesVisible)
-                    
-                    Spacer()
-                    
-                    Button {
-                        self.fieldOfViewCalculatorVisible = true
-                    } label: {
-                        Image(systemName: "arrow.left.and.right.circle")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                            .padding(7)
-                    }
-                    .frame(width: 44, height: 44)
-                    .buttonStyle(.glass)
-                    .clipShape(Circle())
-                }
-                
-                // Settings (Teleconverter, Observer height)
-                HStack {
-                    if Constants.IS_IPAD {
-                        Button { // Lightning Strikes
-                            self.lightningViewModel.strikesVisible.toggle()
-                            if self.lightningViewModel.isVisible {
-                                self.lightningViewModel.show(region: self.visibleRegion)
-                            } else {
-                                self.lightningViewModel.hide()
+                        .disabled(!self.model.networkMonitor.isConnected)
+                        
+                        
+                        Button {
+                            if let userLocation : CLLocationCoordinate2D = self.model.getUserLocation() {
+                                self.position = .camera(.init(centerCoordinate: userLocation, distance: self.model.cameraDistance))
                             }
                         } label: {
-                            Image(systemName: self.lightningViewModel.strikesVisible ? "bolt.fill" : "bolt")
-                                .resizable()
-                                .foregroundStyle(self.lightningViewModel.strikesVisible ? .yellow : .primary)
-                                .frame(width: 18, height: 18)
+                            Image(systemName: "location.circle")
+                                .padding(7)
+                        }
+                        .frame(width: 22, height: 22)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .disabled(!self.model.networkMonitor.isConnected)
+                    }
+                    
+                    // Selected camera and lens
+                    HStack {
+                        Text("\(self.model.camera.name) / \(self.model.lens.name)")
+                            .font(Constants.REGULAR_FONT_14)
+                            .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+                        
+                        Spacer()
+                        
+                        if !self.model.networkMonitor.isConnected {
+                            Text("OFFLINE")
+                                .font(.system(size: 8))
+                                .padding(EdgeInsets(top: 2, leading: 5, bottom: 2, trailing: 5))
+                                .foregroundStyle(.white)
+                                .background(
+                                    ZStack {
+                                        RoundedRectangle(
+                                            cornerRadius: 5,
+                                            style       : .continuous
+                                        )
+                                        .fill(.red)
+                                        RoundedRectangle(
+                                            cornerRadius: 5,
+                                            style       : .continuous
+                                        )
+                                        .stroke(.red, lineWidth: 1)
+                                    }
+                                )
+                        }
+                        
+                        Spacer()
+                        
+                        Text(self.model.currentMapDate, format: .dateTime.day().month().year())
+                            .font(Constants.REGULAR_FONT_14)
+                            .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+                    }
+                    .padding(EdgeInsets(top: 5, leading: 5, bottom: 5, trailing: 5))
+                    .background(self.colorScheme == .dark ? .black.opacity(0.5) : .white.opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerSize: CGSize(width: 5, height: 5)))
+                    
+                    // Camera and CameraPin
+                    HStack {
+                        Button {
+                            self.cameraViewVisible = true
+                        } label: {
+                            Image(systemName: "camera")
                                 .padding(7)
                         }
                         .frame(width: 44, height: 44)
                         .buttonStyle(.glass)
                         .clipShape(Circle())
-                        .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible)
                         
                         Spacer()
                         
-                        if !self.model.milkywayVisible {
-                            Button {
-                                self.settingsViewVisible = true
-                            } label: {
-                                Image(systemName: "gearshape")
-                                    .resizable()
-                                    .frame(width: 20, height: 20)
-                                    .padding(7)
-                            }
-                            .frame(width: 44, height: 44)
-                            .buttonStyle(.glass)
-                            .clipShape(Circle())
+                        Toggle(isOn: $cameraMarkerActive) {
+                            Image("cameraPin")
+                                .resizable()
+                                .frame(width: 32, height: 32)
                         }
-                    } else {
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .onChange(of: self.cameraMarkerActive) { oldValue, newValue in
+                            if newValue && self.subjectMarkerActive { self.subjectMarkerActive = false }
+                        }
+                    }
+                    
+                    // Lens and SubjectPin
+                    HStack {
+                        Button {
+                            self.lensViewVisible = true
+                        } label: {
+                            Image(systemName: "loupe")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        
                         Spacer()
                         
-                        if !self.model.elevationViewVisible && !self.model.milkywayVisible {
+                        Toggle(isOn: $subjectMarkerActive) {
+                            Image("subjectPin")
+                                .resizable()
+                                .frame(width: 32, height: 32)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .onChange(of: self.subjectMarkerActive) { oldValue, newValue in
+                            if newValue && self.cameraMarkerActive { self.cameraMarkerActive = false }
+                        }
+                    }
+                    
+                    // DoF and Center Camera
+                    HStack {
+                        Toggle(isOn: self.model.dofVisibleBinding) {
+                            Image(systemName: "trapezoid.and.line.vertical")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .onChange(of: self.model.dofVisible) { oldValue, newValue in
+                            if newValue {
+                                self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            self.centerCameraPosition.toggle()
+                        } label: {
+                            Image(systemName: "target")
+                                .font(Constants.REGULAR_FONT_24)
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .onChange(of: self.centerCameraPosition) {
+                            if self.model.cameraMarkerData != nil {
+                                self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
+                            }
+                        }
+                        .onChange(of: self.model.triggerCenterToCamera) {
+                            if self.model.cameraMarkerData != nil {
+                                self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
+                            }
+                        }
+                    }
+                    
+                    // Camera Orientation and Save PhotoShoot
+                    HStack {
+                        Toggle(isOn: $isPortrait) {
+                            Image(systemName: "arrow.trianglehead.2.clockwise.rotate.90.camera")
+                                .padding(7)
+                                .rotationEffect(self.isPortrait ? .degrees(-90) : .zero)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .onChange(of: self.isPortrait) { oldValue, newValue in
+                            self.model.orientation = newValue ? .portrait : .landscape
+                            self.model.updateFoVTriangle(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+                            if self.model.dofVisible { self.model.updateDoFTrapezoid(cameraPoint: MKMapPoint(self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), subjectPoint: MKMapPoint(self.model.subjectMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate), focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation) }
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            self.addPhotoShootViewVisible = true
+                        } label: {
+                            Image(systemName: "photo.badge.plus.fill")
+                                .symbolRenderingMode(.multicolor)
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                    }
+                    
+                    // Calendar and PhotoShootViews
+                    HStack {
+                        Toggle(isOn: self.$datePickerVisible) {
+                            Image(systemName: "calendar")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        
+                        Spacer()
+                        
+                        Button {
+                            self.photoShootsViewVisible = true
+                        } label : {
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                    }
+                    
+                    // Blue/Golden Hour Overlay and AR View
+                    HStack {
+                        Toggle(isOn: self.model.epdVisibleBinding) {
+                            Image(systemName: "sun.max")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        
+                        Spacer()
+                        
+                        if lightningViewModel.strikesVisible && lightningViewModel.strikes.isEmpty {
+                            HStack {
+                                Image(systemName: "bolt.slash")
+                                    .font(.caption2)
+                                Text("No strikes in current area")
+                                    .font(.caption2)
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(.black.opacity(0.6))
+                            .clipShape(Capsule())
+                        }
+                        
+                        Spacer()
+                        
+                        Button {
+                            self.arVisible = true
+                        } label: {
+                            Image(systemName: "arkit")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .fullScreenCover(isPresented: $arVisible) {
+                            ARView(coordinate: self.model.cameraMarkerData?.coordinate ?? Constants.DEFAULT_LOCATION.coordinate, onClose: { self.arVisible = false })
+                        }
+                    }
+                    
+                    // Sunrise/Sunset Prediction and Weather forecast
+                    HStack {
+                        Toggle(isOn: self.$sunsetPredictionVisible) {
+                            Image(systemName: "sunset")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .disabled(!self.model.networkMonitor.isConnected)
+                        .onChange(of: self.sunsetPredictionVisible) {
+                            if self.sunsetPredictionVisible {
+                                
+                                if self.model.cameraMarkerData != nil {
+                                    let date         : Date                   = self.model.currentMapDate
+                                    let location     : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                                    let shootAzimuth : Double                 = Helper.calcAzimuth(location1: self.model.cameraMarkerData!.coordinate, location2: self.model.subjectMarkerData!.coordinate)
+                                    var solarEvent   : SolarEvent {
+                                        SolarEvent(time: date, type: .sunset)
+                                    }
+                                    Task {
+                                        await self.sunQualityViewModel.fetch(at: location, on: date, shootAzimuth: shootAzimuth)
+                                    }
+                                }
+                            }
+                        }
+                        .disabled(!self.model.networkMonitor.isConnected || self.moonPhaseVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.strikesVisible)
+                        
+                        Spacer()
+                        
+                        Toggle(isOn: self.weatherViewModel.isVisibleBinding) {
+                            Image(systemName: "cloud.sun")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .disabled(!self.model.networkMonitor.isConnected)
+                        .onChange(of: self.weatherViewModel.isVisible) {
+                            if self.weatherViewModel.isVisible && self.model.cameraMarkerData != nil {
+                                Task {
+                                    await self.weatherViewModel.fetch(at: self.model.cameraMarkerData!.coordinate, on: self.model.currentMapDate)
+                                }
+                            }
+                        }
+                        .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesVisible)
+                    }
+                    
+                    // Moon phase and Exposure Calculator
+                    HStack {
+                        Toggle(isOn: self.$moonPhaseVisible) {
+                            Image(systemName: "moon")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .onChange(of: self.moonPhaseVisible) {
+                            if self.model.cameraMarkerData != nil {
+                                Task {
+                                    let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                                    let date     : Date                   = self.model.currentMapDate
+                                    let timeZone : TimeZone               = await Helper.fetchTimeZone(for: location)
+                                    self.moonViewModel.fetch(at: location, time: date, timeZone: timeZone)
+                                }
+                            }
+                        }
+                        .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.lightningViewModel.strikesVisible)
+                        
+                        Spacer()
+                        
+                        Button {
+                            self.exposureCalculatorVisible = true
+                        } label : {
+                            Image(systemName: "camera.aperture")
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                    }
+                    
+                    // Milky Way and Long time exposure
+                    HStack {
+                        Toggle(isOn: self.model.milkywayVisibleBinding) {
+                            Image(colorScheme == .dark ? "milkyway" : "milkyway_black")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .onChange(of: self.model.milkywayVisible) {
+                            if self.model.cameraMarkerData != nil {
+                                self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
+                                let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                                let date     : Date                   = self.model.currentMapDate
+                                Task {
+                                    let timeZone : TimeZone = await Helper.fetchTimeZone(for: location)
+                                    milkywayViewModel.show(at: location, on: date, timeZone: timeZone)
+                                    clarityViewModel.loadClarity(at: location, on: date, timeZone: timeZone)
+                                }
+                            }
+                        }
+                        .disabled(self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.longExposureVisible || self.moonPhaseVisible || self.lightningViewModel.strikesVisible)
+                        
+                        Spacer()
+                        
+                        Toggle(isOn: self.$longExposureVisible) {
+                            Image(systemName: "clock.badge")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .disabled(!self.model.networkMonitor.isConnected)
+                        .onChange(of: self.longExposureVisible) {
+                            if self.model.cameraMarkerData != nil {
+                                let location      : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                                let date          : Date                   = self.model.currentMapDate
+                                let cameraHeading : Double                 = self.model.currentMapHeading ?? 0.0
+                                Task {
+                                    await self.longExposureViewModel.fetch(at: location, on: date, cameraHeading: cameraHeading)
+                                }
+                            }
+                        }
+                        .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.moonPhaseVisible || self.lightningViewModel.strikesVisible)
+                    }
+                    
+                    // Elevation and DistanceCalculator
+                    HStack {
+                        Toggle(isOn: self.model.elevationViewVisibleBinding) {
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                                .padding(10)
+                        }
+                        .frame(width: 44, height: 44)
+                        .toggleStyle(.button)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                        .disabled(!self.model.networkMonitor.isConnected || self.model.fovData?.distance ?? 0 >= 4000)
+                        .onChange(of: self.model.elevationViewVisible) {
+                            if self.model.elevationViewVisible {
+                                Task {
+                                    await self.model.getElevation()
+                                }
+                            }
+                        }
+                        .disabled(self.lightningViewModel.strikesVisible)
+                        
+                        Spacer()
+                        
+                        Button {
+                            self.fieldOfViewCalculatorVisible = true
+                        } label: {
+                            Image(systemName: "arrow.left.and.right.circle")
+                                .resizable()
+                                .frame(width: 20, height: 20)
+                                .padding(7)
+                        }
+                        .frame(width: 44, height: 44)
+                        .buttonStyle(.glass)
+                        .clipShape(Circle())
+                    }
+                    
+                    // Settings (Teleconverter, Observer height)
+                    HStack {
+                        if Constants.IS_IPAD {
                             Button { // Lightning Strikes
                                 self.lightningViewModel.strikesVisible.toggle()
                                 if self.lightningViewModel.isVisible {
+                                    if !self.radarViewModel.isVisible {
+                                        self.radarViewModel.load(region: self.visibleRegion, canvasSize: geo.size)
+                                    }
                                     self.lightningViewModel.show(region: self.visibleRegion)
                                 } else {
+                                    if self.radarViewModel.isVisible {
+                                        self.radarViewModel.hide()
+                                    }
                                     self.lightningViewModel.hide()
                                 }
                             } label: {
@@ -803,10 +779,89 @@ struct ContentView: View {
                             .frame(width: 44, height: 44)
                             .buttonStyle(.glass)
                             .clipShape(Circle())
-                            .offset(x: 60)
                             .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible)
                             
-                            // Location Search
+                            Spacer()
+                            
+                            if !self.model.milkywayVisible {
+                                Button {
+                                    self.settingsViewVisible = true
+                                } label: {
+                                    Image(systemName: "gearshape")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .padding(7)
+                                }
+                                .frame(width: 44, height: 44)
+                                .buttonStyle(.glass)
+                                .clipShape(Circle())
+                            }
+                        } else {
+                            Spacer()
+                            
+                            if !self.model.elevationViewVisible && !self.model.milkywayVisible {
+                                Button { // Lightning Strikes
+                                    self.lightningViewModel.strikesVisible.toggle()
+                                    if self.lightningViewModel.isVisible {
+                                        if !self.radarViewModel.isVisible {
+                                            self.radarViewModel.load(region: self.visibleRegion, canvasSize: geo.size)                                            
+                                        }
+                                        self.lightningViewModel.show(region: self.visibleRegion)
+                                    } else {
+                                        if self.radarViewModel.isVisible {
+                                            self.radarViewModel.hide()
+                                        }
+                                        self.lightningViewModel.hide()
+                                    }
+                                } label: {
+                                    Image(systemName: self.lightningViewModel.strikesVisible ? "bolt.fill" : "bolt")
+                                        .resizable()
+                                        .foregroundStyle(self.lightningViewModel.strikesVisible ? .yellow : .primary)
+                                        .frame(width: 18, height: 18)
+                                        .padding(7)
+                                }
+                                .frame(width: 44, height: 44)
+                                .buttonStyle(.glass)
+                                .clipShape(Circle())
+                                .offset(x: 60)
+                                .disabled(!self.model.networkMonitor.isConnected || self.sunsetPredictionVisible || self.weatherViewModel.isVisible || self.model.milkywayVisible || self.longExposureVisible || self.moonPhaseVisible)
+                                
+                                // Location Search
+                                Button {
+                                    self.searchViewVisible = true
+                                } label: {
+                                    Image(systemName: "magnifyingglass")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .padding(7)
+                                }
+                                .frame(width: 44, height: 44)
+                                .buttonStyle(.glass)
+                                .clipShape(Circle())
+                                .offset(x: 60)
+                                .disabled(!self.model.networkMonitor.isConnected)
+                                
+                                // Settings
+                                Button {
+                                    self.settingsViewVisible = true
+                                } label: {
+                                    Image(systemName: "gearshape")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .padding(7)
+                                }
+                                .frame(width: 44, height: 44)
+                                .buttonStyle(.glass)
+                                .clipShape(Circle())
+                                .offset(x: 60)
+                            }
+                            
+                            Spacer()
+                        }
+                    }
+                    
+                    if Constants.IS_IPAD {
+                        HStack {
                             Button {
                                 self.searchViewVisible = true
                             } label: {
@@ -818,179 +873,148 @@ struct ContentView: View {
                             .frame(width: 44, height: 44)
                             .buttonStyle(.glass)
                             .clipShape(Circle())
-                            .offset(x: 60)
                             .disabled(!self.model.networkMonitor.isConnected)
                             
-                            // Settings
-                            Button {
-                                self.settingsViewVisible = true
-                            } label: {
-                                Image(systemName: "gearshape")
-                                    .resizable()
-                                    .frame(width: 20, height: 20)
-                                    .padding(7)
+                            Spacer()
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // Aperture Slider
+                    HStack(alignment: .bottom, spacing: 5) {
+                        VStack {
+                            Slider(value: self.model.apertureBinding, in: self.model.minAperture...self.model.maxAperture)
+                            Text("f/\(String(format: "%.1f", self.model.aperture))")
+                                .font(Constants.REGULAR_FONT_14)
+                        }
+                        
+                        if self.model.dofVisible {
+                            Spacer()
+                            VStack(spacing: 10) {
+                                Image.init(systemName: "arrowtriangle.left.and.line.vertical.and.arrowtriangle.right.fill")
+                                    .rotationEffect(Angle(degrees: 90))
+                                    .font(Constants.REGULAR_FONT_14)
+                                let dof       : Double = ((self.model.fovData?.dofInFront ?? 0.0) + (self.model.fovData?.dofBehind ?? 0.0))
+                                let dofFormat : String = dof < 1 ? "%.2f m" : dof < 10 ? "%.1f m" : "%.0f m"
+                                let dofText   : String = dof > 100 ? "∞" : String(format: dofFormat, dof)
+                                Text(dofText)
+                                    .font(Constants.REGULAR_FONT_14)
                             }
-                            .frame(width: 44, height: 44)
-                            .buttonStyle(.glass)
-                            .clipShape(Circle())
-                            .offset(x: 60)
+                            Spacer()
+                        } else {
+                            Spacer()
                         }
                         
-                        Spacer()
-                    }
-                }
-                
-                if Constants.IS_IPAD {
-                    HStack {
-                        Button {
-                            self.searchViewVisible = true
-                        } label: {
-                            Image(systemName: "magnifyingglass")
-                                .resizable()
-                                .frame(width: 20, height: 20)
-                                .padding(7)
-                        }
-                        .frame(width: 44, height: 44)
-                        .buttonStyle(.glass)
-                        .clipShape(Circle())
-                        .disabled(!self.model.networkMonitor.isConnected)
-                        
-                        Spacer()
-                    }
-                }
-                
-                Spacer()
-                
-                // Aperture Slider
-                HStack(alignment: .bottom, spacing: 5) {
-                    VStack {
-                        Slider(value: self.model.apertureBinding, in: self.model.minAperture...self.model.maxAperture)
-                        Text("f/\(String(format: "%.1f", self.model.aperture))")
-                            .font(Constants.REGULAR_FONT_14)
-                    }
-                                        
-                    if self.model.dofVisible {
-                        Spacer()
-                        VStack(spacing: 10) {
-                            Image.init(systemName: "arrowtriangle.left.and.line.vertical.and.arrowtriangle.right.fill")
-                                .rotationEffect(Angle(degrees: 90))
-                                .font(Constants.REGULAR_FONT_14)
-                            let dof       : Double = ((self.model.fovData?.dofInFront ?? 0.0) + (self.model.fovData?.dofBehind ?? 0.0))
-                            let dofFormat : String = dof < 1 ? "%.2f m" : dof < 10 ? "%.1f m" : "%.0f m"
-                            let dofText   : String = dof > 100 ? "∞" : String(format: dofFormat, dof)
-                            Text(dofText)
+                        // Focal Length Slider
+                        VStack {
+                            Slider(value: self.model.focalLengthBinding, in: self.model.minFocalLength...self.model.maxFocalLength)
+                                .disabled(self.model.lens.isPrime)
+                            Text("\(String(format: "%.0f mm", self.model.focalLength))")
                                 .font(Constants.REGULAR_FONT_14)
                         }
-                        Spacer()
-                    } else {
-                        Spacer()
                     }
-                                            
-                    // Focal Length Slider
-                    VStack {
-                        Slider(value: self.model.focalLengthBinding, in: self.model.minFocalLength...self.model.maxFocalLength)
-                            .disabled(self.model.lens.isPrime)
-                        Text("\(String(format: "%.0f mm", self.model.focalLength))")
-                            .font(Constants.REGULAR_FONT_14)
-                    }
+                    .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 5))
                 }
-                .padding(EdgeInsets(top: 5, leading: 5, bottom: 0, trailing: 5))
+                .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
+                
+                if self.sunsetPredictionVisible {
+                    SunQualityMapOverlayView(viewModel: sunQualityViewModel)
+                }
+                
+                if self.moonPhaseVisible {
+                    MoonPhaseMapOverlayView(viewModel: moonViewModel)
+                }
+                
+                if self.model.milkywayVisible {
+                    MilkywayMapOverlayView(viewModel: milkywayViewModel, clarityViewModel: clarityViewModel, onClose: {
+                        self.model.milkywayVisible = false
+                    })
+                }
+                
+                if self.longExposureVisible {
+                    LongExposureMapOverlayView(viewModel: longExposureViewModel)
+                }
+                
+                if self.helpViewVisible {
+                    HelpView()
+                        .onTapGesture {
+                            self.helpViewVisible = false
+                        }
+                }
             }
-            .padding(EdgeInsets(top: 10, leading: 10, bottom: 10, trailing: 10))
-                   
-            if self.sunsetPredictionVisible {
-                SunQualityMapOverlayView(viewModel: sunQualityViewModel)
+            .sheet(isPresented: $cameraViewVisible) {
+                CameraView(cameras: self.cameras)
             }
-            
-            if self.moonPhaseVisible {
-                MoonPhaseMapOverlayView(viewModel: moonViewModel)
+            .sheet(isPresented: $lensViewVisible) {
+                LensView(lenses: self.lenses)
             }
-            
-            if self.model.milkywayVisible {
-                MilkywayMapOverlayView(viewModel: milkywayViewModel, clarityViewModel: clarityViewModel, onClose: {
-                    self.model.milkywayVisible = false
-                })
+            .sheet(isPresented: $datePickerVisible) {
+                DateTimeView()
             }
-            
-            if self.longExposureVisible {
-                LongExposureMapOverlayView(viewModel: longExposureViewModel)
+            .sheet(isPresented: $settingsViewVisible) {
+                SettingsView()
             }
-            
-            if self.helpViewVisible {
-                HelpView()
-                    .onTapGesture {
-                        self.helpViewVisible = false
+            .sheet(isPresented: $searchViewVisible) {
+                SearchView(locationService: self.locationService, functio: setMapLocation)
+            }
+            .sheet(isPresented: $fieldOfViewCalculatorVisible) {
+                MinimumDistanceCalculatorView(photoPlannerModel: self.model)
+            }
+            .sheet(isPresented: $addPhotoShootViewVisible) {
+                AddPhotoShootView()
+            }
+            .sheet(isPresented: $photoShootsViewVisible) {
+                PhotoShootsView(photoShoots: self.photoShoots)
+            }
+            .sheet(isPresented: $exposureCalculatorVisible) {
+                ExposureCalculatorView(baseAperture: self.model.aperture)
+            }
+            .onChange(of: self.model.orientation) {
+                self.isPortrait = self.model.orientation == .portrait
+            }
+            .onChange(of: self.model.cameraMarkerData) {
+                if self.model.cameraMarkerData == nil { return }
+                weatherViewModel.checkIfOutdated(
+                    for: CLLocation(latitude: self.model.cameraMarkerData!.coordinate.latitude, longitude: self.model.cameraMarkerData!.coordinate.longitude),
+                    on:  self.model.currentMapDate
+                )
+            }
+            .onChange(of: self.model.showWeatherRadar) {
+                self.radarViewModel.isVisible = self.model.showWeatherRadar
+            }
+            .task {
+                let savedCameraId         : String     = Properties.instance.cameraId         ?? Constants.DEFAULT_CAMERA.id
+                let savedLensId           : String     = Properties.instance.lensId           ?? Constants.DEFAULT_LENS.id
+                let savedAperture         : Double     = Properties.instance.aperture         ?? 2.8
+                let savedFocalLength      : Double     = Properties.instance.focalLength      ?? 24
+                let savedDistance         : Double     = Properties.instance.distance         ?? 1500
+                let savedCameraLatitude   : Double     = Properties.instance.cameraLatitude   ?? Constants.DEFAULT_LOCATION.coordinate.latitude
+                let savedCameraLongitude  : Double     = Properties.instance.cameraLongitude  ?? Constants.DEFAULT_LOCATION.coordinate.longitude
+                let savedSubjectLatitude  : Double     = Properties.instance.subjectLatitude  ?? Constants.DEFAULT_LOCATION.coordinate.latitude
+                let savedSubjectLongitude : Double     = Properties.instance.subjectLongitude ?? Constants.DEFAULT_LOCATION.coordinate.longitude
+                let cameraPoint           : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: savedCameraLatitude, longitude: savedCameraLongitude))
+                let subjectPoint          : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: savedSubjectLatitude, longitude: savedSubjectLongitude))
+                
+                self.model.camera         = cameras.filter({ $0.id == savedCameraId }).first  ?? Constants.DEFAULT_CAMERA
+                self.model.lens           = lenses.filter({ $0.id == savedLensId }).first     ?? Constants.DEFAULT_LENS
+                self.model.aperture       = savedAperture
+                self.model.focalLength    = savedFocalLength
+                self.model.cameraDistance = savedDistance
+                
+                self.model.cameraMarkerData  = MarkerData(coordinate: cameraPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
+                self.model.subjectMarkerData = MarkerData(coordinate: subjectPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
+                self.model.updateFoVTriangle(cameraPoint: cameraPoint, subjectPoint: subjectPoint, focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
+                
+                if self.model.cameraMarkerData != nil {
+                    self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
+                    let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
+                    let date     : Date                   = self.model.currentMapDate
+                    Task {
+                        let timeZone : TimeZone = await Helper.fetchTimeZone(for: location)
+                        milkywayViewModel.show(at: location, on: date, timeZone: timeZone)
+                        clarityViewModel.loadClarity(at: location, on: date, timeZone: timeZone)
                     }
-            }
-        }
-        .sheet(isPresented: $cameraViewVisible) {
-            CameraView(cameras: self.cameras)
-        }
-        .sheet(isPresented: $lensViewVisible) {
-            LensView(lenses: self.lenses)
-        }
-        .sheet(isPresented: $datePickerVisible) {
-            DateTimeView()
-        }
-        .sheet(isPresented: $settingsViewVisible) {
-            SettingsView()
-        }
-        .sheet(isPresented: $searchViewVisible) {            
-            SearchView(locationService: self.locationService, functio: setMapLocation)
-        }
-        .sheet(isPresented: $fieldOfViewCalculatorVisible) {
-            MinimumDistanceCalculatorView(photoPlannerModel: self.model)
-        }
-        .sheet(isPresented: $addPhotoShootViewVisible) {
-            AddPhotoShootView()
-        }
-        .sheet(isPresented: $photoShootsViewVisible) {
-            PhotoShootsView(photoShoots: self.photoShoots)
-        }
-        .sheet(isPresented: $exposureCalculatorVisible) {            
-            ExposureCalculatorView(baseAperture: self.model.aperture)
-        }
-        .onChange(of: self.model.orientation) {
-            self.isPortrait = self.model.orientation == .portrait
-        }
-        .onChange(of: self.model.cameraMarkerData) {
-            if self.model.cameraMarkerData == nil { return }
-            weatherViewModel.checkIfOutdated(
-                for: CLLocation(latitude: self.model.cameraMarkerData!.coordinate.latitude, longitude: self.model.cameraMarkerData!.coordinate.longitude),
-                on:  self.model.currentMapDate
-            )
-        }
-        .task {
-            let savedCameraId         : String     = Properties.instance.cameraId         ?? Constants.DEFAULT_CAMERA.id
-            let savedLensId           : String     = Properties.instance.lensId           ?? Constants.DEFAULT_LENS.id
-            let savedAperture         : Double     = Properties.instance.aperture         ?? 2.8
-            let savedFocalLength      : Double     = Properties.instance.focalLength      ?? 24
-            let savedDistance         : Double     = Properties.instance.distance         ?? 1500
-            let savedCameraLatitude   : Double     = Properties.instance.cameraLatitude   ?? Constants.DEFAULT_LOCATION.coordinate.latitude
-            let savedCameraLongitude  : Double     = Properties.instance.cameraLongitude  ?? Constants.DEFAULT_LOCATION.coordinate.longitude
-            let savedSubjectLatitude  : Double     = Properties.instance.subjectLatitude  ?? Constants.DEFAULT_LOCATION.coordinate.latitude
-            let savedSubjectLongitude : Double     = Properties.instance.subjectLongitude ?? Constants.DEFAULT_LOCATION.coordinate.longitude
-            let cameraPoint           : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: savedCameraLatitude, longitude: savedCameraLongitude))
-            let subjectPoint          : MKMapPoint = MKMapPoint(CLLocationCoordinate2D(latitude: savedSubjectLatitude, longitude: savedSubjectLongitude))
-            
-            self.model.camera         = cameras.filter({ $0.id == savedCameraId }).first  ?? Constants.DEFAULT_CAMERA
-            self.model.lens           = lenses.filter({ $0.id == savedLensId }).first     ?? Constants.DEFAULT_LENS
-            self.model.aperture       = savedAperture
-            self.model.focalLength    = savedFocalLength
-            self.model.cameraDistance = savedDistance
-                                    
-            self.model.cameraMarkerData  = MarkerData(coordinate: cameraPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
-            self.model.subjectMarkerData = MarkerData(coordinate: subjectPoint.coordinate, screenPoint: CGPoint(x: 0, y: 0))
-            self.model.updateFoVTriangle(cameraPoint: cameraPoint, subjectPoint: subjectPoint, focalLength: self.model.focalLength, aperture: self.model.aperture, sensorFormat: self.model.camera.sensorFormat, orientation: self.model.orientation, tc1: self.model.tc1, tc2: self.model.tc2)
-            
-            if self.model.cameraMarkerData != nil {
-                self.position = .camera(.init(centerCoordinate: self.model.cameraMarkerData!.coordinate, distance: self.model.cameraDistance))
-                let location : CLLocationCoordinate2D = self.model.cameraMarkerData!.coordinate
-                let date     : Date                   = self.model.currentMapDate
-                Task {
-                    let timeZone : TimeZone = await Helper.fetchTimeZone(for: location)
-                    milkywayViewModel.show(at: location, on: date, timeZone: timeZone)
-                    clarityViewModel.loadClarity(at: location, on: date, timeZone: timeZone)
                 }
             }
         }

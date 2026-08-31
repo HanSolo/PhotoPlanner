@@ -142,6 +142,14 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var hiResWeatherMapBinding        : Binding<Bool> {
         .init(get: { self.hiResWeatherMap }, set: { self.hiResWeatherMap = $0 })
     }
+    var showWeatherRadar              : Bool                     = Properties.instance.showWeatherRadar! {
+        didSet {
+            Properties.instance.showWeatherRadar = self.showWeatherRadar
+        }
+    }
+    var showWeatherRadarBinding       : Binding<Bool> {
+        .init(get: { self.showWeatherRadar }, set: { self.showWeatherRadar = $0 })
+    }
     
 
     override init() {
