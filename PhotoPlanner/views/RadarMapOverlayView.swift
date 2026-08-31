@@ -22,7 +22,7 @@ struct RadarMapOverlayView: View {
                         for (_, image, rect) in viewModel.tiles {
                             guard let resolved = try? ctx.resolve(Image(uiImage: image)) else { continue }
                             var tileCtx     = ctx
-                            tileCtx.opacity = 0.85
+                            tileCtx.opacity = 0.70
                             tileCtx.draw(resolved, in: rect)
                         }
                     }
