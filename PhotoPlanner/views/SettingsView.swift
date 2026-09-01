@@ -129,19 +129,6 @@ struct SettingsView: View {
             Divider()
             
             HStack {
-                Toggle(isOn: self.model.hiResWeatherMapBinding) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("High Resolution Rain Radar")
-                            .font(Constants.REGULAR_FONT_16)
-                        Text("512px tiles — sharper but slower to download")
-                            .font(Constants.REGULAR_FONT_12)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            
-            
-            HStack {
                 Toggle(isOn: self.model.showWeatherRadarBinding) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Lightning strikes with weather radar")

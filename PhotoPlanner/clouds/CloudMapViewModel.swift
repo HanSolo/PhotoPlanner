@@ -86,7 +86,7 @@ class CloudMapViewModel {
         radarFrames       = []
         radarCurrentIndex = 0
         
-        let tileSize : Int = Properties.instance.hiResWeatherMap! ? 512 : 256
+        let tileSize : Int = 512 // 256 is also possible but a bit blurry
 
         let colorScheme = Properties.instance.libreWxrColorScheme ?? 8
 
@@ -198,7 +198,7 @@ class CloudMapViewModel {
 
     private func fetchBaseMap(coordinate: CLLocationCoordinate2D, scale: CGFloat) async -> UIImage? {
         let region   : MKCoordinateRegion = MKCoordinateRegion(center: coordinate, latitudinalMeters: 250_000, longitudinalMeters: 250_000)
-        let tileSize : CGFloat            = Properties.instance.hiResWeatherMap! ? 512 : 360
+        let tileSize : CGFloat            = 512
         
         // Store region span for wind grid and arrow positioning
         regionCenter  = coordinate

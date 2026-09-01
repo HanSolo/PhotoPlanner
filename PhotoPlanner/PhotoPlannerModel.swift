@@ -133,15 +133,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var lightningVisibleBinding       : Binding<Bool> {
         .init(get: { self.lightningVisible }, set: { self.lightningVisible = $0 })
     }
-    var visibleRegion                 : MKCoordinateRegion       = MKCoordinateRegion()
-    var hiResWeatherMap               : Bool                     = Properties.instance.hiResWeatherMap! {
-        didSet {
-            Properties.instance.hiResWeatherMap = self.hiResWeatherMap
-        }
-    }
-    var hiResWeatherMapBinding        : Binding<Bool> {
-        .init(get: { self.hiResWeatherMap }, set: { self.hiResWeatherMap = $0 })
-    }
+    var visibleRegion                 : MKCoordinateRegion       = MKCoordinateRegion()    
     var showWeatherRadar              : Bool                     = Properties.instance.showWeatherRadar! {
         didSet {
             Properties.instance.showWeatherRadar = self.showWeatherRadar

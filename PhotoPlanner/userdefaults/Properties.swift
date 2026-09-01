@@ -25,8 +25,7 @@ extension Key {
     static let tc1Factor           : Key = "tc1Factor"
     static let tc2Factor           : Key = "tc2Factor"
     static let observerHeight      : Key = "observerHeight"
-    static let libreWxrColorScheme : Key = "libreWxrColorScheme"
-    static let hiResWeatherMap     : Key = "hiResWeatherMap"
+    static let libreWxrColorScheme : Key = "libreWxrColorScheme"    
     static let showWeatherRadar    : Key = "showWeatherRadar"
 }
 
@@ -78,9 +77,6 @@ public struct Properties {
     
     @UserDefault(key: .libreWxrColorScheme, defaultValue: 8)
     var libreWxrColorScheme: Int?
-    
-    @UserDefault(key: .hiResWeatherMap, defaultValue: false)
-    var hiResWeatherMap: Bool?
     
     @UserDefault(key: .showWeatherRadar, defaultValue: false)
     var showWeatherRadar: Bool?
