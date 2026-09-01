@@ -34,7 +34,7 @@ struct RadarMapOverlayView: View {
 
                 // Loading / no-data hint
                 if viewModel.isLoading {
-                    VStack {
+                    VStack(alignment: .center) {
                         Spacer()
                         HStack(spacing: 6) {
                             if viewModel.isLoading {
@@ -55,18 +55,28 @@ struct RadarMapOverlayView: View {
                         .padding(.vertical, 6)
                         .background(.black.opacity(0.6))
                         .clipShape(Capsule())
-                        .padding(.bottom, 120)
+                        .padding(.bottom, 180)
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.tooManyTiles {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
-                            .font(.caption2)
-                        Text("Zoom in to show radar overlay")
-                            .font(.caption2)
+                    VStack(alignment: .center) {
+                        Spacer()
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
+                                .font(.caption2)
+                            Text("Zoom in to show radar overlay")
+                                .font(.caption2)
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(.black.opacity(0.6))
+                        .clipShape(Capsule())
+                        .padding(.bottom, 180)
                     }
-                    // ... pill styling unchanged
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if viewModel.tiles.isEmpty {
-                    // no data hint unchanged
+                    // no data hint
                 }
             }
         }

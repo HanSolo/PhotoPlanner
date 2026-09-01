@@ -10,7 +10,7 @@ import Foundation
 import CoreLocation
 
 
-struct MapTile {
+public struct MapTile {
     let x : Int
     let y : Int
     let z : Int

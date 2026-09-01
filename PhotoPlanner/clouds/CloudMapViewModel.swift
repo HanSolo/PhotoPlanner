@@ -109,7 +109,6 @@ class CloudMapViewModel {
                           let url     = tile.libreWxrURL(host: manifest.host, path: path, colorScheme: colorScheme, tileSize: tileSize),
                           let tileImg = await self.fetchTileImage(from: url)
                     else { return nil }
-                    //let composited = self.composite(base: base, overlay: tileImg, alpha: 0.85)
                     let composited = await self.composite(base: base, overlay: tileImg, tileIndex: tile, region: MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: regionCenter.latitude, longitude: regionCenter.longitude), span: MKCoordinateSpan(latitudeDelta: regionSpanLat, longitudeDelta: regionSpanLon)), alpha: 0.85)
                     
                     return CloudMapFrame(time: time, image: composited, isNowcast: isNowcast)
@@ -142,7 +141,6 @@ class CloudMapViewModel {
         return frame.isNowcast ? "\(timeStr) ▶ forecast" : timeStr
     }
 
-
     func loadSatelliteFrames(coordinate: CLLocationCoordinate2D, scale: CGFloat) async {
         satelliteLoading      = true
         satelliteFailed       = false
@@ -168,7 +166,6 @@ class CloudMapViewModel {
                           let url     = tile.libreWxrSatelliteURL(host: manifest.host, path: frame.path),
                           let tileImg = await self.fetchTileImage(from: url)
                     else { return nil }
-                    //let composited = self.composite(base: base, overlay: tileImg, alpha: 0.9)
                     let composited = await self.composite(base: base, overlay: tileImg, tileIndex: tile, region: MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: regionCenter.latitude, longitude: regionCenter.longitude), span: MKCoordinateSpan(latitudeDelta: regionSpanLat, longitudeDelta: regionSpanLon)), alpha: 0.9)
                     return CloudMapFrame(time: frame.time, image: composited, isNowcast: false)
                 }
@@ -189,7 +186,6 @@ class CloudMapViewModel {
         guard !satelliteFrames.isEmpty else { return }
         satelliteCurrentIndex = (satelliteCurrentIndex + 1) % satelliteFrames.count
     }
-
 
 
     private func fetchManifest() async -> LibreWxrResponse? {
@@ -225,21 +221,6 @@ class CloudMapViewModel {
         return UIImage(data: data)
     }
 
-    /*
-    nonisolated private func composite(base: UIImage, overlay: UIImage?, alpha: CGFloat) -> UIImage {
-        let size     : CGSize                  = base.size
-        let renderer : UIGraphicsImageRenderer = UIGraphicsImageRenderer(size: size)
-        return renderer.image { ctx in
-            base.draw(in: CGRect(origin: .zero, size: size))
-            if let overlay {
-                overlay.draw(in: CGRect(origin: .zero, size: size), blendMode: .normal, alpha: alpha)
-            }
-            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [UIColor.clear.cgColor, UIColor.black.withAlphaComponent(0.3).cgColor] as CFArray, locations: [0.7, 1.0])!
-            ctx.cgContext.drawRadialGradient(gradient, startCenter: CGPoint(x: size.width / 2, y: size.height / 2), startRadius: size.width * 0.35, endCenter: CGPoint(x: size.width / 2, y: size.height / 2), endRadius: size.width * 0.72, options: [])
-        }
-    }
-    */
-    
     nonisolated private func composite(base: UIImage, overlay: UIImage?, tileIndex: MapTile?, region: MKCoordinateRegion?, alpha: CGFloat) -> UIImage {
         let size     : CGSize                  = base.size
         let renderer : UIGraphicsImageRenderer = UIGraphicsImageRenderer(size: size)

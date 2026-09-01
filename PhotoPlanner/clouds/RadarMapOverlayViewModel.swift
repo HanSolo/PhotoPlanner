@@ -66,7 +66,7 @@ class RadarMapOverlayViewModel {
         startLoad(region: region, canvasSize: canvasSize)
     }
 
-    // Called during pan/zoom — hides tiles but keeps isVisible state.
+    // Called during pan/zoom, hides tiles but keeps isVisible state.
     func mapDidMove() {
         tiles = []
     }
@@ -92,15 +92,17 @@ class RadarMapOverlayViewModel {
 
         guard !Task.isCancelled else { isLoading = false; return }
         
-        
-        let zoom     = max(5, zoomLevel(for: region))   // minimum zoom 5
+        let zoom     = max(5, zoomLevel(for: region))  // minimum zoom 5
         let tileList = tilesForRegion(region, zoom: zoom)
-        guard tileList.count <= 35 else {               // Safety cap — refuse to fetch more than 25 tiles at once
-            tooManyTiles = true
-            isLoading    = false
+        guard tileList.count <= 35 else {              // Cap tiles at 35 to avoid out of memory error
+            await MainActor.run {
+                self.tooManyTiles = true
+                self.isLoading    = false
+            }
             return
         }
-        tooManyTiles = false
+        await MainActor.run { self.tooManyTiles = false }
+                        
         let colorScheme = Properties.instance.libreWxrColorScheme ?? 8
         let host        = response.host
         let path        = lastFrame.path
@@ -120,7 +122,7 @@ class RadarMapOverlayViewModel {
                           let img           = UIImage(data: data)
                     else { return nil }
 
-                    let rect = self.tileRect(tile: tile, region: region, canvasSize: canvasSize)
+                    let rect = Helper.tileRect(tile: tile, region: region, canvasSize: canvasSize)
                     return (tile, img, rect)
                 }
             }
@@ -179,44 +181,5 @@ class RadarMapOverlayViewModel {
             }
         }
         return tiles
-    }
-
-    // Converts a tile's geographic bounds to a CGRect in canvas pixel space.
-    nonisolated private func tileRect(tile: MapTile, region: MKCoordinateRegion, canvasSize : CGSize) -> CGRect {
-        let n : CGFloat = pow(2.0, Double(tile.z))
-
-        // Tile geographic bounds
-        let tileWest  : CGFloat = Double(tile.x)     / n * 360.0 - 180.0
-        let tileEast  : CGFloat = Double(tile.x + 1) / n * 360.0 - 180.0
-        let tileNorth : CGFloat = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y)     / n))) * 180.0 / .pi
-        let tileSouth : CGFloat = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y + 1) / n))) * 180.0 / .pi
-
-        let regWest  : CGFloat = region.center.longitude - region.span.longitudeDelta / 2
-        let regEast  : CGFloat = region.center.longitude + region.span.longitudeDelta / 2
-        let regNorth : CGFloat = region.center.latitude  + region.span.latitudeDelta  / 2
-        let regSouth : CGFloat = region.center.latitude  - region.span.latitudeDelta  / 2
-
-        // Convert latitude to Mercator Y
-        func mercatorY(_ lat: Double) -> Double {
-            let rad : Double = lat * .pi / 180.0
-            return log(tan(.pi / 4.0 + rad / 2.0))
-        }
-
-        let mercRegNorth  : CGFloat = mercatorY(regNorth)
-        let mercRegSouth  : CGFloat = mercatorY(regSouth)
-        let mercTileNorth : CGFloat = mercatorY(tileNorth)
-        let mercTileSouth : CGFloat = mercatorY(tileSouth)
-
-        let mercRegHeight : CGFloat = mercRegNorth - mercRegSouth
-
-        // X is still linear in longitude
-        let x : CGFloat = (tileWest  - regWest)  / (regEast - regWest) * canvasSize.width
-        let w : CGFloat = (tileEast  - tileWest) / (regEast - regWest) * canvasSize.width
-
-        // Y uses Mercator coordinates — correct for non-linear latitude spacing
-        let y : CGFloat = (mercRegNorth - mercTileNorth) / mercRegHeight * canvasSize.height
-        let h : CGFloat = (mercTileNorth - mercTileSouth) / mercRegHeight * canvasSize.height
-
-        return CGRect(x: x, y: y, width: w, height: h)
     }
 }

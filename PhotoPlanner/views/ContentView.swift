@@ -244,13 +244,10 @@ struct ContentView: View {
                     }
                     .allowsHitTesting(!self.model.milkywayVisible)
                 }
-            
-                let safeTop    : CGFloat = geo.safeAreaInsets.top
-                let safeBottom : CGFloat = geo.safeAreaInsets.bottom
-                
+                                            
                 RadarMapOverlayView(viewModel: self.radarViewModel)
                 
-                LightningOverlayView(viewModel: self.lightningViewModel, safeAreaTop: safeTop, safeAreaBottom: safeBottom)
+                LightningOverlayView(viewModel: self.lightningViewModel)
                                                 
                 VStack {
                     Spacer()

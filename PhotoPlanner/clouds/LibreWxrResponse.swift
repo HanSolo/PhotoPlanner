@@ -1,5 +1,5 @@
 //
-//  RainViewerResponse.swift
+//  LibreWxrResponse.swift
 //  PhotoPlanner
 //
 //  Created by Gerrit Grunwald on 14.08.26.
