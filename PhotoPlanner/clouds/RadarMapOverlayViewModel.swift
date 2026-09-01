@@ -11,11 +11,11 @@ import MapKit
 
 @Observable
 class RadarMapOverlayViewModel {
-    var isVisible     : Bool                          = Properties.instance.showWeatherRadar!
-    var isLoading     : Bool                          = false
-    var tiles         : [(MapTile, UIImage, CGRect)]  = []   // tile, image, canvas rect
-    var canvasSize    : CGSize                        = .zero
-    var tooManyTiles  : Bool                          = false
+    var isVisible     : Bool                 = Properties.instance.showWeatherRadar!
+    var isLoading     : Bool                 = false
+    var tiles         : [(MapTile, UIImage)] = []
+    var canvasSize    : CGSize               = .zero
+    var tooManyTiles  : Bool                 = false
     var currentRegion : MKCoordinateRegion?
 
     private let libreWxrHost : String = "http://hansolo.eu:8081"
@@ -108,9 +108,7 @@ class RadarMapOverlayViewModel {
         let path        = lastFrame.path
 
         // Fetch all tiles in parallel
-        let fetched: [(MapTile, UIImage, CGRect)] = await withTaskGroup(
-            of: (MapTile, UIImage, CGRect)?.self
-        ) { group in
+        let fetched: [(MapTile, UIImage)] = await withTaskGroup(of: (MapTile, UIImage)?.self) { group in
             for tile in tileList {
                 group.addTask {
                     guard !Task.isCancelled else { return nil }
@@ -121,13 +119,12 @@ class RadarMapOverlayViewModel {
                           http.statusCode   == 200,
                           let img           = UIImage(data: data)
                     else { return nil }
-
-                    let rect = Helper.tileRect(tile: tile, region: region, canvasSize: canvasSize)
-                    return (tile, img, rect)
+                    
+                    return (tile, img)
                 }
             }
 
-            var results: [(MapTile, UIImage, CGRect)] = []
+            var results: [(MapTile, UIImage)] = []
             for await result in group {
                 if let r = result { results.append(r) }
             }

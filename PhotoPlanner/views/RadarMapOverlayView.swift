@@ -21,11 +21,14 @@ struct RadarMapOverlayView: View {
                 // Radar tile canvas
                 if !viewModel.tiles.isEmpty {
                     Canvas { ctx, size in
-                        for (_, image, rect) in viewModel.tiles {
-                            guard let resolved = try? ctx.resolve(Image(uiImage: image)) else { continue }
-                            var tileCtx     = ctx
-                            tileCtx.opacity = 0.70
-                            tileCtx.draw(resolved, in: rect)
+                        if let region = viewModel.currentRegion {
+                            for (tile, image) in viewModel.tiles {
+                                let rect = Helper.tileRect(tile: tile, region: region, canvasSize: size)
+                                guard let resolved = try? ctx.resolve(Image(uiImage: image)) else { continue }
+                                var tileCtx     = ctx
+                                tileCtx.opacity = 0.65
+                                tileCtx.draw(resolved, in: rect)
+                            }
                         }
                     }
                     .ignoresSafeArea()
