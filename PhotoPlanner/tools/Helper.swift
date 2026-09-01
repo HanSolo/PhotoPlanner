@@ -377,13 +377,29 @@ public class Helper {
         
         return txt
     }
-    
-    public static func screenPoint(for coordinate: CLLocationCoordinate2D, in region: MKCoordinateRegion, size: CGSize) -> CGPoint {
-        let minLat      : Double = region.center.latitude  - region.span.latitudeDelta  / 2
-        let minLon      : Double = region.center.longitude - region.span.longitudeDelta / 2
-        let latFraction : Double = (coordinate.latitude  - minLat) / region.span.latitudeDelta
-        let lonFraction : Double = (coordinate.longitude - minLon) / region.span.longitudeDelta
-        return CGPoint(x: lonFraction * size.width, y: (1.0 - latFraction) * size.height)
+            
+    public static func screenPoint(for coordinate: CLLocationCoordinate2D, in region: MKCoordinateRegion, size: CGSize, safeAreaTop: CGFloat = 0, safeAreaBottom: CGFloat = 0 ) -> CGPoint {
+        func mercY(_ lat: Double) -> Double {
+            let rad : Double = lat * .pi / 180.0
+            return log(tan(.pi / 4.0 + rad / 2.0))
+        }
+        
+        let totalH            : CGFloat = size.height
+        let offsetFraction    : CGFloat = (safeAreaTop - safeAreaBottom) / 2.0 / totalH
+        let adjustedCenterLat : CGFloat = region.center.latitude - offsetFraction * region.span.latitudeDelta
+
+        let minLat            : CGFloat = adjustedCenterLat - region.span.latitudeDelta / 2
+        let maxLat            : CGFloat = adjustedCenterLat + region.span.latitudeDelta / 2
+        let minLon            : CGFloat = region.center.longitude - region.span.longitudeDelta / 2
+
+        let mercMin           : CGFloat = mercY(minLat)
+        let mercMax           : CGFloat = mercY(maxLat)
+        let mercCoord         : CGFloat = mercY(coordinate.latitude)
+
+        let xFrac             : CGFloat = (coordinate.longitude - minLon) / region.span.longitudeDelta
+        let yFrac             : CGFloat = 1.0 - (mercCoord - mercMin) / (mercMax - mercMin)
+
+        return CGPoint(x: xFrac * size.width, y: yFrac * size.height)
     }
 }
 

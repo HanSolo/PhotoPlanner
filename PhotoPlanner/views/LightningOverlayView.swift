@@ -14,8 +14,11 @@ import UIKit
 struct LightningOverlayView: View {
     @Environment(\.colorScheme) private var colorScheme
     
-    let viewModel: LightningOverlayViewModel
+    let viewModel      : LightningOverlayViewModel
+    let safeAreaTop    : CGFloat
+    let safeAreaBottom : CGFloat
 
+    
     var body: some View {
         TimelineView(.animation) { context in
             Canvas { ctx, size in
@@ -24,7 +27,7 @@ struct LightningOverlayView: View {
                 for strike in viewModel.strikes {
                     let age : Double = strike.age(at: now)
                     guard age < self.viewModel.maxAge else { continue }
-                    let point : CGPoint = Helper.screenPoint(for: CLLocationCoordinate2D(latitude: strike.latitude, longitude: strike.longitude), in: region, size: size)
+                    let point : CGPoint = Helper.screenPoint(for: CLLocationCoordinate2D(latitude: strike.latitude, longitude: strike.longitude), in: region, size: size, safeAreaTop: self.safeAreaTop, safeAreaBottom: self.safeAreaBottom)
                     drawStrike(ctx: ctx, point: point, phase: strike.phase(at: now), age: age, color: strike.color(at: now, colorScheme: self.colorScheme), opacity: strike.opacity(at: now))
                 }
             }

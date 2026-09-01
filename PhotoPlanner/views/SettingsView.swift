@@ -140,7 +140,7 @@ struct SettingsView: View {
                 }
             }
             
-            /*
+            
             HStack {
                 Toggle(isOn: self.model.showWeatherRadarBinding) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -151,8 +151,7 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-            }
-            */
+            }            
             
             Spacer()
         }

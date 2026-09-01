@@ -11,26 +11,40 @@ import MapKit
 
 @Observable
 class RadarMapOverlayViewModel {
-    var isVisible     : Bool                          = false
+    var isVisible     : Bool                          = Properties.instance.showWeatherRadar!
     var isLoading     : Bool                          = false
     var tiles         : [(MapTile, UIImage, CGRect)]  = []   // tile, image, canvas rect
     var canvasSize    : CGSize                        = .zero
+    var tooManyTiles  : Bool                          = false
     var currentRegion : MKCoordinateRegion?
 
     private let libreWxrHost : String = "http://hansolo.eu:8081"
     private let manifestURL  : String = "http://hansolo.eu:8081/public/weather-maps.json"
     private let tileSize     : Int    = 256
     private var loadTask     : Task<Void, Never>?
+    private var refreshTimer : Timer?
 
+       
+    func startAutoRefresh(region: MKCoordinateRegion, canvasSize: CGSize) {
+        refreshTimer?.invalidate()
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 600, repeats: true) { [weak self] _ in
+            guard let self, self.isVisible else { return }
+            self.startLoad(region: region, canvasSize: canvasSize)
+        }
+    }
+
+    func stopAutoRefresh() {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
+    }
     
-    // Public API
-
     // Show radar for the given region. Cancels any in-flight load
     func load(region: MKCoordinateRegion, canvasSize: CGSize) {
         isVisible       = true
         currentRegion   = region
         self.canvasSize = canvasSize
         startLoad(region: region, canvasSize: canvasSize)
+        startAutoRefresh(region: region, canvasSize: canvasSize)
     }
 
     // Hide overlay and cancel any in-flight load
@@ -40,6 +54,7 @@ class RadarMapOverlayViewModel {
         loadTask  = nil
         tiles     = []
         isLoading = false
+        stopAutoRefresh()
     }
 
     // Called when map pan/zoom ends. Clears old tiles, reloads if visible
@@ -55,8 +70,7 @@ class RadarMapOverlayViewModel {
     func mapDidMove() {
         tiles = []
     }
-
-    // Private
+    
     private func startLoad(region: MKCoordinateRegion, canvasSize: CGSize) {
         loadTask?.cancel()
         loadTask = Task { await self.fetchTiles(region: region, canvasSize: canvasSize) }
@@ -77,9 +91,16 @@ class RadarMapOverlayViewModel {
         }
 
         guard !Task.isCancelled else { isLoading = false; return }
-
-        let zoom        = zoomLevel(for: region)
-        let tileList    = tilesForRegion(region, zoom: zoom)
+        
+        
+        let zoom     = max(5, zoomLevel(for: region))   // minimum zoom 5
+        let tileList = tilesForRegion(region, zoom: zoom)
+        guard tileList.count <= 35 else {               // Safety cap — refuse to fetch more than 25 tiles at once
+            tooManyTiles = true
+            isLoading    = false
+            return
+        }
+        tooManyTiles = false
         let colorScheme = Properties.instance.libreWxrColorScheme ?? 8
         let host        = response.host
         let path        = lastFrame.path
@@ -128,25 +149,30 @@ class RadarMapOverlayViewModel {
 
     // Returns all XYZ tile indices that cover a geographic bounding box at a given zoom
     private func tilesForRegion(_ region: MKCoordinateRegion, zoom: Int) -> [MapTile] {
-        let n      : Double = pow(2.0, Double(zoom))
-        let minLat : Double = region.center.latitude  - region.span.latitudeDelta  / 2
-        let maxLat : Double = region.center.latitude  + region.span.latitudeDelta  / 2
-        let minLon : Double = region.center.longitude - region.span.longitudeDelta / 2
-        let maxLon : Double = region.center.longitude + region.span.longitudeDelta / 2
+        let n = pow(2.0, Double(zoom))
 
-        func lon2x(_ lon: Double) -> Int { Int((lon + 180.0) / 360.0 * n) }
-        
+        // Use Mercator Y for latitude to tile conversion — matches map projection
+        func lon2x(_ lon: Double) -> Int {
+            Int((lon + 180.0) / 360.0 * n)
+        }
         func lat2y(_ lat: Double) -> Int {
-            let rad = lat * .pi / 180
-            return Int((1.0 - log(tan(rad) + 1.0 / cos(rad)) / .pi) / 2.0 * n)
+            let clampedLat = max(-85.0511, min(85.0511, lat))
+            let rad = clampedLat * .pi / 180.0
+            let mercY = (1.0 - log(tan(rad) + 1.0 / cos(rad)) / .pi) / 2.0
+            return Int(mercY * n)
         }
 
-        let xMin : Int = lon2x(minLon);
-        let xMax : Int = lon2x(maxLon)
-        let yMin : Int = lat2y(maxLat);
-        let yMax : Int = lat2y(minLat)   // y is inverted
+        let minLat = region.center.latitude  - region.span.latitudeDelta  / 2
+        let maxLat = region.center.latitude  + region.span.latitudeDelta  / 2
+        let minLon = region.center.longitude - region.span.longitudeDelta / 2
+        let maxLon = region.center.longitude + region.span.longitudeDelta / 2
 
-        var tiles : [MapTile] = []
+        let xMin = max(0, lon2x(minLon) - 1)
+        let xMax = min(Int(n) - 1, lon2x(maxLon) + 1)
+        let yMin = max(0, lat2y(maxLat) - 1)   // maxLat → smallest y (top)
+        let yMax = min(Int(n) - 1, lat2y(minLat) + 1)  // minLat → largest y (bottom)
+
+        var tiles: [MapTile] = []
         for x in xMin...xMax {
             for y in yMin...yMax {
                 tiles.append(MapTile(x: x, y: y, z: zoom))

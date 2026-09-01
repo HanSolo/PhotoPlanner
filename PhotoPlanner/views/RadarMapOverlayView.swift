@@ -6,13 +6,15 @@
 //
 import Foundation
 import SwiftUI
+import MapKit
 
 
 
 struct RadarMapOverlayView: View {
 
     let viewModel : RadarMapOverlayViewModel
-
+    
+    
     var body: some View {
         ZStack {
             if viewModel.isVisible {
@@ -31,7 +33,7 @@ struct RadarMapOverlayView: View {
                 }
 
                 // Loading / no-data hint
-                if viewModel.isLoading || viewModel.tiles.isEmpty {
+                if viewModel.isLoading {
                     VStack {
                         Spacer()
                         HStack(spacing: 6) {
@@ -55,6 +57,16 @@ struct RadarMapOverlayView: View {
                         .clipShape(Capsule())
                         .padding(.bottom, 120)
                     }
+                } else if viewModel.tooManyTiles {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up.left.and.down.right.magnifyingglass")
+                            .font(.caption2)
+                        Text("Zoom in to show radar overlay")
+                            .font(.caption2)
+                    }
+                    // ... pill styling unchanged
+                } else if viewModel.tiles.isEmpty {
+                    // no data hint unchanged
                 }
             }
         }

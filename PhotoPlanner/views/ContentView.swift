@@ -46,7 +46,7 @@ struct ContentView: View {
     @State private var helpViewVisible              : Bool                        = false
     @State private var centerCameraPosition         : Bool                        = false
     @State private var visibleRegion                : MKCoordinateRegion          = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,longitude: Properties.instance.cameraLongitude!), latitudinalMeters: 500_000, longitudinalMeters: 500_000)
-    //@State private var radarViewModel               : RadarMapOverlayViewModel    = RadarMapOverlayViewModel()
+    @State private var radarViewModel               : RadarMapOverlayViewModel    = RadarMapOverlayViewModel()
     @State private var lightningViewModel           : LightningOverlayViewModel   = LightningOverlayViewModel(username: "hansolo", password: "nuetp0tE.")
     
     @ObservedObject var locationService             : LocationService             = LocationService()
@@ -211,7 +211,7 @@ struct ContentView: View {
                     )
                     .onMapCameraChange(frequency: .continuous) { context in
                         if self.lightningViewModel.strikesVisible {
-                            //if self.radarViewModel.isVisible { self.radarViewModel.mapDidMove() }
+                            if self.radarViewModel.isVisible { self.radarViewModel.mapDidMove() }
                             self.lightningViewModel.isVisible = false
                         }
                     }
@@ -219,7 +219,7 @@ struct ContentView: View {
                         self.visibleRegion = context.region
                                                                                                                    
                         if self.lightningViewModel.strikesVisible {
-                            //if self.radarViewModel.isVisible { self.radarViewModel.mapDidSettle(region: context.region, canvasSize: geo.size) }
+                            if self.radarViewModel.isVisible { self.radarViewModel.mapDidSettle(region: context.region, canvasSize: geo.size) }
                             self.lightningViewModel.updateRegion(context.region)
                             self.lightningViewModel.isVisible = true
                         }
@@ -245,10 +245,13 @@ struct ContentView: View {
                     .allowsHitTesting(!self.model.milkywayVisible)
                 }
             
-                //RadarMapOverlayView(viewModel: self.radarViewModel)
+                let safeTop    : CGFloat = geo.safeAreaInsets.top
+                let safeBottom : CGFloat = geo.safeAreaInsets.bottom
                 
-                LightningOverlayView(viewModel: self.lightningViewModel)
+                RadarMapOverlayView(viewModel: self.radarViewModel)
                 
+                LightningOverlayView(viewModel: self.lightningViewModel, safeAreaTop: safeTop, safeAreaBottom: safeBottom)
+                                                
                 VStack {
                     Spacer()
                     HStack(alignment: .center) {
@@ -755,10 +758,10 @@ struct ContentView: View {
                             Button { // Lightning Strikes
                                 self.lightningViewModel.strikesVisible.toggle()
                                 if self.lightningViewModel.isVisible {
-                                    //if Properties.instance.showWeatherRadar! { self.radarViewModel.load(region: self.visibleRegion, canvasSize: geo.size) }
+                                    if self.model.showWeatherRadar { self.radarViewModel.load(region: self.visibleRegion, canvasSize: geo.size) }
                                     self.lightningViewModel.show(region: self.visibleRegion)
                                 } else {
-                                    //self.radarViewModel.hide()
+                                    self.radarViewModel.hide()
                                     self.lightningViewModel.hide()
                                 }
                             } label: {
@@ -795,10 +798,10 @@ struct ContentView: View {
                                 Button { // Lightning Strikes
                                     self.lightningViewModel.strikesVisible.toggle()
                                     if self.lightningViewModel.isVisible {
-                                        //if Properties.instance.showWeatherRadar! { self.radarViewModel.load(region: self.visibleRegion, canvasSize: geo.size) }
+                                        if self.model.showWeatherRadar { self.radarViewModel.load(region: self.visibleRegion, canvasSize: geo.size) }
                                         self.lightningViewModel.show(region: self.visibleRegion)
                                     } else {
-                                        //self.radarViewModel.hide()
+                                        self.radarViewModel.hide()
                                         self.lightningViewModel.hide()
                                     }
                                 } label: {
@@ -968,11 +971,9 @@ struct ContentView: View {
                     on:  self.model.currentMapDate
                 )
             }
-            /*
             .onChange(of: self.model.showWeatherRadar) {
                 self.radarViewModel.isVisible = self.model.showWeatherRadar
             }
-            */
             .task {
                 let savedCameraId         : String     = Properties.instance.cameraId         ?? Constants.DEFAULT_CAMERA.id
                 let savedLensId           : String     = Properties.instance.lensId           ?? Constants.DEFAULT_LENS.id
