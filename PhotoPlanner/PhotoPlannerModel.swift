@@ -141,7 +141,15 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     }
     var showWeatherRadarBinding       : Binding<Bool> {
         .init(get: { self.showWeatherRadar }, set: { self.showWeatherRadar = $0 })
-    }    
+    }
+    var desaturateMapForRadar         : Bool                     = Properties.instance.desaturateMapForRadar! {
+        didSet {
+            Properties.instance.desaturateMapForRadar = self.desaturateMapForRadar
+        }
+    }
+    var desaturatedMapForRadarBinding : Binding<Bool> {
+        .init(get: { self.desaturateMapForRadar }, set: { self.desaturateMapForRadar = $0 })
+    }
     
 
     override init() {

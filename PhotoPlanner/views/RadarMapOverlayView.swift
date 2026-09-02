@@ -23,10 +23,10 @@ struct RadarMapOverlayView: View {
                     Canvas { ctx, size in
                         if let region = viewModel.currentRegion {
                             for (tile, image) in viewModel.tiles {
-                                let rect = Helper.tileRect(tile: tile, region: region, canvasSize: size)
-                                guard let resolved = try? ctx.resolve(Image(uiImage: image)) else { continue }
+                                let rect        = Helper.tileRect(tile: tile, region: region, canvasSize: size)
+                                let resolved    = ctx.resolve(Image(uiImage: image))
                                 var tileCtx     = ctx
-                                tileCtx.opacity = 0.65
+                                tileCtx.opacity = viewModel.currentOpacity
                                 tileCtx.draw(resolved, in: rect)
                             }
                         }

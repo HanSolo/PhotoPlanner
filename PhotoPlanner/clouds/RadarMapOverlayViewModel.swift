@@ -23,6 +23,18 @@ class RadarMapOverlayViewModel {
     private let tileSize     : Int    = 256
     private var loadTask     : Task<Void, Never>?
     private var refreshTimer : Timer?
+    
+    var currentOpacity: Double {
+        guard let region = currentRegion else { return 0.65 }
+        // Derive zoom level from longitude span
+        // zoom 5 (very zoomed out) → 0.95 opacity
+        // zoom 9 (close in) → 0.35 opacity
+        let zoom    : Double = log2(360.0 / region.span.longitudeDelta)
+        let clamped : Double = max(5.0, min(9.0, zoom))
+        // Linear interpolation between zoom 5 (0.95) and zoom 9 (0.35)
+        let t : Double = (clamped - 5.0) / (9.0 - 5.0) // 0.0 at zoom 5, 1.0 at zoom 9
+        return 0.95 - t * (0.95 - 0.35)                // 0.95...0.35
+    }
 
        
     func startAutoRefresh(region: MKCoordinateRegion, canvasSize: CGSize) {

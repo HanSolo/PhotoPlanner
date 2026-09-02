@@ -12,21 +12,22 @@ import MapKit
 
 
 extension Key {
-    static let cameraLatitude      : Key = "cameraLatitude"
-    static let cameraLongitude     : Key = "cameraLongitude"
-    static let subjectLatitude     : Key = "motifLatitude"
-    static let subjectLongitude    : Key = "motifLongitude"
-    static let landscape           : Key = "landscape"
-    static let lensId              : Key = "lensId"
-    static let cameraId            : Key = "cameraId"
-    static let aperture            : Key = "aperture"
-    static let focalLength         : Key = "focalLength"
-    static let distance            : Key = "distance"
-    static let tc1Factor           : Key = "tc1Factor"
-    static let tc2Factor           : Key = "tc2Factor"
-    static let observerHeight      : Key = "observerHeight"
-    static let libreWxrColorScheme : Key = "libreWxrColorScheme"    
-    static let showWeatherRadar    : Key = "showWeatherRadar"
+    static let cameraLatitude        : Key = "cameraLatitude"
+    static let cameraLongitude       : Key = "cameraLongitude"
+    static let subjectLatitude       : Key = "motifLatitude"
+    static let subjectLongitude      : Key = "motifLongitude"
+    static let landscape             : Key = "landscape"
+    static let lensId                : Key = "lensId"
+    static let cameraId              : Key = "cameraId"
+    static let aperture              : Key = "aperture"
+    static let focalLength           : Key = "focalLength"
+    static let distance              : Key = "distance"
+    static let tc1Factor             : Key = "tc1Factor"
+    static let tc2Factor             : Key = "tc2Factor"
+    static let observerHeight        : Key = "observerHeight"
+    static let libreWxrColorScheme   : Key = "libreWxrColorScheme"
+    static let showWeatherRadar      : Key = "showWeatherRadar"
+    static let desaturateMapForRadar : Key = "desaturateMapForRadar"
 }
 
 
@@ -80,6 +81,9 @@ public struct Properties {
     
     @UserDefault(key: .showWeatherRadar, defaultValue: false)
     var showWeatherRadar: Bool?
+    
+    @UserDefault(key: .desaturateMapForRadar, defaultValue: false)
+    var desaturateMapForRadar: Bool?
     
     private init() {}
 }

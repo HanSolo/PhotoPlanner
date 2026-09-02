@@ -138,7 +138,19 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-            }            
+            }
+            
+            HStack {
+                Toggle(isOn: self.model.desaturatedMapForRadarBinding) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Desaturate map for radar overlay")
+                            .font(Constants.REGULAR_FONT_16)
+                        Text("Reduce color saturation of the map")
+                            .font(Constants.REGULAR_FONT_12)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
             
             Spacer()
         }
