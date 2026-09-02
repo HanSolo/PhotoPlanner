@@ -20,7 +20,7 @@ class RadarMapOverlayViewModel {
 
     private let libreWxrHost : String = "http://hansolo.eu:8081"
     private let manifestURL  : String = "http://hansolo.eu:8081/public/weather-maps.json"
-    private let tileSize     : Int    = 256
+    private let tileSize     : Int    = 256 // 512 is possible but tiles will consume a lot of memory
     private var loadTask     : Task<Void, Never>?
     private var refreshTimer : Timer?
     
@@ -39,7 +39,7 @@ class RadarMapOverlayViewModel {
        
     func startAutoRefresh(region: MKCoordinateRegion, canvasSize: CGSize) {
         refreshTimer?.invalidate()
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 600, repeats: true) { [weak self] _ in
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
             guard let self, self.isVisible else { return }
             self.startLoad(region: region, canvasSize: canvasSize)
         }
