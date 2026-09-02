@@ -243,16 +243,9 @@ struct ContentView: View {
                         self.model.checkIfLocationIsEnabled()
                     }
                     .allowsHitTesting(!self.model.milkywayVisible)
+                    .saturation(self.model.desaturateMapForRadar && self.lightningViewModel.strikesVisible && radarViewModel.isVisible ? 0.0 : 1.0)
                 }
-                           
-                if self.model.desaturateMapForRadar && self.lightningViewModel.strikesVisible && radarViewModel.isVisible {
-                    Color.gray
-                        .opacity(0.95)
-                        .ignoresSafeArea()
-                        .allowsHitTesting(false)
-                        .blendMode(.saturation)   // desaturates what's underneath
-                }
-                
+            
                 RadarMapOverlayView(viewModel: self.radarViewModel)
                 
                 LightningOverlayView(viewModel: self.lightningViewModel)
