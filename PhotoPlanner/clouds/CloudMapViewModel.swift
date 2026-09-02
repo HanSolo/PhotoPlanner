@@ -88,7 +88,7 @@ class CloudMapViewModel {
         
         let tileSize : Int = 512 // 256 is also possible but a bit blurry
 
-        let colorScheme = Properties.instance.libreWxrColorScheme ?? 8
+        let colorScheme = Properties.instance.libreWxrColorScheme ?? 13
 
         guard let manifest = await fetchManifest(),
               let base     = await fetchBaseMap(coordinate: coordinate, scale: scale)

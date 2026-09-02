@@ -21,6 +21,8 @@ enum LibreWxrColorScheme: Int, CaseIterable, Identifiable {
     case datameteoValerio = 9
     case viperHD          = 10
     case mrmsCref         = 11
+    case maxStorm         = 12
+    case windy            = 13
 
     var id   : Int    { rawValue }
     var name : String {
@@ -37,6 +39,8 @@ enum LibreWxrColorScheme: Int, CaseIterable, Identifiable {
             case .datameteoValerio : return "Datameteo Valerio"
             case .viperHD          : return "Viper HD"
             case .mrmsCref         : return "MRMS CREF"
+            case .maxStorm         : return "Max Storm"
+            case .windy            : return "Windy"
         }
     }
 }
