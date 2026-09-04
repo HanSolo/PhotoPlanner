@@ -28,6 +28,7 @@ extension Key {
     static let libreWxrColorScheme   : Key = "libreWxrColorScheme"
     static let showWeatherRadar      : Key = "showWeatherRadar"
     static let desaturateMapForRadar : Key = "desaturateMapForRadar"
+    static let stormCellsVisible     : Key = "stormCellsVisible"
 }
 
 
@@ -84,6 +85,9 @@ public struct Properties {
     
     @UserDefault(key: .desaturateMapForRadar, defaultValue: false)
     var desaturateMapForRadar: Bool?
+    
+    @UserDefault(key: .stormCellsVisible, defaultValue: false)
+    var stormCellsVisible: Bool?
     
     private init() {}
 }

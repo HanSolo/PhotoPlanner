@@ -131,9 +131,21 @@ struct SettingsView: View {
             HStack {
                 Toggle(isOn: self.model.showWeatherRadarBinding) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Lightning strikes with weather radar")
+                        Text("Enable Weather radar overlay")
                             .font(Constants.REGULAR_FONT_16)
-                        Text("Display current weather radar on full screen")
+                        Text("Display current weather radar in region")
+                            .font(Constants.REGULAR_FONT_12)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            
+            HStack {
+                Toggle(isOn: self.model.showStormCellsBinding) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Enable storm cells overlay")
+                            .font(Constants.REGULAR_FONT_16)
+                        Text("Display current storms cells in region")
                             .font(Constants.REGULAR_FONT_12)
                             .foregroundStyle(.secondary)
                     }

@@ -123,4 +123,24 @@ public class Constants {
         UIColor.white.withAlphaComponent(0.15).cgColor,
         UIColor.white.withAlphaComponent(0.00).cgColor
     ] as CFArray
+    
+    public static let DBZ_COLORS                      : [Double:Color] = [
+        0 : Color(hex: "#828282"),
+        3 : Color(hex: "#828282"),
+        8 : Color(hex: "#5E558D"),
+        14 : Color(hex: "#266D93"),
+        20 : Color(hex: "#128E90"),
+        26 : Color(hex: "#07B07D"),
+        32 : Color(hex: "#75D059"),
+        36 : Color(hex: "#DCDC1E"),
+        40 : Color(hex: "#F4CA08"),
+        44 : Color(hex: "#F5A818"),
+        48 : Color(hex: "#EC823F"),
+        52 : Color(hex: "#CD4B4B"),
+        56 : Color(hex: "#B62D64"),
+        60 : Color(hex: "#9C106D"),
+        64 : Color(hex: "#7D006C"),
+        68 : Color(hex: "#5C0064"),
+        100 : Color(hex: "#000000")
+    ]
 }

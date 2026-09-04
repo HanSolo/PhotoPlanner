@@ -150,6 +150,15 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var desaturatedMapForRadarBinding : Binding<Bool> {
         .init(get: { self.desaturateMapForRadar }, set: { self.desaturateMapForRadar = $0 })
     }
+    var showStormCells                : Bool                     = Properties.instance.stormCellsVisible! {
+        didSet {
+            Properties.instance.stormCellsVisible = self.showStormCells
+        }
+    }
+    var showStormCellsBinding         : Binding<Bool> {
+        .init(get: { self.showStormCells }, set: { self.showStormCells = $0 })
+    }
+    
     
 
     override init() {
@@ -260,6 +269,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
             self.moonTimes = MoonCalculator.calcMoonRiseAndMoonSet(at: self.cameraMarkerData!.coordinate, on: self.currentMapDate, timeZone: timeZone)
         }
     }
+    
     
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         // Handle authorization and update location-related state here, called on main thread.

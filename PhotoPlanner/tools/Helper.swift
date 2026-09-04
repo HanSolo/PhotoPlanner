@@ -404,6 +404,9 @@ public class Helper {
     }
     */
     
+    public static func screenPoint(latitude: Double, longitude: Double, in region: MKCoordinateRegion, size: CGSize) -> CGPoint {
+        return screenPoint(for: CLLocationCoordinate2D(latitude: latitude, longitude: longitude), in: region, size: size)
+    }
     public static func screenPoint(for coordinate: CLLocationCoordinate2D, in region: MKCoordinateRegion, size: CGSize) -> CGPoint {
         func mercY(_ lat: Double) -> Double {
             let rad : Double = lat * .pi / 180.0
