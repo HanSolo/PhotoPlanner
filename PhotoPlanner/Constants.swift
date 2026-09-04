@@ -89,6 +89,8 @@ public class Constants {
     public static let DOF_FILL                       : Color         = DOF_COLOR.opacity(0.15)
     public static let DOF_STROKE                     : Color         = DOF_COLOR
     public static let CENTER_LINE_STROKE             : Color         = Color.black
+    
+    public static let DEFAULT_LIBREWXR_COLOR_SCHEME  : Int           = 14
         
     public static let DEFAULT_LOCATION               : MKMapPoint    = MKMapPoint(CLLocationManager().location?.coordinate ?? CLLocationCoordinate2D(latitude : 51.911821, longitude: 7.633703))
     public static let DEFAULT_CAMERA                 : Camera        = Camera(name   : "DEFAULT CAMERA", sensorFormat: SensorFormat.fullFormat.id)

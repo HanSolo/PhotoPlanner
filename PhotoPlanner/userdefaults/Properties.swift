@@ -77,7 +77,7 @@ public struct Properties {
     @UserDefault(key: .observerHeight, defaultValue: 1.7)
     var observerHeight: Double?
     
-    @UserDefault(key: .libreWxrColorScheme, defaultValue: 13)
+    @UserDefault(key: .libreWxrColorScheme, defaultValue: Constants.DEFAULT_LIBREWXR_COLOR_SCHEME)
     var libreWxrColorScheme: Int?
     
     @UserDefault(key: .showWeatherRadar, defaultValue: false)

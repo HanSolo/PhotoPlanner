@@ -115,7 +115,7 @@ class RadarMapOverlayViewModel {
         }
         await MainActor.run { self.tooManyTiles = false }
                         
-        let colorScheme = Properties.instance.libreWxrColorScheme ?? 13
+        let colorScheme = Properties.instance.libreWxrColorScheme ?? Constants.DEFAULT_LIBREWXR_COLOR_SCHEME
         let host        = response.host
         let path        = lastFrame.path
 

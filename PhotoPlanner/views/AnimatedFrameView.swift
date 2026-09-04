@@ -73,7 +73,7 @@ struct AnimatedFrameView: View {
                                     } label: {
                                         Label(
                                             scheme.name,
-                                            systemImage: (Properties.instance.libreWxrColorScheme ?? 13) == scheme.id
+                                            systemImage: (Properties.instance.libreWxrColorScheme ?? Constants.DEFAULT_LIBREWXR_COLOR_SCHEME) == scheme.id
                                                 ? "checkmark.circle.fill"
                                                 : "circle"
                                         )
