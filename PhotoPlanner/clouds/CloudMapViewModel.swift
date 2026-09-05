@@ -4,48 +4,45 @@
 //
 
 import Foundation
-import SwiftUI
-import MapKit
 import CoreLocation
-
+import MapKit
+import UIKit
 
 @Observable
 class CloudMapViewModel {
 
     // Radar
-    var radarFrames           : [CloudMapFrame] = []
-    var radarLoading          : Bool            = false
-    var radarFailed           : Bool            = false
-    var radarCurrentIndex     : Int             = 0
-    var radarPlaying          : Bool            = true
+    var radarFrames             : [CloudMapFrame] = []
+    var radarLoading            : Bool            = false
+    var radarFailed             : Bool            = false
+    var radarCurrentIndex       : Int             = 0
+    var radarPlaying            : Bool            = true
 
     // Satellite
-    var satelliteFrames       : [CloudMapFrame] = []
-    var satelliteLoading      : Bool            = false
-    var satelliteFailed       : Bool            = false
-    var satelliteCurrentIndex : Int             = 0
-    var satellitePlaying      : Bool            = true
+    var satelliteFrames         : [CloudMapFrame] = []
+    var satelliteLoading        : Bool            = false
+    var satelliteFailed         : Bool            = false
+    var satelliteCurrentIndex   : Int             = 0
+    var satellitePlaying        : Bool            = true
 
     // Wind
-    var windSamples           : [WindSample]    = []
-    var windLoading           : Bool            = false
-    var windVisible           : Bool            = false   // toggled by wind button
+    var windSamples             : [WindSample]    = []
+    var windLoading             : Bool            = false
+    var windVisible             : Bool            = false   // toggled by wind button
 
-    private let zoomLevel     : Int             = 7
-    private let libreWxrHost  : String          = "http://hansolo.eu:8081"
-    private let manifestURL   : String          = "http://hansolo.eu:8081/public/weather-maps.json"
-    private let windFetcher   : WindFetcher     = WindFetcher()
+    private let zoomLevel       : Int             = 7
+    private let libreWxrHost    : String          = "http://hansolo.eu:8081"
+    private let manifestURL     : String          = "http://hansolo.eu:8081/public/weather-maps.json"
+    private let windFetcher     : WindFetcher     = WindFetcher()
     
-    private var regionSpanLat : Double                 = 0
-    private var regionSpanLon : Double                 = 0
-    private var regionCenter  : CLLocationCoordinate2D = CLLocationCoordinate2D()
+    private var radarRegion     : MKCoordinateRegion?
+    private var satelliteRegion : MKCoordinateRegion?
 
 
     func loadAll(coordinate: CLLocationCoordinate2D, scale: CGFloat) async {
         async let radarTask     : Void = loadRadarFrames(coordinate: coordinate, scale: scale)
         async let satelliteTask : Void = loadSatelliteFrames(coordinate: coordinate, scale: scale)
         _ = await (radarTask, satelliteTask)
-        // Wind loads separately — only when toggled on
     }
 
 
@@ -54,11 +51,9 @@ class CloudMapViewModel {
         windLoading = true
         windSamples = []
 
-        windSamples = await windFetcher.fetchGrid(
-            center:  coordinate,
-            spanLat: regionSpanLat > 0 ? regionSpanLat : 2.25,   // ~250km fallback
-            spanLon: regionSpanLon > 0 ? regionSpanLon : 3.50
-        )
+        let region = radarRegion ?? satelliteRegion
+
+        windSamples = await windFetcher.fetchGrid(center: coordinate, spanLat: region?.span.latitudeDelta ?? 2.25, spanLon: region?.span.longitudeDelta ?? 3.50) // ~250km fallback
         windLoading = false
     }
 
@@ -72,11 +67,14 @@ class CloudMapViewModel {
 
         guard windVisible && !windSamples.isEmpty else { return frame.image }
 
+        let region : MKCoordinateRegion? = mode == .radar ? radarRegion : satelliteRegion
+        guard let region else { return frame.image }
+
         // Draw wind arrows onto the frame image
         let frameDate : Date = Date(timeIntervalSince1970: TimeInterval(frame.time))
-        
-        debugPrint("[Wind] drawing with regionSpanLat: \(regionSpanLat) regionSpanLon: \(regionSpanLon) centerLat: \(regionCenter.latitude) centerLon: \(regionCenter.longitude)")
-        return WindArrowRenderer.draw(onto: frame.image, samples: windSamples, at: frameDate, regionLat: regionSpanLat, regionLon: regionSpanLon, centerLat: regionCenter.latitude, centerLon: regionCenter.longitude)
+
+        debugPrint("[Wind] drawing with regionSpanLat: \(region.span.latitudeDelta) regionSpanLon: \(region.span.longitudeDelta) centerLat: \(region.center.latitude) centerLon: \(region.center.longitude)")
+        return WindArrowRenderer.draw(onto: frame.image, samples: windSamples, at: frameDate, regionLat: region.span.latitudeDelta, regionLon: region.span.longitudeDelta, centerLat: region.center.latitude, centerLon: region.center.longitude)
     }
 
 
@@ -85,32 +83,45 @@ class CloudMapViewModel {
         radarFailed       = false
         radarFrames       = []
         radarCurrentIndex = 0
-        
-        let tileSize : Int = 512 // 256 is also possible but a bit blurry
 
-        let colorScheme = Properties.instance.libreWxrColorScheme ?? Constants.DEFAULT_LIBREWXR_COLOR_SCHEME
+        let tileSize    : Int = 512 // 256/512 are both possible
+        let colorScheme : Int = Properties.instance.libreWxrColorScheme ?? Constants.DEFAULT_LIBREWXR_COLOR_SCHEME
 
         guard let manifest = await fetchManifest(),
-              let base     = await fetchBaseMap(coordinate: coordinate, scale: scale)
+              let (baseMap, baseRegion) = await fetchBaseMap(coordinate: coordinate, scale: scale)
         else {
             radarLoading = false
             radarFailed  = true
             return
         }
 
-        let tile    = MapTile.tile(for: coordinate, zoom: zoomLevel)
+        let tiles   = tilesCovering(region: baseRegion, zoom: zoomLevel)
         let past    = manifest.radar.past.map    { ($0.time, $0.path, false) }
         let nowcast = manifest.radar.nowcast.map { ($0.time, $0.path, true)  }
 
         let frames: [CloudMapFrame] = await withTaskGroup(of: CloudMapFrame?.self) { group in
             for (time, path, isNowcast) in past + nowcast {
                 group.addTask { [weak self] in
-                    guard let self,
-                          let url     = tile.libreWxrURL(host: manifest.host, path: path, colorScheme: colorScheme, tileSize: tileSize),
-                          let tileImg = await self.fetchTileImage(from: url)
-                    else { return nil }
-                    let composited = await self.composite(base: base, overlay: tileImg, tileIndex: tile, region: MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: regionCenter.latitude, longitude: regionCenter.longitude), span: MKCoordinateSpan(latitudeDelta: regionSpanLat, longitudeDelta: regionSpanLon)), alpha: 0.85)
-                    
+                    guard let self else { return nil }
+
+                    // Fetch every covering tile concurrently for this frame
+                    let overlays: [(tile: MapTile, image: UIImage)] = await withTaskGroup(of: (MapTile, UIImage)?.self) { tileGroup in
+                        for tile in tiles {
+                            tileGroup.addTask {
+                                guard let url = tile.libreWxrURL(host: manifest.host, path: path, colorScheme: colorScheme, tileSize: tileSize),
+                                      let img = await self.fetchTileImage(from: url)
+                                else { return nil }
+                                return (tile, img)
+                            }
+                        }
+                        var results: [(MapTile, UIImage)] = []
+                        for await result in tileGroup { if let result { results.append(result) } }
+                        return results
+                    }
+
+                    guard !overlays.isEmpty else { return nil }
+
+                    let composited = await self.composite(base: baseMap, overlays: overlays, region: baseRegion, alpha: 0.85)
                     return CloudMapFrame(time: time, image: composited, isNowcast: isNowcast)
                 }
             }
@@ -122,6 +133,7 @@ class CloudMapViewModel {
         radarFrames  = frames
         radarLoading = false
         radarFailed  = frames.isEmpty
+        radarRegion  = baseRegion
 
         if let lastPast = frames.lastIndex(where: { !$0.isNowcast }) {
             radarCurrentIndex = lastPast
@@ -146,27 +158,41 @@ class CloudMapViewModel {
         satelliteFailed       = false
         satelliteFrames       = []
         satelliteCurrentIndex = 0
-        
+
         guard let manifest  = await fetchManifest(),
               let satellite = manifest.satellite,
               !satellite.infrared.isEmpty,
-              let base      = await fetchBaseMap(coordinate: coordinate, scale: scale)
+              let (base, baseRegion) = await fetchBaseMap(coordinate: coordinate, scale: scale)
         else {
             satelliteLoading = false
             satelliteFailed  = true
             return
         }
 
-        let tile = MapTile.tile(for: coordinate, zoom: zoomLevel)
+        let tiles = tilesCovering(region: baseRegion, zoom: zoomLevel)
 
         let frames: [CloudMapFrame] = await withTaskGroup(of: CloudMapFrame?.self) { group in
             for frame in satellite.infrared {
                 group.addTask { [weak self] in
-                    guard let self,
-                          let url     = tile.libreWxrSatelliteURL(host: manifest.host, path: frame.path),
-                          let tileImg = await self.fetchTileImage(from: url)
-                    else { return nil }
-                    let composited = await self.composite(base: base, overlay: tileImg, tileIndex: tile, region: MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: regionCenter.latitude, longitude: regionCenter.longitude), span: MKCoordinateSpan(latitudeDelta: regionSpanLat, longitudeDelta: regionSpanLon)), alpha: 0.9)
+                    guard let self else { return nil }
+
+                    let overlays: [(tile: MapTile, image: UIImage)] = await withTaskGroup(of: (MapTile, UIImage)?.self) { tileGroup in
+                        for tile in tiles {
+                            tileGroup.addTask {
+                                guard let url = tile.libreWxrSatelliteURL(host: manifest.host, path: frame.path),
+                                      let img = await self.fetchTileImage(from: url)
+                                else { return nil }
+                                return (tile, img)
+                            }
+                        }
+                        var results: [(MapTile, UIImage)] = []
+                        for await result in tileGroup { if let result { results.append(result) } }
+                        return results
+                    }
+
+                    guard !overlays.isEmpty else { return nil }
+
+                    let composited = await self.composite(base: base, overlays: overlays, region: baseRegion, alpha: 0.9)
                     return CloudMapFrame(time: frame.time, image: composited, isNowcast: false)
                 }
             }
@@ -178,6 +204,7 @@ class CloudMapViewModel {
         satelliteFrames  = frames
         satelliteLoading = false
         satelliteFailed  = frames.isEmpty
+        satelliteRegion  = baseRegion
 
         if !frames.isEmpty { satelliteCurrentIndex = frames.count - 1 }
     }
@@ -196,14 +223,13 @@ class CloudMapViewModel {
         return response
     }
 
-    private func fetchBaseMap(coordinate: CLLocationCoordinate2D, scale: CGFloat) async -> UIImage? {
+    // Returns the snapshotted base map image together with the exact geographic
+    // region it covers. Returning the region alongside the image (rather than
+    // stashing it in shared instance state) avoids a data race when radar and
+    // satellite loads run concurrently via loadAll.
+    private func fetchBaseMap(coordinate: CLLocationCoordinate2D, scale: CGFloat) async -> (UIImage, MKCoordinateRegion)? {
         let region   : MKCoordinateRegion = MKCoordinateRegion(center: coordinate, latitudinalMeters: 250_000, longitudinalMeters: 250_000)
         let tileSize : CGFloat            = 512
-        
-        // Store region span for wind grid and arrow positioning
-        regionCenter  = coordinate
-        regionSpanLat = region.span.latitudeDelta
-        regionSpanLon = region.span.longitudeDelta
 
         let options            = MKMapSnapshotter.Options()
         options.region         = region
@@ -211,7 +237,9 @@ class CloudMapViewModel {
         options.scale          = scale
         options.mapType        = .standard
         options.showsBuildings = false
-        return try? await MKMapSnapshotter(options: options).start().image.tonal
+
+        guard let image = try? await MKMapSnapshotter(options: options).start().image.tonal else { return nil }
+        return (image, region)
     }
 
     nonisolated private func fetchTileImage(from url: URL) async -> UIImage? {
@@ -221,47 +249,76 @@ class CloudMapViewModel {
         return UIImage(data: data)
     }
 
-    nonisolated private func composite(base: UIImage, overlay: UIImage?, tileIndex: MapTile?, region: MKCoordinateRegion?, alpha: CGFloat) -> UIImage {
+    // Returns every XYZ tile at `zoom` whose bounds intersect `region`.
+    // A single 512x512 tile rarely covers the full ~250km base-map region,
+    // so the caller must fetch and composite the whole covering set — not
+    // just the one tile nearest `coordinate` — or the overlay will be
+    // undersized and offset relative to the base map.
+    nonisolated private func tilesCovering(region: MKCoordinateRegion, zoom: Int) -> [MapTile] {
+        let regNorth = region.center.latitude  + region.span.latitudeDelta  / 2
+        let regSouth = region.center.latitude  - region.span.latitudeDelta  / 2
+        let regWest  = region.center.longitude - region.span.longitudeDelta / 2
+        let regEast  = region.center.longitude + region.span.longitudeDelta / 2
+
+        let n = pow(2.0, Double(zoom))
+        func xTile(_ lon: Double) -> Int { Int(floor((lon + 180.0) / 360.0 * n)) }
+        func yTile(_ lat: Double) -> Int {
+            let rad = lat * .pi / 180.0
+            return Int(floor((1.0 - log(tan(rad) + 1.0 / cos(rad)) / .pi) / 2.0 * n))
+        }
+
+        let xMin = max(0, xTile(regWest)),  xMax = min(Int(n) - 1, xTile(regEast))
+        let yMin = max(0, yTile(regNorth)), yMax = min(Int(n) - 1, yTile(regSouth))
+
+        var tiles: [MapTile] = []
+        guard xMin <= xMax, yMin <= yMax else { return tiles }
+        for x in xMin...xMax {
+            for y in yMin...yMax {
+                tiles.append(MapTile(x: x, y: y, z: zoom)) // NB: MapTile's initializer order is (x:, y:, z:)
+            }
+        }
+        return tiles
+    }
+
+    // Composites the base map with one or more overlay tiles, each positioned
+    // independently via Mercator projection against `region`. Supports an
+    // arbitrary tile mosaic rather than assuming a single tile fills the canvas.
+    nonisolated private func composite(base: UIImage, overlays: [(tile: MapTile, image: UIImage)], region: MKCoordinateRegion, alpha: CGFloat) -> UIImage {
         let size     : CGSize                  = base.size
         let renderer : UIGraphicsImageRenderer = UIGraphicsImageRenderer(size: size)
+
+        func mercY(_ lat: Double) -> Double {
+            let rad : Double = lat * .pi / 180.0
+            return log(tan(.pi / 4.0 + rad / 2.0))
+        }
+
+        let regNorth      : CGFloat = region.center.latitude  + region.span.latitudeDelta  / 2
+        let regSouth      : CGFloat = region.center.latitude  - region.span.latitudeDelta  / 2
+        let regWest       : CGFloat = region.center.longitude - region.span.longitudeDelta / 2
+        let regEast       : CGFloat = region.center.longitude + region.span.longitudeDelta / 2
+        let mercRegNorth  : CGFloat = mercY(regNorth)
+        let mercRegSouth  : CGFloat = mercY(regSouth)
+        let mercRegHeight : CGFloat = mercRegNorth - mercRegSouth
 
         return renderer.image { ctx in
             base.draw(in: CGRect(origin: .zero, size: size))
 
-            if let overlay {
-                if let tile = tileIndex, let reg = region {
-                    // Position tile using Mercator projection — correct for latitude distortion
-                    func mercY(_ lat: Double) -> Double {
-                        let rad : Double = lat * .pi / 180.0
-                        return log(tan(.pi / 4.0 + rad / 2.0))
-                    }
+            for (tile, overlayImg) in overlays {
+                let n         : Double = pow(2.0, Double(tile.z))
+                let tileNorth : Double = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y)     / n))) * 180.0 / .pi
+                let tileSouth : Double = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y + 1) / n))) * 180.0 / .pi
+                let tileWest  : Double = Double(tile.x)     / n * 360.0 - 180.0
+                let tileEast  : Double = Double(tile.x + 1) / n * 360.0 - 180.0
 
-                    let n         : Double = pow(2.0, Double(tile.z))
-                    let tileNorth : Double = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y)     / n))) * 180.0 / .pi
-                    let tileSouth : Double = atan(sinh(.pi * (1.0 - 2.0 * Double(tile.y + 1) / n))) * 180.0 / .pi
-                    let tileWest  : Double = Double(tile.x)     / n * 360.0 - 180.0
-                    let tileEast  : Double = Double(tile.x + 1) / n * 360.0 - 180.0
+                let mercTileNorth : CGFloat = mercY(tileNorth)
+                let mercTileSouth : CGFloat = mercY(tileSouth)
 
-                    let regNorth : CGFloat = reg.center.latitude  + reg.span.latitudeDelta  / 2
-                    let regSouth : CGFloat = reg.center.latitude  - reg.span.latitudeDelta  / 2
-                    let regWest  : CGFloat = reg.center.longitude - reg.span.longitudeDelta / 2
-                    let regEast  : CGFloat = reg.center.longitude + reg.span.longitudeDelta / 2
+                let x : CGFloat = CGFloat((tileWest  - regWest)  / (regEast - regWest))    * size.width
+                let y : CGFloat = CGFloat((mercRegNorth - mercTileNorth) / mercRegHeight)  * size.height
+                let w : CGFloat = CGFloat((tileEast  - tileWest) / (regEast - regWest))    * size.width
+                let h : CGFloat = CGFloat((mercTileNorth - mercTileSouth) / mercRegHeight) * size.height
 
-                    let mercRegNorth  : CGFloat = mercY(regNorth)
-                    let mercRegSouth  : CGFloat = mercY(regSouth)
-                    let mercTileNorth : CGFloat = mercY(tileNorth)
-                    let mercTileSouth : CGFloat = mercY(tileSouth)
-                    let mercRegHeight : CGFloat = mercRegNorth - mercRegSouth
-
-                    let x : CGFloat = CGFloat((tileWest  - regWest)  / (regEast - regWest))  * size.width
-                    let w : CGFloat = CGFloat((tileEast  - tileWest) / (regEast - regWest))  * size.width
-                    let y : CGFloat = CGFloat((mercRegNorth - mercTileNorth) / mercRegHeight) * size.height
-                    let h : CGFloat = CGFloat((mercTileNorth - mercTileSouth) / mercRegHeight) * size.height
-
-                    overlay.draw(in: CGRect(x: x, y: y, width: w, height: h), blendMode: .normal, alpha: alpha)
-                } else {
-                    overlay.draw(in: CGRect(origin: .zero, size: size), blendMode: .normal, alpha: alpha)
-                }
+                overlayImg.draw(in: CGRect(x: x, y: y, width: w, height: h), blendMode: .normal, alpha: alpha)
             }
 
             let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: [UIColor.clear.cgColor, UIColor.black.withAlphaComponent(0.3).cgColor] as CFArray, locations: [0.7, 1.0])!

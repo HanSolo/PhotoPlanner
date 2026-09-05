@@ -24,6 +24,8 @@ public class Constants {
     public static let DATE_TWENTY_FOUR_HOUR_FORMAT   : String        = "dd.MM.yyyy HH:mm"
     public static let DATE_TWELVE_HOUR_FORMAT        : String        = "MM/dd/yyyy h:mm a"
     
+    public static let LIBREWXR_STORM_CELL_URL        : String        = "http://hansolo.eu:8081/v2/storm-cells?format=json"
+    
     public static let EPD_SUN                        : String        = "sun"
     public static let EPD_MOON                       : String        = "moon"
     public static let EPD_BLUE_HOUR_MORNING          : String        = "blueHourMorning"

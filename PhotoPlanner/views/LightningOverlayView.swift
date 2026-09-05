@@ -31,8 +31,7 @@ struct LightningOverlayView: View {
                 
                 if viewModel.stormCellsVisible && self.viewModel.visibleRegion != nil {
                     for cell in viewModel.stormCells {
-                        let coord : CLLocationCoordinate2D = cell.coordinate
-                        let point : CGPoint                = Helper.screenPoint(for: coord, in: self.viewModel.visibleRegion!, size: size)
+                        let point : CGPoint = Helper.screenPoint(latitude: cell.lat ?? 0, longitude: cell.lon ?? 0, in: self.viewModel.visibleRegion!, size: size)                        
                         drawStormCell(cell: cell, at: point, ctx: &ctx)
                     }
                 }
@@ -70,9 +69,9 @@ struct LightningOverlayView: View {
         }
     }
     
-    private func drawStormCell(cell: StormCellFeature, at point: CGPoint, ctx: inout GraphicsContext) {
-        let severity : Color   = severityColor(dbz: cell.properties.maxDbz)
-        let radius   : CGFloat = symbolRadius(areaKm2: cell.properties.areaKm2)
+    private func drawStormCell(cell: Cell, at point: CGPoint, ctx: inout GraphicsContext) {
+        let severity : Color   = severityColor(dbz: cell.maxDbz ?? 0)
+        let radius   : CGFloat = symbolRadius(areaKm2: cell.areaKm2 ?? 0)
 
         // Storm cell marker
         let circleRect : CGRect = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
@@ -81,7 +80,7 @@ struct LightningOverlayView: View {
         ctx.stroke(circlePath, with: .color(severity), lineWidth: 2)
 
         // Motion vector arrow
-        drawCellMotionArrow(from: point, headingDeg: cell.properties.motionHeadingDeg, speedKmh: cell.properties.motionSpeedKmh, color: severity, ctx: &ctx)
+        drawCellMotionArrow(from: point, headingDeg: cell.motionHeadingDeg ?? 0, speedKmh: cell.motionSpeedKmh ?? 0, color: severity, ctx: &ctx)
     }
 
     private func drawCellMotionArrow(from origin: CGPoint, headingDeg: Double, speedKmh: Double, color: Color, ctx: inout GraphicsContext) {

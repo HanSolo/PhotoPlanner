@@ -22,7 +22,7 @@ class LightningOverlayViewModel {
         }
     }
     var visibleRegion     : MKCoordinateRegion?
-    var stormCells        : [StormCellFeature]   = []
+    var stormCells        : [Cell]               = []
     var stormCellsVisible : Bool                 = Properties.instance.stormCellsVisible!
 
     private let mqttClient          : BlitzortungMQTTClient     = BlitzortungMQTTClient()
@@ -32,7 +32,6 @@ class LightningOverlayViewModel {
     private let maxStrikes          : Int                       = 500
     public  let maxAge              : Double                    = 300.0  // 5 minutes
     private let bufferKm            : Double                    = 50.0
-    private let stormCellService    : StormCellService          = StormCellService()
     private var isFetchingCells     : Bool                      = false
     private var lastStormCellUpdate : Date                      = Date.distantPast
 
@@ -84,18 +83,9 @@ class LightningOverlayViewModel {
     
     func fetchStormCells() async -> Void {
         if self.isFetchingCells { return }
-        do {
-            guard let region = visibleRegion else { return }
+        Task {
             self.stormCells.removeAll()
-            self.isFetchingCells = true
-            try await self.stormCells += self.stormCellService.fetchStormCells()
-            filterForStormCellsInRegion(region)
-            self.lastStormCellUpdate = Date()
-            self.isFetchingCells     = false
-        } catch {
-            self.lastStormCellUpdate = .now.addingTimeInterval(TimeInterval(-540)) // Set the lastStormUpdate to -9 min so the next update will be checked in a minute
-            self.isFetchingCells     = false
-            debugPrint("Error fetching storm cells")
+            self.stormCells += await RestController.fetchStormCells()
         }
     }
 
@@ -132,14 +122,14 @@ class LightningOverlayViewModel {
     }
     
     
-    private func isWithinStormCellBuffer(_ cell: StormCellFeature, region: MKCoordinateRegion) -> Bool {
+    private func isWithinStormCellBuffer(_ cell: Cell, region: MKCoordinateRegion) -> Bool {
         let bufferLat : Double = bufferKm / 111.0
         let bufferLon : Double = bufferKm / (111.0 * cos(region.center.latitude * .pi / 180))
         let minLat    : Double = region.center.latitude  - region.span.latitudeDelta  / 2 - bufferLat
         let maxLat    : Double = region.center.latitude  + region.span.latitudeDelta  / 2 + bufferLat
         let minLon    : Double = region.center.longitude - region.span.longitudeDelta / 2 - bufferLon
         let maxLon    : Double = region.center.longitude + region.span.longitudeDelta / 2 + bufferLon
-        return cell.coordinate.latitude  >= minLat && cell.coordinate.latitude <= maxLat && cell.coordinate.longitude >= minLon && cell.coordinate.longitude <= maxLon
+        return cell.lat!  >= minLat && cell.lat! <= maxLat && cell.lon! >= minLon && cell.lon! <= maxLon
     }
     
     private func filterForStormCellsInRegion(_ region: MKCoordinateRegion) {

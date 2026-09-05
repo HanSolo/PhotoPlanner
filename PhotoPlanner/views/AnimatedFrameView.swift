@@ -44,9 +44,7 @@ struct AnimatedFrameView: View {
 
                 // Frame image — uses currentImage() which composites wind arrows if enabled
                 if let image = viewModel.currentImage(for: mode) {
-                    let currentFrame = mode == .radar
-                        ? viewModel.radarFrames[safe: viewModel.radarCurrentIndex]
-                        : viewModel.satelliteFrames[safe: viewModel.satelliteCurrentIndex]
+                    let currentFrame = mode == .radar ? viewModel.radarFrames[safe: viewModel.radarCurrentIndex] : viewModel.satelliteFrames[safe: viewModel.satelliteCurrentIndex]
 
                     Image(uiImage: image)
                         .resizable()
@@ -54,10 +52,7 @@ struct AnimatedFrameView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(
                             RoundedRectangle(cornerRadius: 14)
-                                .strokeBorder(
-                                    currentFrame?.isNowcast == true ? Color.accentColor.opacity(0.6) : Color.clear,
-                                    lineWidth: 2
-                                )
+                                .strokeBorder(currentFrame?.isNowcast == true ? Color.accentColor.opacity(0.6) : Color.clear, lineWidth: 2)
                         )
                         .contextMenu {
                             if mode == .radar {
@@ -65,18 +60,10 @@ struct AnimatedFrameView: View {
                                     Button {
                                         Properties.instance.libreWxrColorScheme = scheme.id
                                         Task {
-                                            await viewModel.loadRadarFrames(
-                                                coordinate: coordinate,
-                                                scale:      UITraitCollection.current.displayScale
-                                            )
+                                            await viewModel.loadRadarFrames(coordinate: coordinate, scale: UITraitCollection.current.displayScale)
                                         }
                                     } label: {
-                                        Label(
-                                            scheme.name,
-                                            systemImage: (Properties.instance.libreWxrColorScheme ?? Constants.DEFAULT_LIBREWXR_COLOR_SCHEME) == scheme.id
-                                                ? "checkmark.circle.fill"
-                                                : "circle"
-                                        )
+                                        Label(scheme.name, systemImage: (Properties.instance.libreWxrColorScheme ?? Constants.DEFAULT_LIBREWXR_COLOR_SCHEME) == scheme.id ? "checkmark.circle.fill" : "circle")
                                     }
                                 }
                             }

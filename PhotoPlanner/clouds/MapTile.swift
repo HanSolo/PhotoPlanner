@@ -44,8 +44,10 @@ public struct MapTile {
      ** 10 -> Viper HD
      ** 11 -> MRMS CREF
      ** 12 -> 33/40 Max Storm
+     ** 13 ->
+     ** 14 -> Windy
      **/
-    nonisolated func libreWxrURL(host: String, path: String, colorScheme: Int = 8, tileSize: Int = 256) -> URL? {
+    nonisolated func libreWxrURL(host: String, path: String, colorScheme: Int = 14, tileSize: Int = 256) -> URL? {
         // host  = "https://hansolo.eu"
         // path  = "/v2/radar/1609401600"
         // color = /256/z/x/y/COLOR_SCHEME/SMOOTH_SNOW.png

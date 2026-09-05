@@ -124,7 +124,7 @@ class RadarMapOverlayViewModel {
             for tile in tileList {
                 group.addTask {
                     guard !Task.isCancelled else { return nil }
-                    let urlStr = "\(host)\(path)/\(self.tileSize)/\(tile.z)/\(tile.x)/\(tile.y)/\(colorScheme)/1_1.png"
+                    let urlStr = "\(host)\(path)/\(self.tileSize)/\(tile.z)/\(tile.x)/\(tile.y)/\(colorScheme)/1_1.png"                    
                     guard let url           = URL(string: urlStr),
                           let (data, resp)  = try? await URLSession.shared.data(from: url),
                           let http          = resp as? HTTPURLResponse,
