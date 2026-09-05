@@ -140,6 +140,7 @@ struct SettingsView: View {
                 }
             }
             
+            /*
             HStack {
                 Toggle(isOn: self.model.showStormCellsBinding) {
                     VStack(alignment: .leading, spacing: 2) {
@@ -151,6 +152,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            */
             
             HStack {
                 Toggle(isOn: self.model.desaturatedMapForRadarBinding) {

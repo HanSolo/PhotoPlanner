@@ -121,7 +121,7 @@ class CloudMapViewModel {
 
                     guard !overlays.isEmpty else { return nil }
 
-                    let composited = await self.composite(base: baseMap, overlays: overlays, region: baseRegion, alpha: 0.85)
+                    let composited = self.composite(base: baseMap, overlays: overlays, region: baseRegion, alpha: 0.85)
                     return CloudMapFrame(time: time, image: composited, isNowcast: isNowcast)
                 }
             }
@@ -192,7 +192,7 @@ class CloudMapViewModel {
 
                     guard !overlays.isEmpty else { return nil }
 
-                    let composited = await self.composite(base: base, overlays: overlays, region: baseRegion, alpha: 0.9)
+                    let composited = self.composite(base: base, overlays: overlays, region: baseRegion, alpha: 0.9)
                     return CloudMapFrame(time: frame.time, image: composited, isNowcast: false)
                 }
             }

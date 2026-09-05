@@ -13,35 +13,77 @@ import UIKit
 
 struct LightningOverlayView: View {
     @Environment(\.colorScheme) private var colorScheme
-    
-    let viewModel : LightningOverlayViewModel    
 
-    
-    var body: some View {       
-        TimelineView(.animation) { context in
-            Canvas { ctx, size in
-                guard viewModel.isVisible, let region = viewModel.visibleRegion else { return }
-                let now : Date = context.date
-                for strike in viewModel.strikes {
-                    let age : Double = strike.age(at: now)
-                    guard age < self.viewModel.maxAge else { continue }
-                    let point : CGPoint = Helper.screenPoint(for: CLLocationCoordinate2D(latitude: strike.latitude, longitude: strike.longitude), in: region, size: size)
-                    drawStrike(ctx: ctx, point: point, phase: strike.phase(at: now), age: age, color: strike.color(at: now, colorScheme: self.colorScheme), opacity: strike.opacity(at: now))
-                }
-                
-                if viewModel.stormCellsVisible && self.viewModel.visibleRegion != nil {
-                    for cell in viewModel.stormCells {
-                        let point : CGPoint = Helper.screenPoint(latitude: cell.lat ?? 0, longitude: cell.lon ?? 0, in: self.viewModel.visibleRegion!, size: size)                        
-                        drawStormCell(cell: cell, at: point, ctx: &ctx)
+    let viewModel : LightningOverlayViewModel
+
+    // Cached storm-cell screen positions — recomputed only when the visible
+    // region, the cell data, or the view size changes, never inside the
+    // per-frame animation callback. Doing that recomputation (or any other
+    // @State mutation) inside onChange(of: context.date) on a .animation
+    // TimelineView fires up to ~120x/sec and was the actual source of both
+    // the flicker and the "tried to update multiple times per frame"
+    // warnings — SwiftUI detects the tight mutate/redraw loop and complains.
+    @State private var cachedCellPoints : [(cell: Cell, point: CGPoint)] = []
+
+    var body: some View {
+        GeometryReader { geo in
+            // Lightning strikes need a per-frame clock to animate the flash.
+            // Everything else (pruning, region/cell diffing) is intentionally
+            // kept OUT of this timeline's onChange — see comments below.
+            TimelineView(.animation) { context in
+                Canvas { ctx, size in
+                    guard viewModel.isVisible, let region = viewModel.visibleRegion else { return }
+                    let now : Date = context.date
+                    for strike in viewModel.strikes {
+                        let age : Double = strike.age(at: now)
+                        guard age < self.viewModel.maxAge else { continue }
+                        let point : CGPoint = Helper.screenPoint(for: CLLocationCoordinate2D(latitude: strike.latitude, longitude: strike.longitude), in: region, size: size)
+                        drawStrike(ctx: ctx, point: point, phase: strike.phase(at: now), age: age, color: strike.color(at: now, colorScheme: self.colorScheme), opacity: strike.opacity(at: now))
+                    }
+
+                    if viewModel.stormCellsVisible {
+                        for (cell, point) in cachedCellPoints {
+                            drawStormCell(cell: cell, at: point, ctx: &ctx)
+                        }
                     }
                 }
+                // No state mutation here — purely reads viewModel.strikes to draw.
             }
-            .onChange(of: context.date) { _, _ in
-                viewModel.pruneOldStrikes()
+            // Pruning only needs ~1s granularity given a 300s maxAge. Driving it
+            // from a slow periodic timeline instead of the animation timeline
+            // removes ~120x/sec of unnecessary @Observable mutation.
+            .overlay {
+                TimelineView(.periodic(from: .now, by: 1.0)) { context in
+                    Color.clear
+                        .onChange(of: context.date) { _, _ in viewModel.pruneOldStrikes() }
+                }
+                .allowsHitTesting(false)
+            }
+            .onAppear {
+                recomputeCellPoints(size: geo.size)
+            }
+            .onChange(of: geo.size) { _, newSize in
+                recomputeCellPoints(size: newSize)
+            }
+            .onChange(of: viewModel.regionVersion) { _, _ in
+                recomputeCellPoints(size: geo.size)
+            }
+            .onChange(of: viewModel.stormCells) { _, _ in
+                recomputeCellPoints(size: geo.size)
             }
         }
         .ignoresSafeArea()
         .allowsHitTesting(false)
+    }
+
+    private func recomputeCellPoints(size: CGSize) {
+        guard let region = viewModel.visibleRegion else {
+            cachedCellPoints = []
+            return
+        }
+        cachedCellPoints = viewModel.stormCells.map { cell in
+            (cell, Helper.screenPoint(latitude: cell.lat ?? 0, longitude: cell.lon ?? 0, in: region, size: size))
+        }
     }
 
     private func drawStrike(ctx: GraphicsContext, point: CGPoint, phase: LightningStrike.AnimationPhase, age: Double, color: Color, opacity: Double) {
@@ -52,7 +94,7 @@ struct LightningOverlayView: View {
                 let minRadius    : CGFloat = 3
                 let radius       : CGFloat = maxRadius * CGFloat(1.0 - progress) + minRadius
                 let flashOpacity : CGFloat = pow(1.0 - progress, 1.5) * opacity
-                
+
                 ctx.withCGContext { cgCtx in
                     cgCtx.saveGState()
                     cgCtx.setAlpha(flashOpacity)
@@ -60,7 +102,7 @@ struct LightningOverlayView: View {
                     cgCtx.drawRadialGradient(gradient, startCenter: CGPoint(x: point.x, y: point.y), startRadius: 0, endCenter: CGPoint(x: point.x, y: point.y), endRadius: radius, options: .drawsAfterEndLocation)
                     cgCtx.restoreGState()
                 }
-                
+
             case .persistent:
                 let dotRadius : CGFloat         = 3
                 var dotCtx    : GraphicsContext = ctx
@@ -68,7 +110,7 @@ struct LightningOverlayView: View {
                 dotCtx.fill(Path(ellipseIn: CGRect(x: point.x - dotRadius, y: point.y - dotRadius, width: dotRadius * 2, height: dotRadius * 2)), with: .color(color))
         }
     }
-    
+
     private func drawStormCell(cell: Cell, at point: CGPoint, ctx: inout GraphicsContext) {
         let severity : Color   = severityColor(dbz: cell.maxDbz ?? 0)
         let radius   : CGFloat = symbolRadius(areaKm2: cell.areaKm2 ?? 0)
@@ -76,7 +118,7 @@ struct LightningOverlayView: View {
         // Storm cell marker
         let circleRect : CGRect = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
         let circlePath : Path   = Path(ellipseIn: circleRect)
-        ctx.fill(circlePath, with: .color(severity.opacity(0.35)))
+        ctx.fill(circlePath, with: .color(severity.opacity(0.75)))
         ctx.stroke(circlePath, with: .color(severity), lineWidth: 2)
 
         // Motion vector arrow

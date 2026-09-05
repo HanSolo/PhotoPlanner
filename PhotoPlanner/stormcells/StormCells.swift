@@ -31,7 +31,7 @@ class StormCells: Codable {
     }
 }
 
-class Cell: Codable {
+class Cell: Codable, Equatable {
     var lon              : Double?
     var lat              : Double?
     var region           : String?
@@ -75,5 +75,14 @@ class Cell: Codable {
         try? container.encode(motionHeadingDeg, forKey: .motionHeadingDeg)
         try? container.encode(areaKm2,          forKey: .areaKm2)
         try? container.encode(maxDbz,           forKey: .maxDbz)
+    }
+    
+    static func == (lhs: Cell, rhs: Cell) -> Bool {
+        lhs.lat              == rhs.lat &&
+        lhs.lon              == rhs.lon &&
+        lhs.motionSpeedKmh   == rhs.motionSpeedKmh &&
+        lhs.motionHeadingDeg == rhs.motionHeadingDeg &&
+        lhs.areaKm2          == rhs.areaKm2 &&
+        lhs.maxDbz           == rhs.maxDbz
     }
 }

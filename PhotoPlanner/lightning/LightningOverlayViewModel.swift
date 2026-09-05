@@ -21,7 +21,11 @@ class LightningOverlayViewModel {
             self.isVisible = self.strikesVisible
         }
     }
-    var visibleRegion     : MKCoordinateRegion?
+    var visibleRegion     : MKCoordinateRegion? {
+        didSet { regionVersion += 1 }
+    }
+    
+    private(set) var regionVersion : Int          = 0
     var stormCells        : [Cell]               = []
     var stormCellsVisible : Bool                 = Properties.instance.stormCellsVisible!
 
@@ -68,10 +72,16 @@ class LightningOverlayViewModel {
         filterForStormCellsInRegion(region)
     }
 
+    // Called once per second by a low-frequency TimelineView schedule in the
+    // view, NOT per animation frame. Pruning is cheap but was previously
+    // invoked up to 120x/sec tied to the lightning-flash timeline, which is
+    // unnecessary, strikes only need pruning at roughly 1s granularity given
+    // a 300s maxAge, and was contributing to the "multiple updates per
+    // frame" warning by mutating an @Observable array inside a hot per-frame
+    // callback.
     func pruneOldStrikes() {
         let cutoff : Date = Date().addingTimeInterval(-self.maxAge)
         strikes.removeAll { $0.timestamp < cutoff }
-        
         
         if self.stormCellsVisible && self.lastStormCellUpdate.timeIntervalSinceNow < -600 {
             Task {
@@ -83,10 +93,13 @@ class LightningOverlayViewModel {
     
     func fetchStormCells() async -> Void {
         if self.isFetchingCells { return }
-        Task {
-            self.stormCells.removeAll()
-            self.stormCells += await RestController.fetchStormCells()
-        }
+        isFetchingCells = true
+        lastStormCellUpdate = Date()
+        let fetched = await RestController.fetchStormCells()
+        // Single assignment instead of removeAll() + += so stormCells only
+        // publishes one change, not two, per fetch.
+        self.stormCells = fetched
+        isFetchingCells = false
     }
 
     private func handleStrike(_ strike: LightningStrike) {

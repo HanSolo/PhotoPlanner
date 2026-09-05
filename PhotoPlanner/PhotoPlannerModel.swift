@@ -150,7 +150,7 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var desaturatedMapForRadarBinding : Binding<Bool> {
         .init(get: { self.desaturateMapForRadar }, set: { self.desaturateMapForRadar = $0 })
     }
-    var showStormCells                : Bool                     = Properties.instance.stormCellsVisible! {
+    var showStormCells                : Bool                     = false /*Properties.instance.stormCellsVisible!*/ {
         didSet {
             Properties.instance.stormCellsVisible = self.showStormCells
         }
