@@ -16,6 +16,9 @@ struct CameraView: View {
     @Environment(PhotoPlannerModel.self) private var model
     
     @State                               private var addCameraViewVisible : Bool = false
+    @State                               private var cameraInUseAlert     : Bool = false
+    
+    @Query                               private var photoShoots          : [PhotoShoot]
     
     let cameras : [Camera]
 
@@ -68,6 +71,11 @@ struct CameraView: View {
                 CameraDetailView(camera: camera)
             }
             .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+            .alert("Camera In Use", isPresented: self.$cameraInUseAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("This camera is used in one or more saved photo shoots. Remove it from those shoots before deleting it.")
+            }
         }
         .sheet(isPresented: self.$addCameraViewVisible) {
             AddCameraView()
@@ -77,11 +85,19 @@ struct CameraView: View {
     private func deleteCamera(indexSet: IndexSet) {
         indexSet.forEach { index in
             let camera = cameras[index]
+
+            let isInUse : Bool = self.photoShoots.contains { $0.camera.id == camera.id }
+            guard !isInUse else {
+                self.cameraInUseAlert = true
+                return
+            }
+
             context.delete(camera)
             do {
                 try context.save()
             } catch {
                 debugPrint(error.localizedDescription)
+                context.rollback()
             }
         }
     }

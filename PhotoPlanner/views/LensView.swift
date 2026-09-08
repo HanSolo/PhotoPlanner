@@ -17,6 +17,9 @@ struct LensView: View {
     @Environment(PhotoPlannerModel.self) private var model
     
     @State                               private var addLensViewVisible : Bool = false
+    @State                               private var lensInUseAlert     : Bool = false
+    
+    @Query                               private var photoShoots        : [PhotoShoot]
     
     let lenses : [Lens]
 
@@ -76,6 +79,11 @@ struct LensView: View {
                 LensDetailView(lens: lens)
             }
             .foregroundStyle(self.colorScheme == .dark ? .white : .black)
+            .alert("Lens In Use", isPresented: self.$lensInUseAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("This lens is used in one or more saved photo shoots. Remove it from those shoots before deleting it.")
+            }
         }
         .sheet(isPresented: self.$addLensViewVisible) {
             AddLensView()
@@ -85,11 +93,19 @@ struct LensView: View {
     private func deleteLens(indexSet: IndexSet) {
         indexSet.forEach { index in
             let lens = lenses[index]
+
+            let isInUse : Bool = self.photoShoots.contains { $0.lens.id == lens.id }
+            guard !isInUse else {
+                self.lensInUseAlert = true
+                return
+            }
+
             context.delete(lens)
             do {
                 try context.save()
             } catch {
                 debugPrint(error.localizedDescription)
+                context.rollback()
             }
         }
     }

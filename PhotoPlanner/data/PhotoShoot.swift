@@ -16,8 +16,8 @@ public class PhotoShoot {
     
     var name           : String
     var note           : String?
-    var camera         : Camera
-    var lens           : Lens
+    @Relationship(deleteRule: .deny) var camera : Camera
+    @Relationship(deleteRule: .deny) var lens   : Lens
     var isLandscape    : Bool
     var aperture       : Double
     var focalLength    : Double
