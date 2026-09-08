@@ -20,20 +20,58 @@ class RadarMapOverlayViewModel {
 
     private let libreWxrHost : String = "http://hansolo.eu:8081"
     private let manifestURL  : String = "http://hansolo.eu:8081/public/weather-maps.json"
-    private let tileSize     : Int    = 256 // 512 is possible but tiles will consume a lot of memory
     private var loadTask     : Task<Void, Never>?
     private var refreshTimer : Timer?
     
+    // Adaptive tile resolution. Switching to 512px is only worthwhile once the
+    // mosaic (bounded by tilesForRegion + the 35 tile cap) is small enough that
+    // the 4x memory cost per tile (512² vs 256²) stays within budget. Zoom is
+    // clamped to 4...9 in zoomLevel(for:), so 8 sits one step below the ceiling.
+    //
+    // Hysteresis: switch up to 512px only at zoom >= highResZoomIn, switch back
+    // down to 256px only once zoom drops below highResZoomOut. The gap between
+    // the two prevents rapid re-fetching at alternating resolutions when the
+    // user pinch-zooms back and forth across a single threshold.
+    private let highResZoomIn   : Int = 8   // switch to 512px at/above this zoom
+    private let highResZoomOut  : Int = 6   // fall back to 256px below this zoom
+    private var currentTileSize : Int = 256
+ 
+    // Hard byte ceiling for one fetched mosaic's decoded memory (RGBA, 4 bytes/px).
+    // Used to veto a 512px fetch that would exceed budget even after the zoom
+    // hysteresis says "go high-res", e.g. a wide region still zoomed to 8.
+    private let maxMosaicBytes : Int = 60 * 1024 * 1024 // 60MB
+ 
+    private func resolvedTileSize(for zoom: Int, tileCount: Int) -> Int {
+        if currentTileSize == 256 && zoom >= highResZoomIn {
+            currentTileSize = 512
+        } else if currentTileSize == 512 && zoom < highResZoomOut {
+            currentTileSize = 256
+        }
+ 
+        // Even within hysteresis, don't let a large mosaic blow the memory budget.
+        let candidateBytes = tileCount * currentTileSize * currentTileSize * 4
+        if candidateBytes > maxMosaicBytes { return 256 }
+        return currentTileSize
+    }
+    
     var currentOpacity: Double {
         guard let region = currentRegion else { return 0.65 }
-        // Derive zoom level from longitude span
-        // zoom 5 (very zoomed out) → 0.95 opacity
-        // zoom 9 (close in) → 0.35 opacity
+        // Derive zoom level from longitude span.
+        // Below plateauZoom: stay fully opaque (0.95), colors stay strong for
+        // most of the zoom range. Above it, fade non-linearly down to 0.35 by
+        // maxZoom, with the fade concentrated near the top of the range rather
+        // than spread evenly, so it only gets translucent when zoomed in very far.
         let zoom    : Double = log2(360.0 / region.span.longitudeDelta)
-        let clamped : Double = max(5.0, min(9.0, zoom))
-        // Linear interpolation between zoom 5 (0.95) and zoom 9 (0.35)
-        let t : Double = (clamped - 5.0) / (9.0 - 5.0) // 0.0 at zoom 5, 1.0 at zoom 9
-        return 0.95 - t * (0.95 - 0.35)                // 0.95...0.35
+        let plateauZoom : Double = 7.0   // no fading at/below this zoom
+        let maxZoom     : Double = 9.0   // fully faded (0.35) at/above this zoom
+        let fadeExponent: Double = 3.0   // higher = fade concentrated closer to maxZoom
+ 
+        guard zoom > plateauZoom else { return 0.95 }
+ 
+        let clamped : Double = max(plateauZoom, min(maxZoom, zoom))
+        let t       : Double = (clamped - plateauZoom) / (maxZoom - plateauZoom) // 0.0 at plateauZoom, 1.0 at maxZoom
+        let eased   : Double = pow(t, fadeExponent)
+        return 0.95 - eased * (0.95 - 0.35)                                      // 0.95...0.35
     }
 
        
@@ -115,16 +153,17 @@ class RadarMapOverlayViewModel {
         }
         await MainActor.run { self.tooManyTiles = false }
                         
-        let colorScheme = Properties.instance.libreWxrColorScheme ?? Constants.DEFAULT_LIBREWXR_COLOR_SCHEME
-        let host        = response.host
-        let path        = lastFrame.path
-
+        let colorScheme  = Properties.instance.libreWxrColorScheme ?? 13
+        let host         = response.host
+        let path         = lastFrame.path
+        let resolvedSize = resolvedTileSize(for: zoom, tileCount: tileList.count)
+ 
         // Fetch all tiles in parallel
         let fetched: [(MapTile, UIImage)] = await withTaskGroup(of: (MapTile, UIImage)?.self) { group in
             for tile in tileList {
                 group.addTask {
                     guard !Task.isCancelled else { return nil }
-                    let urlStr = "\(host)\(path)/\(self.tileSize)/\(tile.z)/\(tile.x)/\(tile.y)/\(colorScheme)/1_1.png"                    
+                    let urlStr = "\(host)\(path)/\(resolvedSize)/\(tile.z)/\(tile.x)/\(tile.y)/\(colorScheme)/1_1.png"
                     guard let url           = URL(string: urlStr),
                           let (data, resp)  = try? await URLSession.shared.data(from: url),
                           let http          = resp as? HTTPURLResponse,
