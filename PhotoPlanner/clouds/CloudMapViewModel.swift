@@ -18,14 +18,14 @@ class CloudMapViewModel {
     var radarLoading            : Bool            = false
     var radarFailed             : Bool            = false
     var radarCurrentIndex       : Int             = 0
-    var radarPlaying          : Bool            = false
+    var radarPlaying            : Bool            = false
 
     // Satellite
     var satelliteFrames         : [CloudMapFrame] = []
     var satelliteLoading        : Bool            = false
     var satelliteFailed         : Bool            = false
     var satelliteCurrentIndex   : Int             = 0
-    var satellitePlaying      : Bool            = false
+    var satellitePlaying        : Bool            = false
 
     // Wind
     var windSamples             : [WindSample]    = []

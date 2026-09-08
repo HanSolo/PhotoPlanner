@@ -63,7 +63,7 @@ class RadarMapOverlayViewModel {
         // than spread evenly, so it only gets translucent when zoomed in very far.
         let zoom    : Double = log2(360.0 / region.span.longitudeDelta)
         let plateauZoom : Double = 7.0   // no fading at/below this zoom
-        let maxZoom     : Double = 9.0   // fully faded (0.35) at/above this zoom
+        let maxZoom     : Double = 9.0   // fully faded (0.5) at/above this zoom
         let fadeExponent: Double = 3.0   // higher = fade concentrated closer to maxZoom
  
         guard zoom > plateauZoom else { return 0.95 }
@@ -71,7 +71,7 @@ class RadarMapOverlayViewModel {
         let clamped : Double = max(plateauZoom, min(maxZoom, zoom))
         let t       : Double = (clamped - plateauZoom) / (maxZoom - plateauZoom) // 0.0 at plateauZoom, 1.0 at maxZoom
         let eased   : Double = pow(t, fadeExponent)
-        return 0.95 - eased * (0.95 - 0.35)                                      // 0.95...0.35
+        return 0.95 - eased * (0.95 - 0.5)                                       // 0.95...0.5
     }
 
        
