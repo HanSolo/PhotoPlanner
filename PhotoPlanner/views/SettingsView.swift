@@ -166,6 +166,18 @@ struct SettingsView: View {
                 }
             }
             
+            HStack {
+                Toggle(isOn: self.model.issVisibleBinding) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Show ISS path and location")
+                            .font(Constants.REGULAR_FONT_16)
+                        Text("Display current location and path of the ISS")
+                            .font(Constants.REGULAR_FONT_12)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            
             Spacer()
         }
         .padding()

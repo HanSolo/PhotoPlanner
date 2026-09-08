@@ -29,6 +29,7 @@ extension Key {
     static let showWeatherRadar      : Key = "showWeatherRadar"
     static let desaturateMapForRadar : Key = "desaturateMapForRadar"
     static let stormCellsVisible     : Key = "stormCellsVisible"
+    static let issVisible            : Key = "issVisible"
 }
 
 
@@ -88,6 +89,9 @@ public struct Properties {
     
     @UserDefault(key: .stormCellsVisible, defaultValue: false)
     var stormCellsVisible: Bool?
+    
+    @UserDefault(key: .issVisible, defaultValue: false)
+    var issVisible: Bool?
     
     private init() {}
 }

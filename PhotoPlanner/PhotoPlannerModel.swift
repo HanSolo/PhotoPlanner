@@ -158,6 +158,14 @@ public class PhotoPlannerModel : NSObject, CLLocationManagerDelegate {
     var showStormCellsBinding         : Binding<Bool> {
         .init(get: { self.showStormCells }, set: { self.showStormCells = $0 })
     }
+    var issVisible                    : Bool                     = Properties.instance.issVisible! {
+        didSet {
+            Properties.instance.issVisible = self.issVisible
+        }
+    }
+    var issVisibleBinding                : Binding<Bool> {
+        .init(get: { self.issVisible }, set: { self.issVisible = $0 })
+    }
     
     
 

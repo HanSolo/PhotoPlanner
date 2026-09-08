@@ -48,6 +48,7 @@ struct ContentView: View {
     @State private var visibleRegion                : MKCoordinateRegion          = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: Properties.instance.cameraLatitude!,longitude: Properties.instance.cameraLongitude!), latitudinalMeters: 500_000, longitudinalMeters: 500_000)
     @State private var radarViewModel               : RadarMapOverlayViewModel    = RadarMapOverlayViewModel()
     @State private var lightningViewModel           : LightningOverlayViewModel   = LightningOverlayViewModel(username: "hansolo", password: "nuetp0tE.")
+    @State private var issOverlayViewModel          : IssOverlayViewModel         = IssOverlayViewModel()
     
     @ObservedObject var locationService             : LocationService             = LocationService()
     
@@ -94,6 +95,28 @@ struct ContentView: View {
                         
                         // Show user location
                         UserAnnotation()
+                        
+                        // Show ISS current position + predicted path as native MapKit
+                        if self.model.issVisible {
+                            if let issPosition = self.issOverlayViewModel.currentPosition {
+                                Annotation("", coordinate: issPosition) {
+                                    Image("iss")
+                                        .resizable()
+                                        .frame(width: 20, height: 20)
+                                        .rotationEffect(Angle(degrees: 22))
+                                }
+                                /*
+                                Annotation("", coordinate: issPosition) {
+                                    IssMarkerView()
+                                }
+                                */
+                            }
+                            ForEach(Array(self.issOverlayViewModel.smoothedPathSegments.enumerated()), id: \.offset) { _, segment in
+                                MapPolyline(coordinates: segment)
+                                    .strokeStyle(style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                                    .stroke(Color.cyan.opacity(0.85))
+                            }
+                        }
                         
                         // Show the camera marker
                         if self.model.cameraMarkerData != nil {
@@ -249,7 +272,7 @@ struct ContentView: View {
                 RadarMapOverlayView(viewModel: self.radarViewModel)
                 
                 LightningOverlayView(viewModel: self.lightningViewModel)
-                                                
+            
                 VStack {
                     Spacer()
                     HStack(alignment: .center) {
@@ -972,6 +995,13 @@ struct ContentView: View {
             .onChange(of: self.model.showWeatherRadar) {
                 self.radarViewModel.isVisible = self.model.showWeatherRadar
             }
+            .onChange(of: self.model.issVisible) {
+                if self.model.issVisible {
+                    self.issOverlayViewModel.show()
+                } else {
+                    self.issOverlayViewModel.hide()
+                }
+            }
             .task {
                 let savedCameraId         : String     = Properties.instance.cameraId         ?? Constants.DEFAULT_CAMERA.id
                 let savedLensId           : String     = Properties.instance.lensId           ?? Constants.DEFAULT_LENS.id
@@ -1004,6 +1034,12 @@ struct ContentView: View {
                         milkywayViewModel.show(at: location, on: date, timeZone: timeZone)
                         clarityViewModel.loadClarity(at: location, on: date, timeZone: timeZone)
                     }
+                }
+                
+                if self.model.issVisible {
+                    self.issOverlayViewModel.show()
+                } else {
+                    self.issOverlayViewModel.hide()
                 }
             }
         }
