@@ -41,7 +41,7 @@ enum LibreWxrColorScheme: Int, CaseIterable, Identifiable {
             case .viperHD          : return "Viper HD"
             case .mrmsCref         : return "MRMS CREF"
             case .maxStorm         : return "Max Storm"
-            case .metServiceNZ     : return "MetService NZ (dark)"
+            case .metServiceNZ     : return "MetService NZ"
             case .windy            : return "Windy"
         }
     }
