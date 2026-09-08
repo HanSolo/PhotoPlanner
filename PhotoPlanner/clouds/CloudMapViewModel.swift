@@ -5,8 +5,10 @@
 
 import Foundation
 import CoreLocation
+import SwiftUI
 import MapKit
 import UIKit
+
 
 @Observable
 class CloudMapViewModel {
@@ -16,14 +18,14 @@ class CloudMapViewModel {
     var radarLoading            : Bool            = false
     var radarFailed             : Bool            = false
     var radarCurrentIndex       : Int             = 0
-    var radarPlaying            : Bool            = true
+    var radarPlaying          : Bool            = false
 
     // Satellite
     var satelliteFrames         : [CloudMapFrame] = []
     var satelliteLoading        : Bool            = false
     var satelliteFailed         : Bool            = false
     var satelliteCurrentIndex   : Int             = 0
-    var satellitePlaying        : Bool            = true
+    var satellitePlaying      : Bool            = false
 
     // Wind
     var windSamples             : [WindSample]    = []
@@ -51,7 +53,7 @@ class CloudMapViewModel {
         windLoading = true
         windSamples = []
 
-        let region = radarRegion ?? satelliteRegion
+        let region  = radarRegion ?? satelliteRegion
 
         windSamples = await windFetcher.fetchGrid(center: coordinate, spanLat: region?.span.latitudeDelta ?? 2.25, spanLon: region?.span.longitudeDelta ?? 3.50) // ~250km fallback
         windLoading = false
@@ -73,7 +75,6 @@ class CloudMapViewModel {
         // Draw wind arrows onto the frame image
         let frameDate : Date = Date(timeIntervalSince1970: TimeInterval(frame.time))
 
-        debugPrint("[Wind] drawing with regionSpanLat: \(region.span.latitudeDelta) regionSpanLon: \(region.span.longitudeDelta) centerLat: \(region.center.latitude) centerLon: \(region.center.longitude)")
         return WindArrowRenderer.draw(onto: frame.image, samples: windSamples, at: frameDate, regionLat: region.span.latitudeDelta, regionLon: region.span.longitudeDelta, centerLat: region.center.latitude, centerLon: region.center.longitude)
     }
 
